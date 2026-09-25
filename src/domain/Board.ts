@@ -68,6 +68,12 @@ export class Board {
     return this.tileAt(point) !== null;
   }
 
+  /** Returns a detached row-major snapshot. */
+  toRows(): Cell[][] {
+    return Array.from({ length: this.height }, (_, row) =>
+      Array.from({ length: this.width }, (_, col) => this.#cells[row * this.width + col] ?? null));
+  }
+
   withTile(point: GridPoint, tile: Cell): Board {
     if (!this.contains(point)) throw new RangeError("Point is outside the board");
     if (tile !== null && !isTileId(tile)) {
