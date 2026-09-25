@@ -83,6 +83,7 @@ out
 dist
 .test-dist/
 .simulation-dist/
+.analysis-dist/
 .output
 
 # Gatsby files
