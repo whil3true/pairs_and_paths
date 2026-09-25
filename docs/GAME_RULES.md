@@ -10,6 +10,17 @@ Future gameplay must obey these invariants:
 - A board is at most 6×8.
 - Every published level must be validated by the solver.
 
-The pathfinder's logical outer border does **not** need to occupy a full tile's physical width in the UI. This distinction is important for portrait mobile layouts.
+`findPath(board, start, end)` accepts endpoints in real-board coordinates and returns
+`null` for an invalid or unconnectable pair. A successful result contains `points`, a
+2–4 vertex orthogonal polyline from `start` to `end` with collinear intermediate
+points removed. The endpoints must be distinct occupied cells with the same positive
+integer tile ID; all other occupied cells block the route.
 
-The board and pathfinder are intentionally not implemented in the bootstrap.
+Pathfinding uses exactly one logical empty cell around the board (`col` from `-1` to
+`width`, `row` from `-1` to `height`). Returned vertices may use those padded
+coordinates, but never coordinates beyond them. This logical outer border does
+**not** need to occupy a full tile's physical width in the UI. This distinction is
+important for portrait mobile layouts.
+
+When several routes exist, the pathfinder minimizes turns first, total Manhattan
+length second, and uses stable row/column vertex ordering as the final tie-break.
