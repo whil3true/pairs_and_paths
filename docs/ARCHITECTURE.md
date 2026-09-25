@@ -2,7 +2,11 @@
 
 ## Boundaries
 
-- `src/domain/` will own framework-independent board, pathfinding, generation, and solver logic. Phaser must not enter this layer.
+- `src/domain/` owns the framework-independent `Board` and Onet pathfinder. `Board`
+  stores a copied, private row-major array of positive integer tile IDs or `null` and
+  produces new boards for cell changes. The pathfinder reads but never changes it.
+  Coordinates and returned polylines are plain data suitable for a future renderer
+  or solver. This layer imports no Phaser, game, UI, platform, or browser APIs.
 - `src/game/` owns Phaser scenes and rendering. The current scene is only an infrastructure smoke test.
 - `src/platform/` defines the deliberately small platform boundary. `WebPlatform` currently provides identity and locale; persistence will be added only when real save requirements exist. A future Yandex implementation will live behind the same boundary.
 - `src/ui/` is reserved for concrete UI when it exists; no placeholder abstraction is introduced now.
