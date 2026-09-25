@@ -22,50 +22,40 @@ const validateConfig = ({ width, height, pairCount, seed }: GenerationConfig): v
   if (!Number.isInteger(seed) || seed < 0 || seed > 0xffff_ffff) throw new RangeError("seed must be a uint32");
 };
 const adjacent = (a: GridPoint, b: GridPoint): boolean => Math.abs(a.col - b.col) + Math.abs(a.row - b.row) === 1;
-const boardFromPairs = (width: number, height: number, pairs: readonly Pair[]): Board => {
-  const rows: Cell[][] = Array.from({ length: height }, () => Array<Cell>(width).fill(null));
-  pairs.forEach(([a, b], index) => { rows[a.row]![a.col] = index + 1; rows[b.row]![b.col] = index + 1; });
-  return Board.fromRows(rows);
-};
 
-/** Bounded reverse construction. The reverse of the successful addition order is a witness. */
+/**
+ * Builds a bounded geometric removal witness. Read backwards, the witness is a
+ * reverse construction from empty cells in which every inserted pair has the
+ * same legal path it had immediately before removal.
+ */
 const construct = (config: GenerationConfig, random: SeededRandom): Pair[] => {
   const points = Array.from({ length: config.width * config.height }, (_, index) =>
     ({ col: index % config.width, row: Math.floor(index / config.width) }));
-  const attemptLimit = 256;
+  const attemptLimit = 32;
   for (let attempt = 0; attempt < attemptLimit; attempt += 1) {
-    const pairs: Pair[] = [];
-    const used = new Set<string>();
-    while (pairs.length < config.pairCount) {
-      const free = points.filter((point) => !used.has(`${point.col},${point.row}`));
+    const occupied = new Set(random.shuffle(points).slice(0, config.pairCount * 2)
+      .map((point) => point.row * config.width + point.col));
+    const removal: Pair[] = [];
+    while (removal.length < config.pairCount) {
+      const rows: Cell[][] = Array.from({ length: config.height }, (_, row) =>
+        Array.from({ length: config.width }, (_, col) => occupied.has(row * config.width + col) ? 1 : null));
+      const board = Board.fromRows(rows);
+      const remaining = points.filter((point) => occupied.has(point.row * config.width + point.col));
       const candidates: Pair[] = [];
-      for (let left = 0; left < free.length; left += 1) for (let right = left + 1; right < free.length; right += 1) {
-        const pair: Pair = [free[left]!, free[right]!];
+      for (let left = 0; left < remaining.length; left += 1) for (let right = left + 1; right < remaining.length; right += 1) {
+        const pair: Pair = [remaining[left]!, remaining[right]!];
         if (!config.avoidAdjacentMatchingPairs || !adjacent(pair[0], pair[1])) candidates.push(pair);
       }
       let selected: Pair | undefined;
       for (const pair of random.shuffle(candidates)) {
-        if (findPath(boardFromPairs(config.width, config.height, [...pairs, pair]), pair[0], pair[1]) === null) continue;
-        if (pairs.length === config.pairCount - 2) {
-          const remaining = free.filter((point) => point !== pair[0] && point !== pair[1]);
-          let finalExists = false;
-          for (let i = 0; i < remaining.length && !finalExists; i += 1) for (let j = i + 1; j < remaining.length; j += 1) {
-            const last: Pair = [remaining[i]!, remaining[j]!];
-            if (config.avoidAdjacentMatchingPairs && adjacent(last[0], last[1])) continue;
-            finalExists = findPath(boardFromPairs(config.width, config.height, [...pairs, pair, last]), last[0], last[1]) !== null;
-            if (finalExists) break;
-          }
-          if (!finalExists) continue;
-        }
-        selected = pair;
-        break;
+        if (findPath(board, pair[0], pair[1]) !== null) { selected = pair; break; }
       }
       if (selected === undefined) break;
-      pairs.push(selected);
-      used.add(`${selected[0].col},${selected[0].row}`);
-      used.add(`${selected[1].col},${selected[1].row}`);
+      removal.push(selected);
+      occupied.delete(selected[0].row * config.width + selected[0].col);
+      occupied.delete(selected[1].row * config.width + selected[1].col);
     }
-    if (pairs.length === config.pairCount) return pairs;
+    if (removal.length === config.pairCount) return removal;
   }
   throw new Error(`Generation search exhausted its ${attemptLimit}-attempt budget`);
 };
@@ -73,15 +63,15 @@ const construct = (config: GenerationConfig, random: SeededRandom): Pair[] => {
 export const generateLevel = (config: GenerationConfig): GeneratedLevel => {
   validateConfig(config);
   const random = new SeededRandom(config.seed);
-  const additions = construct(config, random);
+  const removal = construct(config, random);
   const ids = random.shuffle(Array.from({ length: config.pairCount }, (_, index) => index + 1));
   const rows: Cell[][] = Array.from({ length: config.height }, () => Array<Cell>(config.width).fill(null));
-  additions.forEach(([a, b], index) => { rows[a.row]![a.col] = ids[index]!; rows[b.row]![b.col] = ids[index]!; });
+  removal.forEach(([a, b], index) => { rows[a.row]![a.col] = ids[index]!; rows[b.row]![b.col] = ids[index]!; });
   const board = Board.fromRows(rows);
   let state = board;
   const witness: LegalMove[] = [];
-  for (let index = additions.length - 1; index >= 0; index -= 1) {
-    const [start, end] = additions[index]!;
+  for (let index = 0; index < removal.length; index += 1) {
+    const [start, end] = removal[index]!;
     const path = findPath(state, start, end);
     if (path === null) throw new Error("Internal generation error: reverse-construction witness blocked");
     const move = { tileId: ids[index]!, start, end, path };
