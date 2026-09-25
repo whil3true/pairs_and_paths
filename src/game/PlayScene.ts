@@ -1,7 +1,7 @@
 import { applyMove, findPath, type Board, type GridPoint, type LegalMove } from "../domain/index.js";
 import type { PlatformService } from "../platform/PlatformService.js";
 import { BoardLayout } from "./BoardLayout.js";
-import { createDemoLevel, DEV_DEMO_CONFIG } from "./DemoLevel.js";
+import { createLevel } from "./LevelSequence.js";
 
 interface TileVisual {
   readonly card: Phaser.GameObjects.Rectangle;
@@ -19,8 +19,11 @@ export class PlayScene extends Phaser.Scene {
   private inputLocked = false;
   private readonly tiles = new Map<string, TileVisual>();
   private route!: Phaser.GameObjects.Graphics;
+  private levelText!: Phaser.GameObjects.Text;
   private remainingText!: Phaser.GameObjects.Text;
+  private seedText!: Phaser.GameObjects.Text;
   private completeOverlay: Phaser.GameObjects.Container | null = null;
+  private currentLevelNumber = 1;
 
   constructor(private readonly platform: PlatformService) {
     super({ key: "PlayScene" });
@@ -30,10 +33,13 @@ export class PlayScene extends Phaser.Scene {
     this.add.text(240, 30, "Pairs & Paths", {
       color: "#f7fbff", fontFamily: "Arial, sans-serif", fontSize: "32px", fontStyle: "bold",
     }).setOrigin(0.5);
-    this.remainingText = this.add.text(240, 76, "", {
+    this.levelText = this.add.text(240, 70, "", {
+      color: "#dceaff", fontFamily: "Arial, sans-serif", fontSize: "20px", fontStyle: "bold",
+    }).setOrigin(0.5);
+    this.remainingText = this.add.text(240, 98, "", {
       color: "#bcd1ec", fontFamily: "Arial, sans-serif", fontSize: "20px",
     }).setOrigin(0.5);
-    this.add.text(240, 766, `Prototype · ${this.platform.displayName} · seed ${DEV_DEMO_CONFIG.seed}`, {
+    this.seedText = this.add.text(240, 766, "", {
       color: "#6f86a5", fontFamily: "Arial, sans-serif", fontSize: "13px",
     }).setOrigin(0.5);
     this.route = this.add.graphics().setDepth(20);
@@ -53,8 +59,10 @@ export class PlayScene extends Phaser.Scene {
     this.tiles.clear();
     this.children.list.filter((child) => child.name === "board-cell").forEach((child) => child.destroy());
 
-    const level = createDemoLevel();
+    const level = createLevel(this.currentLevelNumber);
     this.board = level.board;
+    this.levelText.setText(`Level ${this.currentLevelNumber}`);
+    this.seedText.setText(`Prototype · ${this.platform.displayName} · seed ${level.config.seed}`);
     this.layout = new BoardLayout({
       sceneWidth: Number(this.scale.width), sceneHeight: Number(this.scale.height),
       boardWidth: this.board.width, boardHeight: this.board.height,
@@ -178,15 +186,25 @@ export class PlayScene extends Phaser.Scene {
   }
 
   private showComplete(): void {
-    const shade = this.add.rectangle(240, 420, 440, 230, 0x0b1220, 0.96).setStrokeStyle(2, 0x7fa8d8);
-    const title = this.add.text(240, 374, "Complete", {
+    const shade = this.add.rectangle(240, 420, 440, 260, 0x0b1220, 0.96).setStrokeStyle(2, 0x7fa8d8);
+    const title = this.add.text(240, 342, "Complete", {
       color: "#ffffff", fontFamily: "Arial, sans-serif", fontSize: "36px", fontStyle: "bold",
     }).setOrigin(0.5);
-    const button = this.add.rectangle(240, 460, 210, 58, 0x3976b9).setStrokeStyle(2, 0xd6eaff)
-      .setInteractive({ useHandCursor: true }).on("pointerdown", () => this.startLevel());
-    const buttonText = this.add.text(240, 460, "Play again", {
+    const nextButton = this.add.rectangle(240, 418, 210, 58, 0x3976b9).setStrokeStyle(2, 0xd6eaff)
+      .setInteractive({ useHandCursor: true }).on("pointerdown", () => {
+        this.currentLevelNumber += 1;
+        this.startLevel();
+      });
+    const nextText = this.add.text(240, 418, "Next level", {
       color: "#ffffff", fontFamily: "Arial, sans-serif", fontSize: "22px", fontStyle: "bold",
     }).setOrigin(0.5);
-    this.completeOverlay = this.add.container(0, 0, [shade, title, button, buttonText]).setDepth(40);
+    const replayButton = this.add.rectangle(240, 489, 180, 46, 0x243c5c).setStrokeStyle(1, 0x91acce)
+      .setInteractive({ useHandCursor: true }).on("pointerdown", () => this.startLevel());
+    const replayText = this.add.text(240, 489, "Replay level", {
+      color: "#dceaff", fontFamily: "Arial, sans-serif", fontSize: "18px",
+    }).setOrigin(0.5);
+    this.completeOverlay = this.add.container(
+      0, 0, [shade, title, nextButton, nextText, replayButton, replayText],
+    ).setDepth(40);
   }
 }
