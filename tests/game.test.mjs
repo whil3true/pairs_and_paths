@@ -2,21 +2,53 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { BoardLayout } from "../.test-dist/game/BoardLayout.js";
-import { createDemoLevel, DEV_DEMO_CONFIG, DEV_DEMO_SEED } from "../.test-dist/game/DemoLevel.js";
+import { solveBoard, validateGeneratedLevel } from "../.test-dist/domain/index.js";
+import { createLevel, getLevelConfig, levelSeed } from "../.test-dist/game/LevelSequence.js";
 
 const layout = (boardWidth, boardHeight) => new BoardLayout({
   sceneWidth: 480, sceneHeight: 800, boardWidth, boardHeight,
 });
 
-test("demo is deterministic, sparse, non-adjacent, and solvable", () => {
-  const first = createDemoLevel(), second = createDemoLevel();
-  assert.equal(DEV_DEMO_SEED, 0x0000_0000);
-  assert.deepEqual(DEV_DEMO_CONFIG, { width: 6, height: 8, pairCount: 20, seed: DEV_DEMO_SEED, avoidAdjacentMatchingPairs: true });
+test("level 1 preserves the deterministic prototype profile", () => {
+  const first = createLevel(1), second = createLevel(1);
+  assert.equal(levelSeed(1), 0x0000_0000);
+  assert.deepEqual(getLevelConfig(1), { width: 6, height: 8, pairCount: 20, seed: 0, avoidAdjacentMatchingPairs: true });
+  assert.deepEqual(getLevelConfig(1), getLevelConfig(1));
   assert.deepEqual(first.board.toRows(), second.board.toRows());
   assert.equal(first.board.toRows().flat().filter((tile) => tile !== null).length, 40);
   assert.equal(first.board.toRows().flat().filter((tile) => tile === null).length, 8);
   assert.ok(first.metrics.initialLegalMoveCount >= 2);
   assert.ok(first.metrics.maxTurns >= 3);
+});
+
+test("level numbers must be positive integers in the uint32 sequence", () => {
+  for (const invalid of [0, -1, 1.5, Number.NaN, Number.POSITIVE_INFINITY, 0x1_0000_0001, Number.MAX_SAFE_INTEGER + 1]) {
+    assert.throws(() => getLevelConfig(invalid), RangeError);
+  }
+});
+
+test("first 100 sequence levels are distinct, valid, non-adjacent, and solvable", () => {
+  const seeds = new Set();
+  let previousSnapshot = null;
+  for (let levelNumber = 1; levelNumber <= 100; levelNumber += 1) {
+    const config = getLevelConfig(levelNumber);
+    const level = createLevel(levelNumber);
+    const snapshot = JSON.stringify(level.board.toRows());
+    seeds.add(config.seed);
+    assert.equal(validateGeneratedLevel(level).valid, true, `level ${levelNumber} must validate`);
+    assert.equal(solveBoard(level.board).status, "solved", `level ${levelNumber} must solve`);
+    for (const move of level.witness) {
+      const distance = Math.abs(move.start.col - move.end.col) + Math.abs(move.start.row - move.end.row);
+      assert.notEqual(distance, 1, `level ${levelNumber} must not start with adjacent pairs`);
+    }
+    if (previousSnapshot !== null) {
+      assert.notEqual(snapshot, previousSnapshot, `level ${levelNumber} must differ from its predecessor`);
+    }
+    assert.equal(snapshot, JSON.stringify(createLevel(levelNumber).board.toRows()), "replay must reproduce the board");
+    previousSnapshot = snapshot;
+  }
+  assert.equal(seeds.size, 100);
+  assert.notEqual(getLevelConfig(42).seed, getLevelConfig(43).seed);
 });
 
 test("real cell centers and the full board fit the portrait play area", () => {
