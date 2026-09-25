@@ -8,17 +8,15 @@ const layout = (boardWidth, boardHeight) => new BoardLayout({
   sceneWidth: 480, sceneHeight: 800, boardWidth, boardHeight,
 });
 
-test("demo level is full, deterministic, and retains non-trivial route geometry", () => {
-  const first = createDemoLevel();
-  const second = createDemoLevel();
-  assert.equal(DEV_DEMO_SEED, 0x5041_4952);
-  assert.deepEqual(DEV_DEMO_CONFIG, { width: 6, height: 8, pairCount: 24, seed: DEV_DEMO_SEED });
+test("demo is deterministic, sparse, non-adjacent, and solvable", () => {
+  const first = createDemoLevel(), second = createDemoLevel();
+  assert.equal(DEV_DEMO_SEED, 0x0000_0000);
+  assert.deepEqual(DEV_DEMO_CONFIG, { width: 6, height: 8, pairCount: 20, seed: DEV_DEMO_SEED, avoidAdjacentMatchingPairs: true });
   assert.deepEqual(first.board.toRows(), second.board.toRows());
-  assert.equal(first.board.toRows().flat().filter((tile) => tile !== null).length, 48);
-  assert.ok(first.metrics.oneTurnMoves > 0);
-  assert.ok(first.metrics.twoTurnMoves > 0);
-  assert.ok(first.metrics.outerBorderMoves > 0);
-  assert.ok(first.metrics.initialLegalMoveCount < DEV_DEMO_CONFIG.pairCount);
+  assert.equal(first.board.toRows().flat().filter((tile) => tile !== null).length, 40);
+  assert.equal(first.board.toRows().flat().filter((tile) => tile === null).length, 8);
+  assert.ok(first.metrics.initialLegalMoveCount >= 2);
+  assert.ok(first.metrics.maxTurns >= 3);
 });
 
 test("real cell centers and the full board fit the portrait play area", () => {
@@ -42,31 +40,8 @@ test("smaller boards remain centered in the same safe play area", () => {
   assert.equal((short.boardTop + short.boardBottom) / 2, 420);
 });
 
-test("padded coordinates use a small gutter rather than a full cell pitch", () => {
+test("layout rejects coordinates outside the real board", () => {
   const full = layout(6, 8);
-  assert.deepEqual(full.gridPointToWorld({ col: -1, row: 0 }), { x: 14, y: 168 });
-  assert.deepEqual(full.gridPointToWorld({ col: 6, row: 0 }), { x: 466, y: 168 });
-  assert.deepEqual(full.gridPointToWorld({ col: 0, row: -1 }), { x: 60, y: 122 });
-  assert.deepEqual(full.gridPointToWorld({ col: 0, row: 8 }), { x: 60, y: 718 });
-  assert.equal(full.outerGutter, 10);
-  assert.ok(full.outerGutter < full.pitch);
-});
-
-test("route mapping preserves orthogonal segments and stays inside safe scene bounds", () => {
-  for (const dimensions of [[6, 8], [4, 4], [4, 2]]) {
-    const current = layout(...dimensions);
-    const route = [
-      { col: 0, row: 0 }, { col: -1, row: 0 },
-      { col: -1, row: dimensions[1] - 1 }, { col: dimensions[0] - 1, row: dimensions[1] - 1 },
-    ].map((point) => current.gridPointToWorld(point));
-    route.forEach(({ x, y }) => {
-      assert.ok(x >= 0 && x <= 480);
-      assert.ok(y >= 100 && y <= 740);
-    });
-    for (let index = 1; index < route.length; index += 1) {
-      const previous = route[index - 1];
-      const next = route[index];
-      assert.ok(previous.x === next.x || previous.y === next.y);
-    }
-  }
+  assert.throws(() => full.cellCenter({ col: -1, row: 0 }), RangeError);
+  assert.throws(() => full.cellCenter({ col: 6, row: 0 }), RangeError);
 });

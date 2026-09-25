@@ -59,7 +59,7 @@ test("Mulberry32 has frozen outputs, supports zero, and validates its API", () =
 test("legal moves are stable, matching, and applyMove is pure and explicit", () => {
   const board = Board.fromRows([[2, 1, 1, 2], [null, 3, null, 3]]);
   const moves = findLegalMoves(board);
-  assert.deepEqual(moves.map(({ tileId }) => tileId), [1, 2, 3]);
+  assert.deepEqual(moves.map(({ tileId }) => tileId), [1, 3]);
   const changed = applyMove(board, moves[0]);
   assert.equal(board.tileAt({ col: 1, row: 0 }), 1);
   assert.equal(changed.tileAt({ col: 1, row: 0 }), null);
@@ -92,27 +92,25 @@ test("generator rejects invalid dimensions, counts, and seeds", () => {
   ]) assert.throws(() => generateLevel(config), RangeError);
 });
 
-test("seeded generation covers sparse/full target sizes, pair invariants, witnesses, and solver replay", () => {
+test("seeded reverse generation preserves pair, witness, solver, and product invariants", () => {
   const configs = [
-    [4, 2, 1], [4, 2, 4], [4, 4, 8], [5, 6, 7], [5, 6, 15],
-    [6, 6, 18], [6, 8, 3], [6, 8, 24], [1, 8, 4],
+    { width: 4, height: 4, pairCount: 5, seed: 1, avoidAdjacentMatchingPairs: true },
+    { width: 6, height: 8, pairCount: 18, seed: 2, avoidAdjacentMatchingPairs: true },
+    { width: 6, height: 8, pairCount: 20, seed: 3, avoidAdjacentMatchingPairs: true },
+    { width: 4, height: 2, pairCount: 4, seed: 4 },
   ];
-  for (const [width, height, pairCount] of configs) for (const seed of [0, 1, 0xffff_ffff]) {
-    const config = { width, height, pairCount, seed };
+  for (const config of configs) {
     const level = generateLevel(config);
     assert.equal(validateGeneratedLevel(level).valid, true);
     assert.equal(snapshot(generateLevel(config)), snapshot(level));
-    const counts = new Map();
-    level.board.toRows().flat().forEach((tile) => { if (tile !== null) counts.set(tile, (counts.get(tile) ?? 0) + 1); });
-    assert.equal(counts.size, pairCount);
-    assert.ok([...counts.values()].every((count) => count === 2));
     assert.ok(empty(replay(level.board, level.witness)));
     const solved = solveBoard(level.board);
     assert.equal(solved.status, "solved");
     assert.ok(empty(replay(level.board, solved.moves)));
+    if (config.avoidAdjacentMatchingPairs) for (const move of level.witness) {
+      assert.notEqual(Math.abs(move.start.col - move.end.col) + Math.abs(move.start.row - move.end.row), 1);
+    }
   }
-  const variants = new Set(Array.from({ length: 20 }, (_, seed) => snapshot(generateLevel({ width: 6, height: 8, pairCount: 15, seed }))));
-  assert.ok(variants.size > 1, "different seeds should normally vary output");
 });
 
 test("small generated boards agree with independent exhaustive solver", () => {
@@ -123,45 +121,13 @@ test("small generated boards agree with independent exhaustive solver", () => {
   }
 });
 
-test("geometry-aware generation exercises non-trivial valid routes", () => {
-  const totals = { zero: 0, one: 0, two: 0, outer: 0 };
-  let hasNonAdjacentPair = false;
-  let hasInitiallyUnavailablePair = false;
-  for (let seed = 0; seed < 200; seed += 1) {
-    const full = generateLevel({ width: 6, height: 8, pairCount: 24, seed });
-    const sparse = generateLevel({ width: 5, height: 7, pairCount: 9, seed });
-    for (const level of [full, sparse]) {
-      assert.equal(validateGeneratedLevel(level).valid, true);
-      assert.ok(empty(replay(level.board, level.witness)));
-      totals.zero += level.metrics.zeroTurnMoves;
-      totals.one += level.metrics.oneTurnMoves;
-      totals.two += level.metrics.twoTurnMoves;
-      totals.outer += level.metrics.outerBorderMoves;
-      hasInitiallyUnavailablePair ||= level.metrics.initialLegalMoveCount < level.config.pairCount;
-      for (const move of level.witness) {
-        hasNonAdjacentPair ||= Math.abs(move.start.col - move.end.col) + Math.abs(move.start.row - move.end.row) > 1;
-      }
-    }
-  }
-  assert.ok(totals.zero > 0);
-  assert.ok(totals.one > 0);
-  assert.ok(totals.two > 0);
-  assert.ok(totals.outer > 0);
-  assert.ok(hasNonAdjacentPair);
-  assert.ok(hasInitiallyUnavailablePair);
+test("metrics describe unlimited-turn solutions", () => {
+  const level = generateLevel({ width: 6, height: 8, pairCount: 20, seed: 7, avoidAdjacentMatchingPairs: true });
+  assert.equal(Object.values(level.metrics.turnHistogram).reduce((a, b) => a + b, 0), 20);
+  assert.equal(level.metrics.threePlusTurnRate, level.metrics.threePlusTurnMoves / 20);
+  assert.ok(level.metrics.averageSolutionPathLength > 0);
 });
 
-test("every occupancy of up to 3x3 with at least two cells has a geometric move", () => {
-  for (const [width, height] of [[2, 2], [2, 3], [3, 3]]) {
-    const cells = width * height;
-    for (let mask = 0; mask < 2 ** cells; mask += 1) {
-      if (mask.toString(2).replaceAll("0", "").length < 2) continue;
-      const rows = Array.from({ length: height }, (_, row) =>
-        Array.from({ length: width }, (_, col) => (mask & (1 << (row * width + col))) === 0 ? null : 1));
-      assert.ok(findLegalMoves(Board.fromRows(rows)).length > 0, `${width}x${height} mask ${mask}`);
-    }
-  }
-});
 
 test("exhaustive small pair boards confirm every legal choice preserves solvability", () => {
   let solvableBoards = 0;

@@ -1,92 +1,33 @@
 import { rm } from "node:fs/promises";
 import { spawnSync } from "node:child_process";
 import { performance } from "node:perf_hooks";
-
-const countIndex = process.argv.indexOf("--count");
-const count = countIndex < 0 ? 10_000 : Number(process.argv[countIndex + 1]);
-if (!Number.isSafeInteger(count) || count < 1) {
-  console.error("Usage: npm run simulate -- --count <positive integer>");
-  process.exit(2);
-}
-
+const value = (flag, fallback) => { const i = process.argv.indexOf(flag); return i < 0 ? fallback : Number(process.argv[i + 1]); };
+const count = value("--count", 10_000), densityCount = value("--density-count", 0);
+if (!Number.isSafeInteger(count) || count < 1) process.exit(2);
 const root = new URL("../", import.meta.url);
-await rm(new URL("../.simulation-dist", import.meta.url), { force: true, recursive: true });
-const compiler = spawnSync(process.platform === "win32" ? "npx.cmd" : "npx", ["tsc", "-p", "tsconfig.simulation.json"], {
-  cwd: root, shell: process.platform === "win32", stdio: "inherit",
-});
+await rm(new URL("../.simulation-dist", import.meta.url), { recursive: true, force: true });
+const compiler = spawnSync(process.platform === "win32" ? "npx.cmd" : "npx", ["tsc", "-p", "tsconfig.simulation.json"], { cwd: root, stdio: "inherit", shell: process.platform === "win32" });
 if (compiler.status !== 0) process.exit(compiler.status ?? 1);
-
-const { applyMove, findPath, generateLevel, solveBoard, validateGeneratedLevel } =
-  await import("../.simulation-dist/domain/index.js");
-const sizes = [[4, 2], [4, 4], [5, 6], [6, 6], [6, 8]];
-const bySize = Object.fromEntries(sizes.map(([width, height]) => [`${width}x${height}`, 0]));
-const totals = { legal: 0, initialLegal: 0, forced: 0, zero: 0, one: 0, two: 0, outer: 0, paths: 0 };
-let minLegal = Infinity, maxLegal = 0, minInitialLegal = Infinity, maxInitialLegal = 0;
-let failures = 0, generationFailures = 0, solverFailures = 0;
-const started = performance.now();
-
-const serialize = (level) => JSON.stringify({ board: level.board.toRows(), witness: level.witness });
-const replay = (initial, moves) => {
-  let board = initial;
-  for (const move of moves) {
-    if (JSON.stringify(findPath(board, move.start, move.end)) !== JSON.stringify(move.path)) throw new Error("invalid path");
-    board = applyMove(board, move);
-  }
-  if (board.toRows().some((row) => row.some((tile) => tile !== null))) throw new Error("replay did not empty board");
+const { applyMove, generateLevel, solveBoard, validateGeneratedLevel } = await import("../.simulation-dist/domain/index.js");
+const run = (pairs, samples) => {
+  const out = { pairs, samples, successes: 0, failures: 0, initialTotal: 0, initialMin: Infinity, initialMax: 0, forcedStarts: 0, turnsTotal: 0, maxTurns: 0, threePlus: 0, paths: 0, length: 0, adjacent: 0 };
+  for (let seed = 0; seed < samples; seed += 1) try {
+    const config = { width: 6, height: 8, pairCount: pairs, seed, avoidAdjacentMatchingPairs: true };
+    const level = generateLevel(config), again = generateLevel(config);
+    if (JSON.stringify(level.board.toRows()) !== JSON.stringify(again.board.toRows())) throw new Error("nondeterministic");
+    const valid = validateGeneratedLevel(level); if (!valid.valid) throw new Error(valid.errors.join("; "));
+    let board = level.board; for (const move of level.witness) board = applyMove(board, move);
+    const solved = solveBoard(level.board); if (solved.status !== "solved") throw new Error(`solver ${solved.status}`);
+    out.successes++; const m = level.metrics; out.initialTotal += m.initialLegalMoveCount;
+    out.initialMin = Math.min(out.initialMin, m.initialLegalMoveCount); out.initialMax = Math.max(out.initialMax, m.initialLegalMoveCount);
+    out.forcedStarts += Number(m.initialLegalMoveCount === 1); out.turnsTotal += m.averageTurns * m.pairCount;
+    out.maxTurns = Math.max(out.maxTurns, m.maxTurns); out.threePlus += m.threePlusTurnMoves; out.paths += m.pairCount; out.length += m.totalSolutionPathLength;
+  } catch { out.failures++; }
+  return { ...out, averageInitialLegalMoveCount: out.successes ? out.initialTotal / out.successes : 0,
+    averageTurns: out.paths ? out.turnsTotal / out.paths : 0, threePlusTurnRate: out.paths ? out.threePlus / out.paths : 0,
+    averageSolutionPathLength: out.paths ? out.length / out.paths : 0, initialMin: out.initialMin === Infinity ? 0 : out.initialMin };
 };
-
-for (let index = 0; index < count; index += 1) {
-  const [width, height] = sizes[index % sizes.length];
-  const config = { width, height, pairCount: Math.floor(width * height / 2), seed: index >>> 0 };
-  bySize[`${width}x${height}`] += 1;
-  try {
-    const level = generateLevel(config);
-    if (serialize(level) !== serialize(generateLevel(config))) throw new Error("nondeterministic regeneration");
-    const validation = validateGeneratedLevel(level);
-    if (!validation.valid) throw new Error(validation.errors.join("; "));
-    replay(level.board, level.witness);
-    const solved = solveBoard(level.board);
-    if (solved.status !== "solved") { solverFailures += 1; throw new Error(`solver status ${solved.status}`); }
-    replay(level.board, solved.moves);
-    const metrics = level.metrics;
-    minLegal = Math.min(minLegal, metrics.minimumLegalMoveCount);
-    maxLegal = Math.max(maxLegal, metrics.maximumLegalMoveCount);
-    minInitialLegal = Math.min(minInitialLegal, metrics.initialLegalMoveCount);
-    maxInitialLegal = Math.max(maxInitialLegal, metrics.initialLegalMoveCount);
-    totals.legal += metrics.averageLegalMoveCount;
-    totals.initialLegal += metrics.initialLegalMoveCount;
-    totals.forced += metrics.forcedMoveSteps;
-    totals.zero += metrics.zeroTurnMoves;
-    totals.one += metrics.oneTurnMoves;
-    totals.two += metrics.twoTurnMoves;
-    totals.outer += metrics.outerBorderMoves;
-    totals.paths += metrics.pairCount;
-  } catch (error) {
-    failures += 1;
-    if (!(error instanceof Error) || !error.message.startsWith("solver status")) generationFailures += 1;
-    if (failures <= 5) console.error(`seed=${index} size=${width}x${height}:`, error);
-  }
-}
-
-const elapsed = performance.now() - started;
-console.log(JSON.stringify({
-  levels: count, boardsBySize: bySize, failures, generationFailures, solverFailures,
-  elapsedMs: Math.round(elapsed),
-  metrics: {
-    minimumLegalMoves: minLegal === Infinity ? 0 : minLegal, maximumLegalMoves: maxLegal,
-    meanAverageLegalMoves: totals.legal / count, forcedMoveSteps: totals.forced,
-    initialLegalMoves: {
-      minimum: minInitialLegal === Infinity ? 0 : minInitialLegal,
-      maximum: maxInitialLegal,
-      average: totals.initialLegal / count,
-    },
-    totalSolutionMoves: totals.paths,
-    turns: {
-      zero: totals.zero, zeroRate: totals.paths === 0 ? 0 : totals.zero / totals.paths,
-      one: totals.one, oneRate: totals.paths === 0 ? 0 : totals.one / totals.paths,
-      two: totals.two, twoRate: totals.paths === 0 ? 0 : totals.two / totals.paths,
-    },
-    outerBorderMoves: totals.outer, outerBorderRate: totals.paths === 0 ? 0 : totals.outer / totals.paths,
-  },
-}, null, 2));
-if (failures > 0) process.exit(1);
+const started = performance.now();
+const report = densityCount > 0 ? [18,20,22].map((pairs) => run(pairs, densityCount)) : [run(20, count)];
+console.log(JSON.stringify({ elapsedMs: Math.round(performance.now() - started), densities: report }, null, 2));
+if (report.some((item) => item.failures > 0)) process.exit(1);

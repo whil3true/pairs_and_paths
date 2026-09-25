@@ -14,13 +14,13 @@ const pathCost = (path) => ({
 });
 
 function validatePath(board, start, end, path) {
-  assert.ok(path.points.length >= 2 && path.points.length <= 4);
+  assert.ok(path.points.length >= 2);
   assert.deepEqual(path.points[0], start);
   assert.deepEqual(path.points.at(-1), end);
 
   for (const vertex of path.points) {
-    assert.ok(vertex.col >= -1 && vertex.col <= board.width);
-    assert.ok(vertex.row >= -1 && vertex.row <= board.height);
+    assert.ok(vertex.col >= 0 && vertex.col < board.width);
+    assert.ok(vertex.row >= 0 && vertex.row < board.height);
   }
 
   for (let index = 1; index < path.points.length; index += 1) {
@@ -45,7 +45,7 @@ function validatePath(board, start, end, path) {
   }
 }
 
-// Independent direction-state Dijkstra search. It explores individual padded cells,
+// Independent direction-state Dijkstra search. It explores individual real-board cells,
 // unlike production's bounded polyline enumeration.
 function oracle(board, start, end) {
   if (!board.contains(start) || !board.contains(end) || same(start, end)) return null;
@@ -70,7 +70,7 @@ function oracle(board, start, end) {
       const col = state.col + dc;
       const row = state.row + dr;
       const turns = state.direction < 0 || state.direction === direction ? state.turns : state.turns + 1;
-      if (turns > 2 || col < -1 || col > board.width || row < -1 || row > board.height) return;
+      if (col < 0 || col >= board.width || row < 0 || row >= board.height) return;
       const next = { col, row };
       if (board.contains(next) && !same(next, end) && board.isOccupied(next)) return;
       queue.push({ col, row, direction, turns, length: state.length + 1 });
@@ -125,7 +125,7 @@ test("zero-turn paths connect adjacent, row, and column pairs but never cross bl
   const column = Board.fromRows([[1], [null], [1]]);
   assert.deepEqual(pathCost(findPath(column, point(0, 0), point(0, 2))), { turns: 0, length: 2 });
   const blocked = Board.fromRows([[1, 2, 1]]);
-  assert.deepEqual(pathCost(findPath(blocked, point(0, 0), point(2, 0))), { turns: 2, length: 4 });
+  assert.equal(findPath(blocked, point(0, 0), point(2, 0)), null);
 });
 
 test("one-turn paths evaluate both L corners and blocked corners", () => {
@@ -147,21 +147,20 @@ test("two-turn paths work in both orientations and choose the shortest legal rou
   assertMatchesOracle(verticalMiddle, point(0, 0), point(0, 2));
 });
 
-test("logical outer border supports top, bottom, left, right, and outside-corner routes", () => {
-  const top = Board.fromRows([[1, 2, 1], [2, 2, 2]]);
-  assert.ok(findPath(top, point(0, 0), point(2, 0)).points.some(({ row }) => row === -1));
-  const bottom = Board.fromRows([[2, 2, 2], [1, 2, 1]]);
-  assert.ok(findPath(bottom, point(0, 1), point(2, 1)).points.some(({ row }) => row === 2));
-  const left = Board.fromRows([[1, 2], [2, 2], [1, 2]]);
-  assert.ok(findPath(left, point(0, 0), point(0, 2)).points.some(({ col }) => col === -1));
-  const right = Board.fromRows([[2, 1], [2, 2], [2, 1]]);
-  assert.ok(findPath(right, point(1, 0), point(1, 2)).points.some(({ col }) => col === 2));
-  const corner = Board.fromRows([[1, 2], [2, 1]]);
-  assert.equal(findPath(corner, point(0, 0), point(1, 1)), null, "a diagonal outside route needs three turns");
-  for (const [board, start, end] of [
-    [top, point(0, 0), point(2, 0)], [bottom, point(0, 1), point(2, 1)],
-    [left, point(0, 0), point(0, 2)], [right, point(1, 0), point(1, 2)],
-  ]) assertMatchesOracle(board, start, end);
+test("open zig-zag corridors support three and arbitrarily many turns", () => {
+  const three = Board.fromRows([[1,null,2,null,2,2],[null,null,2,null,null,2],[2,null,null,null,null,null],[2,null,2,2,null,null],[null,2,2,2,null,null],[null,null,null,2,null,1]]);
+  assert.deepEqual(pathCost(findPath(three, point(0, 0), point(5, 5))), { turns: 3, length: 10 });
+  const five = Board.fromRows([[1,2,2,null,null,null],[null,null,null,null,2,null],[2,2,null,null,null,2],[null,2,null,2,null,2],[null,2,2,null,null,2],[2,2,2,2,null,1]]);
+  assert.equal(pathCost(findPath(five, point(0, 0), point(5, 5))).turns, 5);
+});
+
+test("routes never use the old virtual outer border", () => {
+  const board = Board.fromRows([[1, 2, 1], [2, 2, 2]]);
+  assert.equal(findPath(board, point(0, 0), point(2, 0)), null);
+  const edge = Board.fromRows([[1, 2, 1], [null, null, null]]);
+  const path = findPath(edge, point(0, 0), point(2, 0));
+  validatePath(edge, point(0, 0), point(2, 0), path);
+  assert.ok(path.points.every((p) => edge.contains(p)));
 });
 
 test("removing an obstacle opens a route without mutating the original board", () => {
