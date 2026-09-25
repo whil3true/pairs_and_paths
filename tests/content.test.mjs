@@ -123,6 +123,46 @@ test("small generated boards agree with independent exhaustive solver", () => {
   }
 });
 
+test("geometry-aware generation exercises non-trivial valid routes", () => {
+  const totals = { zero: 0, one: 0, two: 0, outer: 0 };
+  let hasNonAdjacentPair = false;
+  let hasInitiallyUnavailablePair = false;
+  for (let seed = 0; seed < 200; seed += 1) {
+    const full = generateLevel({ width: 6, height: 8, pairCount: 24, seed });
+    const sparse = generateLevel({ width: 5, height: 7, pairCount: 9, seed });
+    for (const level of [full, sparse]) {
+      assert.equal(validateGeneratedLevel(level).valid, true);
+      assert.ok(empty(replay(level.board, level.witness)));
+      totals.zero += level.metrics.zeroTurnMoves;
+      totals.one += level.metrics.oneTurnMoves;
+      totals.two += level.metrics.twoTurnMoves;
+      totals.outer += level.metrics.outerBorderMoves;
+      hasInitiallyUnavailablePair ||= level.metrics.initialLegalMoveCount < level.config.pairCount;
+      for (const move of level.witness) {
+        hasNonAdjacentPair ||= Math.abs(move.start.col - move.end.col) + Math.abs(move.start.row - move.end.row) > 1;
+      }
+    }
+  }
+  assert.ok(totals.zero > 0);
+  assert.ok(totals.one > 0);
+  assert.ok(totals.two > 0);
+  assert.ok(totals.outer > 0);
+  assert.ok(hasNonAdjacentPair);
+  assert.ok(hasInitiallyUnavailablePair);
+});
+
+test("every occupancy of up to 3x3 with at least two cells has a geometric move", () => {
+  for (const [width, height] of [[2, 2], [2, 3], [3, 3]]) {
+    const cells = width * height;
+    for (let mask = 0; mask < 2 ** cells; mask += 1) {
+      if (mask.toString(2).replaceAll("0", "").length < 2) continue;
+      const rows = Array.from({ length: height }, (_, row) =>
+        Array.from({ length: width }, (_, col) => (mask & (1 << (row * width + col))) === 0 ? null : 1));
+      assert.ok(findLegalMoves(Board.fromRows(rows)).length > 0, `${width}x${height} mask ${mask}`);
+    }
+  }
+});
+
 test("exhaustive small pair boards confirm every legal choice preserves solvability", () => {
   let solvableBoards = 0;
   const cellCount = 6;

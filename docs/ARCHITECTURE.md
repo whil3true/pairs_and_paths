@@ -35,11 +35,21 @@ CI validates pull requests and relevant pushes. The Pages workflow builds and de
   reports structurally unsupported input separately from a valid-but-unsolvable
   board and repeatedly takes the first ordered legal move. Removal monotonicity
   proves this greedy policy complete for any solvable unique-pair board.
-- `generateLevel()` validates the public 1×1..6×8 configuration, creates a snake
-  Hamiltonian path, divides it into adjacent disjoint pairs, and uses the seeded
-  RNG to select pairs, removal order, and unique ID assignment. Every selected
-  pair remains directly adjacent, so construction cannot fail or retry. It records
-  each path against its actual intermediate board as a replayable witness.
+- `generateLevel()` validates the public 1×1..6×8 configuration and separates
+  occupancy geometry from tile identity. It gives occupied cells one dummy ID,
+  seeded-shuffles their consideration order, finds the first pair accepted by the
+  production pathfinder, removes it, and repeats. Unique IDs are assigned only
+  after this geometric decomposition. The final witness recomputes the canonical
+  path against each real intermediate board state.
+- Peeling always terminates without retries. With multiple occupied columns, the
+  top occupied cell of any two columns can connect via the empty outer top border
+  in at most two turns. With one occupied column, two consecutive occupied cells
+  connect directly. Thus every occupancy containing at least two cells has a
+  removable pair, and each step strictly removes two cells.
+- For an odd board area, seeded selection omits one cell before maximal
+  decomposition. Sparse levels select a seeded subset of the maximal geometric
+  pairs while preserving their relative removal order, then recompute paths on the
+  sparser real board. Removal monotonicity preserves the construction witness.
 - `validateGeneratedLevel()` verifies dimensions, occupied and distinct counts,
   exact multiplicity two, witness length, every current-state witness path, and an
   empty replay result. Generated results also expose objective solution metrics;
@@ -49,3 +59,6 @@ Metrics count legal moves immediately before each solution step. Minimum, maximu
 and average use those samples, while `forcedMoveSteps` counts samples equal to one.
 Path length is Manhattan segment length. Turn buckets use zero, one, or two bends;
 an outer-border move has at least one vertex outside real-board coordinates.
+The generator guarantees solvability and provides varied route geometry; metrics
+expose that diversity, but final difficulty targets/scoring remain a separate
+content-design task.

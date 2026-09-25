@@ -32,6 +32,9 @@ Two test-only validation layers supplement production behavior:
   board the oracle verifies that every initially legal choice leaves a solvable
   remainder. This independently exercises the player-choice theorem in
   `GAME_RULES.md` rather than merely asserting the greedy solver result.
+- all occupancy masks through 3×3 verify the geometric peeling lemma, and a
+  deterministic 200-seed batch requires valid zero-, one-, two-turn, outer-border,
+  non-adjacent, and initially unavailable-pair examples from full and sparse boards.
 
 `npm run simulate -- --count N` compiles only `src/domain/` and runs a headless,
 deterministic mix of full 4×2, 4×4, 5×6, 6×6, and 6×8 boards. It checks regeneration,

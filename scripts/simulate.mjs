@@ -20,8 +20,9 @@ const { applyMove, findPath, generateLevel, solveBoard, validateGeneratedLevel }
   await import("../.simulation-dist/domain/index.js");
 const sizes = [[4, 2], [4, 4], [5, 6], [6, 6], [6, 8]];
 const bySize = Object.fromEntries(sizes.map(([width, height]) => [`${width}x${height}`, 0]));
-const totals = { legal: 0, forced: 0, zero: 0, one: 0, two: 0, outer: 0, paths: 0 };
-let minLegal = Infinity, maxLegal = 0, failures = 0, generationFailures = 0, solverFailures = 0;
+const totals = { legal: 0, initialLegal: 0, forced: 0, zero: 0, one: 0, two: 0, outer: 0, paths: 0 };
+let minLegal = Infinity, maxLegal = 0, minInitialLegal = Infinity, maxInitialLegal = 0;
+let failures = 0, generationFailures = 0, solverFailures = 0;
 const started = performance.now();
 
 const serialize = (level) => JSON.stringify({ board: level.board.toRows(), witness: level.witness });
@@ -50,7 +51,10 @@ for (let index = 0; index < count; index += 1) {
     const metrics = level.metrics;
     minLegal = Math.min(minLegal, metrics.minimumLegalMoveCount);
     maxLegal = Math.max(maxLegal, metrics.maximumLegalMoveCount);
+    minInitialLegal = Math.min(minInitialLegal, metrics.initialLegalMoveCount);
+    maxInitialLegal = Math.max(maxInitialLegal, metrics.initialLegalMoveCount);
     totals.legal += metrics.averageLegalMoveCount;
+    totals.initialLegal += metrics.initialLegalMoveCount;
     totals.forced += metrics.forcedMoveSteps;
     totals.zero += metrics.zeroTurnMoves;
     totals.one += metrics.oneTurnMoves;
@@ -71,7 +75,17 @@ console.log(JSON.stringify({
   metrics: {
     minimumLegalMoves: minLegal === Infinity ? 0 : minLegal, maximumLegalMoves: maxLegal,
     meanAverageLegalMoves: totals.legal / count, forcedMoveSteps: totals.forced,
-    turns: { zero: totals.zero, one: totals.one, two: totals.two },
+    initialLegalMoves: {
+      minimum: minInitialLegal === Infinity ? 0 : minInitialLegal,
+      maximum: maxInitialLegal,
+      average: totals.initialLegal / count,
+    },
+    totalSolutionMoves: totals.paths,
+    turns: {
+      zero: totals.zero, zeroRate: totals.paths === 0 ? 0 : totals.zero / totals.paths,
+      one: totals.one, oneRate: totals.paths === 0 ? 0 : totals.one / totals.paths,
+      two: totals.two, twoRate: totals.paths === 0 ? 0 : totals.two / totals.paths,
+    },
     outerBorderMoves: totals.outer, outerBorderRate: totals.paths === 0 ? 0 : totals.outer / totals.paths,
   },
 }, null, 2));

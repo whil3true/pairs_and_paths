@@ -38,24 +38,60 @@ const samePath = (left: LegalMove["path"], right: LegalMove["path"]): boolean =>
     return other !== undefined && point.col === other.col && point.row === other.row;
   });
 
-/**
- * Builds a seeded subset of disjoint adjacent edges from a snake Hamiltonian path.
- * Every recorded pair is therefore independently removable; no retry is needed.
- */
+type GeometricPair = readonly [GridPoint, GridPoint];
+
+const occupancyBoard = (width: number, height: number, positions: readonly GridPoint[]): Board => {
+  const rows: Cell[][] = Array.from({ length: height }, () => Array<Cell>(width).fill(null));
+  for (const point of positions) rows[point.row]![point.col] = 1;
+  return Board.fromRows(rows);
+};
+
+/** Peels one seeded, legal geometric pair at a time from an occupancy mask. */
+const decomposeOccupancy = (
+  width: number,
+  height: number,
+  initialPositions: readonly GridPoint[],
+  random: SeededRandom,
+): GeometricPair[] => {
+  let positions = [...initialPositions];
+  const pairs: GeometricPair[] = [];
+  while (positions.length > 0) {
+    const board = occupancyBoard(width, height, positions);
+    const candidates = random.shuffle(positions);
+    let selected: GeometricPair | undefined;
+    for (let left = 0; left < candidates.length && selected === undefined; left += 1) {
+      for (let right = left + 1; right < candidates.length; right += 1) {
+        if (findPath(board, candidates[left]!, candidates[right]!) !== null) {
+          selected = [candidates[left]!, candidates[right]!];
+          break;
+        }
+      }
+    }
+    // For any occupancy with at least two cells this cannot happen: if multiple
+    // columns are occupied, two column-top cells connect over the top border; if
+    // only one column is occupied, two consecutive occupied cells connect directly.
+    if (selected === undefined) throw new Error("Internal generation error: occupancy has no removable pair");
+    pairs.push(selected);
+    positions = positions.filter((point) => point !== selected![0] && point !== selected![1]);
+  }
+  return pairs;
+};
+
+/** Builds a seeded geometric decomposition and then assigns unique tile IDs. */
 export const generateLevel = (config: GenerationConfig): GeneratedLevel => {
   validateConfig(config);
   const random = new SeededRandom(config.seed);
-  const snake: GridPoint[] = [];
+  const allPositions: GridPoint[] = [];
   for (let row = 0; row < config.height; row += 1) {
-    for (let step = 0; step < config.width; step += 1) {
-      const col = row % 2 === 0 ? step : config.width - 1 - step;
-      snake.push({ col, row });
-    }
+    for (let col = 0; col < config.width; col += 1) allPositions.push({ col, row });
   }
-  const allPairs = Array.from({ length: Math.floor(snake.length / 2) }, (_, index) =>
-    [snake[index * 2]!, snake[index * 2 + 1]!] as const);
-  const selected = random.shuffle(allPairs).slice(0, config.pairCount);
-  const removalOrder = random.shuffle(selected);
+  const maximalPositionCount = Math.floor(allPositions.length / 2) * 2;
+  const maximalPositions = random.shuffle(allPositions).slice(0, maximalPositionCount);
+  const decomposition = decomposeOccupancy(config.width, config.height, maximalPositions, random);
+  const selectedIndexes = new Set(
+    random.shuffle(decomposition.map((_, index) => index)).slice(0, config.pairCount),
+  );
+  const removalOrder = decomposition.filter((_, index) => selectedIndexes.has(index));
   const tileIds = random.shuffle(Array.from({ length: config.pairCount }, (_, index) => index + 1));
   const rows: Cell[][] = Array.from({ length: config.height }, () => Array<Cell>(config.width).fill(null));
   removalOrder.forEach(([start, end], index) => {
@@ -69,7 +105,7 @@ export const generateLevel = (config: GenerationConfig): GeneratedLevel => {
   removalOrder.forEach(([start, end], index) => {
     const tileId = tileIds[index]!;
     const path = findPath(state, start, end);
-    if (path === null) throw new Error("Internal generation error: constructed adjacent pair is blocked");
+    if (path === null) throw new Error("Internal generation error: geometric witness became blocked");
     const move = { tileId, start, end, path };
     witness.push(move);
     state = applyMove(state, move);
