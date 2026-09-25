@@ -1,0 +1,6 @@
+:root { color-scheme: dark; font-family: system-ui, sans-serif; background: #10182b; }
+* { box-sizing: border-box; }
+html, body { width: 100%; min-height: 100%; margin: 0; }
+body { min-height: 100dvh; overflow: hidden; }
+#game { width: 100vw; height: 100dvh; }
+#game canvas { display: block; }
