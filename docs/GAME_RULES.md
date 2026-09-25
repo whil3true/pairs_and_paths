@@ -1,6 +1,6 @@
 # Game-rule invariants
 
-A move joins two distinct occupied cells with the same `TileId`. Movement is horizontal or vertical, stays strictly inside the real board, and every transit cell is empty. There is no virtual border and no turn limit. `findPath` ranks routes by minimum turns, then minimum step length, then a stable row/column traversal tie-break, and returns a compact 2..N-vertex polyline.
+A move joins two distinct occupied cells with the same `TileId`. Movement is horizontal or vertical, stays strictly inside the real board, and every transit cell is empty. There is no virtual border and no turn limit. `findPath` ranks routes by minimum turns, then minimum step length, then a stable deterministic implementation-defined direction/insertion order, and returns a compact 2..N-vertex polyline.
 
 Product-generated initial boards contain each ID exactly twice and never place its two cells orthogonally adjacent; diagonal adjacency is allowed. This is a generation constraint, not a generic `Board` or pathfinder rule. Initial empty cells are expected level geometry. Removed tiles leave empty cells and do not fall.
 

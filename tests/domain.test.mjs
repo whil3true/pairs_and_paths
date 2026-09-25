@@ -45,9 +45,44 @@ function validatePath(board, start, end, path) {
   }
 }
 
-// Independent direction-state Dijkstra search. It explores individual real-board cells,
-// unlike production's bounded polyline enumeration.
-function oracle(board, start, end) {
+// Independent exhaustive oracle for tiny boards. It enumerates every simple
+// interior cell path and shares neither production's direction-state graph nor heap.
+function bruteForceOracle(board, start, end) {
+  if (!board.contains(start) || !board.contains(end) || same(start, end)) return null;
+  const tile = board.tileAt(start);
+  if (tile === null || board.tileAt(end) !== tile) return null;
+
+  const directions = [[0, -1], [-1, 0], [1, 0], [0, 1]];
+  const visited = new Set([`${start.col},${start.row}`]);
+  let best = null;
+  function visit(current, previousDirection, turns, length) {
+    if (same(current, end)) {
+      const candidate = { turns, length };
+      if (best === null || candidate.turns < best.turns
+        || (candidate.turns === best.turns && candidate.length < best.length)) best = candidate;
+      return;
+    }
+    for (let direction = 0; direction < directions.length; direction += 1) {
+      const [dc, dr] = directions[direction];
+      const next = { col: current.col + dc, row: current.row + dr };
+      const key = `${next.col},${next.row}`;
+      if (!board.contains(next) || visited.has(key) || (!same(next, end) && board.isOccupied(next))) continue;
+      const nextTurns = turns + Number(previousDirection >= 0 && previousDirection !== direction);
+      const nextLength = length + 1;
+      if (best !== null && (nextTurns > best.turns
+        || (nextTurns === best.turns && nextLength >= best.length))) continue;
+      visited.add(key);
+      visit(next, direction, nextTurns, nextLength);
+      visited.delete(key);
+    }
+  }
+  visit(start, -1, 0, 0);
+  return best;
+}
+
+// Fast direction-state reference search for larger randomized coverage. Returned
+// production paths are additionally validated without relying on this search.
+function referenceSearch(board, start, end) {
   if (!board.contains(start) || !board.contains(end) || same(start, end)) return null;
   const tile = board.tileAt(start);
   if (tile === null || board.tileAt(end) !== tile) return null;
@@ -79,8 +114,8 @@ function oracle(board, start, end) {
   return null;
 }
 
-function assertMatchesOracle(board, start, end) {
-  const expected = oracle(board, start, end);
+function assertMatches(board, start, end, reference = bruteForceOracle) {
+  const expected = reference(board, start, end);
   const actual = findPath(board, start, end);
   assert.equal(actual !== null, expected !== null);
   if (actual !== null) {
@@ -143,8 +178,8 @@ test("two-turn paths work in both orientations and choose the shortest legal rou
   assert.deepEqual(pathCost(findPath(horizontalMiddle, point(0, 0), point(2, 0))), { turns: 2, length: 4 });
   const verticalMiddle = Board.fromRows([[1, null], [2, null], [1, null]]);
   assert.deepEqual(pathCost(findPath(verticalMiddle, point(0, 0), point(0, 2))), { turns: 2, length: 4 });
-  assertMatchesOracle(horizontalMiddle, point(0, 0), point(2, 0));
-  assertMatchesOracle(verticalMiddle, point(0, 0), point(0, 2));
+  assertMatches(horizontalMiddle, point(0, 0), point(2, 0));
+  assertMatches(verticalMiddle, point(0, 0), point(0, 2));
 });
 
 test("open zig-zag corridors support three and arbitrarily many turns", () => {
@@ -185,7 +220,7 @@ test("exhaustive 2x2, 2x3, 3x2, and 3x3 boards match the independent oracle (5,1
             return (mask & (1 << bit++)) === 0 ? null : 2;
           }));
           const board = Board.fromRows(rows);
-          assertMatchesOracle(board, point(startIndex % width, Math.floor(startIndex / width)), point(endIndex % width, Math.floor(endIndex / width)));
+          assertMatches(board, point(startIndex % width, Math.floor(startIndex / width)), point(endIndex % width, Math.floor(endIndex / width)));
           cases += 1;
         }
       }
@@ -194,7 +229,7 @@ test("exhaustive 2x2, 2x3, 3x2, and 3x3 boards match the independent oracle (5,1
   assert.equal(cases, 5_112);
 });
 
-test("5,000 deterministic random boards through 6x8 match oracle, validate, and repeat", () => {
+test("5,000 deterministic random boards through 6x8 match reference search, validate, and repeat", () => {
   let state = 0x5eed1234;
   const random = () => {
     state = (Math.imul(state, 1664525) + 1013904223) >>> 0;
@@ -209,6 +244,6 @@ test("5,000 deterministic random boards through 6x8 match oracle, validate, and 
     if (same(start, end)) end = point((end.col + 1) % width, end.row);
     rows[start.row][start.col] = 1;
     rows[end.row][end.col] = 1;
-    assertMatchesOracle(Board.fromRows(rows), start, end);
+    assertMatches(Board.fromRows(rows), start, end, referenceSearch);
   }
 });
