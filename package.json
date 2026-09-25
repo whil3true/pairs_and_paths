@@ -10,7 +10,7 @@
     "build": "node scripts/build.mjs"
   },
   "dependencies": {
-    "phaser": "4.0.0-rc.5"
+    "phaser": "4.2.1"
   },
   "devDependencies": {
     "typescript": "5.9.2"
