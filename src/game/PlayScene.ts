@@ -1,7 +1,7 @@
 import { applyMove, findPath, type Board, type GridPoint, type LegalMove } from "../domain/index.js";
 import type { PlatformService } from "../platform/PlatformService.js";
 import { BoardLayout } from "./BoardLayout.js";
-import { createLevel } from "./LevelSequence.js";
+import { createLevel, hasNextLevel } from "./LevelSequence.js";
 
 interface TileVisual {
   readonly card: Phaser.GameObjects.Rectangle;
@@ -187,15 +187,16 @@ export class PlayScene extends Phaser.Scene {
 
   private showComplete(): void {
     const shade = this.add.rectangle(240, 420, 440, 260, 0x0b1220, 0.96).setStrokeStyle(2, 0x7fa8d8);
-    const title = this.add.text(240, 342, "Complete", {
+    const campaignComplete = !hasNextLevel(this.currentLevelNumber);
+    const title = this.add.text(240, 342, campaignComplete ? "Campaign complete" : "Complete", {
       color: "#ffffff", fontFamily: "Arial, sans-serif", fontSize: "36px", fontStyle: "bold",
     }).setOrigin(0.5);
     const nextButton = this.add.rectangle(240, 418, 210, 58, 0x3976b9).setStrokeStyle(2, 0xd6eaff)
       .setInteractive({ useHandCursor: true }).on("pointerdown", () => {
-        this.currentLevelNumber += 1;
+        this.currentLevelNumber = campaignComplete ? 1 : this.currentLevelNumber + 1;
         this.startLevel();
       });
-    const nextText = this.add.text(240, 418, "Next level", {
+    const nextText = this.add.text(240, 418, campaignComplete ? "Restart from Level 1" : "Next level", {
       color: "#ffffff", fontFamily: "Arial, sans-serif", fontSize: "22px", fontStyle: "bold",
     }).setOrigin(0.5);
     const replayButton = this.add.rectangle(240, 489, 180, 46, 0x243c5c).setStrokeStyle(1, 0x91acce)
