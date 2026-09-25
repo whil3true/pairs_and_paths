@@ -7,7 +7,16 @@
   produces new boards for cell changes. The pathfinder reads but never changes it.
   Coordinates and returned polylines are plain data suitable for a future renderer
   or solver. This layer imports no Phaser, game, UI, platform, or browser APIs.
-- `src/game/` owns Phaser scenes and rendering. The current scene is only an infrastructure smoke test.
+- `src/game/` owns the playable Phaser `PlayScene`, prototype configuration, and
+  rendering. The scene asks the domain generator for its board, uses the production
+  pathfinder result for its route, and submits that same path to `applyMove`; it does
+  not duplicate game rules. Phaser objects are a disposable projection of the
+  immutable domain `Board`.
+- `BoardLayout` is a small, pure TypeScript mapping owned by the game layer. It
+  centers boards in the portrait play area, maps real cells at a 72-pixel pitch,
+  and compresses the domain's padded outer coordinates into a 10-pixel visual
+  gutter. This keeps route segments orthogonal without spending a tile-width on
+  each virtual border.
 - `src/platform/` defines the deliberately small platform boundary. `WebPlatform` currently provides identity and locale; persistence will be added only when real save requirements exist. A future Yandex implementation will live behind the same boundary.
 - `src/ui/` is reserved for concrete UI when it exists; no placeholder abstraction is introduced now.
 
@@ -62,3 +71,7 @@ an outer-border move has at least one vertex outside real-board coordinates.
 The generator guarantees solvability and provides varied route geometry; metrics
 expose that diversity, but final difficulty targets/scoring remain a separate
 content-design task.
+
+Dependencies point from `game` to `domain`, never from `domain` to Phaser, DOM,
+platform, or renderer code. `PlayScene` also receives the existing
+`PlatformService` at composition time in `main.ts`.

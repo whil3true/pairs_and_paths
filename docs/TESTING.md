@@ -33,8 +33,15 @@ Two test-only validation layers supplement production behavior:
   remainder. This independently exercises the player-choice theorem in
   `GAME_RULES.md` rather than merely asserting the greedy solver result.
 - all occupancy masks through 3×3 verify the geometric peeling lemma, and a
-  deterministic 200-seed batch requires valid zero-, one-, two-turn, outer-border,
-  non-adjacent, and initially unavailable-pair examples from full and sparse boards.
+deterministic 200-seed batch requires valid zero-, one-, two-turn, outer-border,
+non-adjacent, and initially unavailable-pair examples from full and sparse boards.
+
+Task 3 adds Node unit coverage for the Phaser-independent `BoardLayout`: real cell
+centers, 6×8 bounds, centered 4×4 and 4×2 boards, compressed coordinates on all
+four padded sides, orthogonality preservation, and safe scene bounds. The fixed
+demo seed is also locked to a full 48-tile board whose witness includes one-turn,
+two-turn, and outer-border moves and whose initial legal set is smaller than all
+24 pairs.
 
 `npm run simulate -- --count N` compiles only `src/domain/` and runs a headless,
 deterministic mix of full 4×2, 4×4, 5×6, 6×6, and 6×8 boards. It checks regeneration,
@@ -43,3 +50,20 @@ empty final boards, then prints size counts, failure categories, elapsed time,
 legal-move metric ranges/averages, turn distribution, and outer-border use. Any
 correctness failure exits non-zero. CI uses 10,000 levels; the same CLI accepts the
 100,000-level release-quality target without a flaky elapsed-time assertion.
+
+## Manual Pages/mobile checklist
+
+After a production build is deployed, verify on desktop and an approximately
+320-CSS-pixel-wide Android viewport that:
+
+- the page has no scroll, Phaser launches `PlayScene`, and all 48 tiles fit;
+- taps have cell-sized targets; first/same/invalid/empty taps select, deselect,
+  switch selection, and clear selection respectively;
+- a legal matching pair shows its production route briefly, then disappears
+  without moving other tiles, while an invalid pair does not disappear;
+- zero-, one-, two-turn, and outer-gutter routes remain orthogonal and unclipped;
+- the remaining count reaches zero, `Complete` appears, and `Play again` restores
+  the identical deterministic board.
+
+Automated checks do not constitute real-device Android QA; that remains a manual
+Pages verification after deployment.
