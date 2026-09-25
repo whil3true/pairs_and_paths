@@ -1,105 +1,136 @@
 import { Board, type GridPoint } from "./Board.js";
 
+/** A compact, interior-only orthogonal polyline: start, zero or more corners, end. */
 export interface ConnectionPath {
   readonly points: readonly GridPoint[];
 }
 
+interface QueueEntry {
+  readonly state: number;
+  readonly turns: number;
+  readonly length: number;
+  readonly order: number;
+}
+
+// Direction order is part of the stable route tie-break.
+const DIRECTIONS = [
+  { col: 0, row: -1 }, // up
+  { col: -1, row: 0 }, // left
+  { col: 1, row: 0 },  // right
+  { col: 0, row: 1 },  // down
+] as const;
+
 const samePoint = (left: GridPoint, right: GridPoint): boolean =>
   left.col === right.col && left.row === right.row;
 
-const compact = (points: readonly GridPoint[]): GridPoint[] => {
-  const result: GridPoint[] = [];
-  for (const point of points) {
-    if (result.length > 0 && samePoint(result[result.length - 1]!, point)) continue;
-    while (result.length >= 2) {
-      const before = result[result.length - 2]!;
-      const previous = result[result.length - 1]!;
-      const collinear = (before.col === previous.col && previous.col === point.col)
-        || (before.row === previous.row && previous.row === point.row);
-      if (!collinear) break;
-      result.pop();
-    }
-    result.push(point);
+const before = (left: QueueEntry, right: QueueEntry): boolean =>
+  left.turns < right.turns
+  || (left.turns === right.turns && (left.length < right.length
+    || (left.length === right.length && left.order < right.order)));
+
+const push = (heap: QueueEntry[], entry: QueueEntry): void => {
+  let index = heap.length;
+  heap.push(entry);
+  while (index > 0) {
+    const parent = (index - 1) >> 1;
+    if (!before(entry, heap[parent]!)) break;
+    heap[index] = heap[parent]!;
+    index = parent;
   }
-  return result;
+  heap[index] = entry;
 };
 
-const isClearSegment = (
-  board: Board,
-  from: GridPoint,
-  to: GridPoint,
-  start: GridPoint,
-  end: GridPoint,
-): boolean => {
-  if (from.col !== to.col && from.row !== to.row) return false;
-  const colStep = Math.sign(to.col - from.col);
-  const rowStep = Math.sign(to.row - from.row);
-  let col = from.col;
-  let row = from.row;
+const pop = (heap: QueueEntry[]): QueueEntry => {
+  const first = heap[0]!;
+  const last = heap.pop()!;
+  if (heap.length === 0) return first;
+  let index = 0;
   while (true) {
-    const point = { col, row };
-    if (board.contains(point) && !samePoint(point, start) && !samePoint(point, end) && board.isOccupied(point)) {
-      return false;
+    const left = index * 2 + 1;
+    if (left >= heap.length) break;
+    const right = left + 1;
+    const child = right < heap.length && before(heap[right]!, heap[left]!) ? right : left;
+    if (!before(heap[child]!, last)) break;
+    heap[index] = heap[child]!;
+    index = child;
+  }
+  heap[index] = last;
+  return first;
+};
+
+const compact = (cells: readonly GridPoint[]): GridPoint[] => {
+  const points: GridPoint[] = [];
+  for (const point of cells) {
+    while (points.length >= 2) {
+      const beforePoint = points[points.length - 2]!;
+      const previous = points[points.length - 1]!;
+      if (!((beforePoint.col === previous.col && previous.col === point.col)
+        || (beforePoint.row === previous.row && previous.row === point.row))) break;
+      points.pop();
     }
-    if (col === to.col && row === to.row) return true;
-    col += colStep;
-    row += rowStep;
+    points.push(point);
   }
+  return points;
 };
-
-const isLegal = (board: Board, points: readonly GridPoint[], start: GridPoint, end: GridPoint): boolean => {
-  for (const point of points) {
-    if (point.col < -1 || point.col > board.width || point.row < -1 || point.row > board.height) return false;
-  }
-  for (let index = 1; index < points.length; index += 1) {
-    if (!isClearSegment(board, points[index - 1]!, points[index]!, start, end)) return false;
-  }
-  return true;
-};
-
-const lengthOf = (points: readonly GridPoint[]): number => {
-  let length = 0;
-  for (let index = 1; index < points.length; index += 1) {
-    length += Math.abs(points[index]!.col - points[index - 1]!.col)
-      + Math.abs(points[index]!.row - points[index - 1]!.row);
-  }
-  return length;
-};
-
-const pathKey = (points: readonly GridPoint[]): string => points.map(({ col, row }) => `${row},${col}`).join(";");
 
 /**
- * Finds the best legal Onet polyline, or null for an invalid/unconnectable pair.
- * Ranking is turns, Manhattan length, then a stable row/column vertex ordering.
+ * Finds the canonical interior route. Cost is minimum turns, then minimum step
+ * length, then stable direction/queue order. There is no turn limit.
  */
 export const findPath = (board: Board, start: GridPoint, end: GridPoint): ConnectionPath | null => {
   if (!board.contains(start) || !board.contains(end) || samePoint(start, end)) return null;
-  const startTile = board.tileAt(start);
-  if (startTile === null || startTile !== board.tileAt(end)) return null;
+  const tile = board.tileAt(start);
+  if (tile === null || board.tileAt(end) !== tile) return null;
 
-  const candidates: GridPoint[][] = [
-    [start, end],
-    [start, { col: start.col, row: end.row }, end],
-    [start, { col: end.col, row: start.row }, end],
-  ];
-
-  for (let row = -1; row <= board.height; row += 1) {
-    candidates.push([start, { col: start.col, row }, { col: end.col, row }, end]);
-  }
-  for (let col = -1; col <= board.width; col += 1) {
-    candidates.push([start, { col, row: start.row }, { col, row: end.row }, end]);
-  }
-
-  const unique = new Map<string, GridPoint[]>();
-  for (const raw of candidates) {
-    const points = compact(raw);
-    if (points.length <= 4 && isLegal(board, points, start, end)) unique.set(pathKey(points), points);
+  const stateCount = board.width * board.height * DIRECTIONS.length;
+  const bestTurns = new Int16Array(stateCount).fill(0x7fff);
+  const bestLengths = new Int16Array(stateCount).fill(0x7fff);
+  const previous = new Int16Array(stateCount).fill(-1);
+  const heap: QueueEntry[] = [];
+  let order = 0;
+  for (let direction = 0; direction < DIRECTIONS.length; direction += 1) {
+    const delta = DIRECTIONS[direction]!;
+    const col = start.col + delta.col, row = start.row + delta.row;
+    const point = { col, row };
+    if (!board.contains(point) || (!samePoint(point, end) && board.isOccupied(point))) continue;
+    const state = (row * board.width + col) * 4 + direction;
+    bestTurns[state] = 0;
+    bestLengths[state] = 1;
+    push(heap, { state, turns: 0, length: 1, order: order++ });
   }
 
-  const paths = [...unique.values()];
-  paths.sort((left, right) =>
-    (left.length - right.length)
-    || (lengthOf(left) - lengthOf(right))
-    || pathKey(left).localeCompare(pathKey(right)));
-  return paths[0] === undefined ? null : { points: paths[0] };
+  while (heap.length > 0) {
+    const current = pop(heap);
+    if (current.turns !== bestTurns[current.state] || current.length !== bestLengths[current.state]) continue;
+    const cell = Math.floor(current.state / 4);
+    const direction = current.state % 4;
+    const col = cell % board.width, row = Math.floor(cell / board.width);
+    if (col === end.col && row === end.row) {
+      const cells: GridPoint[] = [];
+      for (let state = current.state; state >= 0; state = previous[state]!) {
+        const stateCell = Math.floor(state / 4);
+        cells.push({ col: stateCell % board.width, row: Math.floor(stateCell / board.width) });
+      }
+      cells.push(start);
+      cells.reverse();
+      return { points: compact(cells) };
+    }
+
+    for (let nextDirection = 0; nextDirection < DIRECTIONS.length; nextDirection += 1) {
+      const delta = DIRECTIONS[nextDirection]!;
+      const next = { col: col + delta.col, row: row + delta.row };
+      if (!board.contains(next) || (!samePoint(next, end) && board.isOccupied(next))) continue;
+      const turns = current.turns + Number(direction !== nextDirection);
+      const length = current.length + 1;
+      const state = (next.row * board.width + next.col) * 4 + nextDirection;
+      const knownTurns = bestTurns[state]!;
+      const knownLength = bestLengths[state]!;
+      if (turns > knownTurns || (turns === knownTurns && length >= knownLength)) continue;
+      bestTurns[state] = turns;
+      bestLengths[state] = length;
+      previous[state] = current.state;
+      push(heap, { state, turns, length, order: order++ });
+    }
+  }
+  return null;
 };

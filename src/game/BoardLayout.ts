@@ -12,16 +12,14 @@ export interface BoardLayoutOptions {
   readonly boardHeight: number;
 }
 
-/** Pure coordinate mapping for the prototype board and its compressed outer route. */
+/** Pure coordinate mapping for real board cells. */
 export class BoardLayout {
   static readonly CELL_PITCH = 72;
   static readonly TILE_SIZE = 64;
-  static readonly OUTER_GUTTER = 10;
   static readonly BOARD_AREA_CENTER_Y = 420;
 
   readonly pitch = BoardLayout.CELL_PITCH;
   readonly tileSize = BoardLayout.TILE_SIZE;
-  readonly outerGutter = BoardLayout.OUTER_GUTTER;
   readonly boardLeft: number;
   readonly boardTop: number;
   readonly boardRight: number;
@@ -43,20 +41,7 @@ export class BoardLayout {
       || point.row < 0 || point.row >= this.options.boardHeight) {
       throw new RangeError("Cell is outside the real board");
     }
-    return this.gridPointToWorld(point);
-  }
-
-  gridPointToWorld(point: GridPoint): WorldPoint {
-    const { boardWidth, boardHeight } = this.options;
-    if (point.col < -1 || point.col > boardWidth || point.row < -1 || point.row > boardHeight) {
-      throw new RangeError("Point is outside the padded board");
-    }
-    const x = point.col === -1 ? this.boardLeft - this.outerGutter
-      : point.col === boardWidth ? this.boardRight + this.outerGutter
-        : this.boardLeft + (point.col + 0.5) * this.pitch;
-    const y = point.row === -1 ? this.boardTop - this.outerGutter
-      : point.row === boardHeight ? this.boardBottom + this.outerGutter
-        : this.boardTop + (point.row + 0.5) * this.pitch;
-    return { x, y };
+    return { x: this.boardLeft + (point.col + 0.5) * this.pitch,
+      y: this.boardTop + (point.row + 0.5) * this.pitch };
   }
 }

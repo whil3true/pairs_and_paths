@@ -109,9 +109,21 @@ export class PlayScene extends Phaser.Scene {
     const path = tileId === this.board.tileAt(point) ? findPath(this.board, start, point) : null;
     if (tileId !== null && path !== null) {
       this.completeMove({ tileId, start, end: point, path });
+    } else if (tileId !== null && tileId === this.board.tileAt(point)) {
+      this.showBlockedPair(start, point);
     } else {
       this.setSelected(point);
     }
+  }
+
+  private showBlockedPair(first: GridPoint, second: GridPoint): void {
+    this.inputLocked = true;
+    for (const point of [first, second]) this.tiles.get(keyOf(point))?.card.setStrokeStyle(5, 0xff4d5e);
+    this.time.delayedCall(180, () => {
+      this.inputLocked = false;
+      this.setSelected(null);
+      this.setSelected(second);
+    });
   }
 
   private setSelected(point: GridPoint | null): void {
@@ -144,7 +156,7 @@ export class PlayScene extends Phaser.Scene {
   }
 
   private drawRoute(points: readonly GridPoint[]): void {
-    const mapped = points.map((point) => this.layout.gridPointToWorld(point));
+    const mapped = points.map((point) => this.layout.cellCenter(point));
     this.route.clear().lineStyle(7, 0x152238, 0.85).beginPath();
     this.route.moveTo(mapped[0]!.x, mapped[0]!.y);
     mapped.slice(1).forEach(({ x, y }) => this.route.lineTo(x, y));
