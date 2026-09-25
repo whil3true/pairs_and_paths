@@ -18,3 +18,34 @@
 Dependencies stay minimal: Phaser is the only browser runtime dependency and TypeScript is the only development dependency. No bundler or development server is used.
 
 CI validates pull requests and relevant pushes. The Pages workflow builds and deploys only the `dev` branch.
+
+## Deterministic content core
+
+- `SeededRandom` is the stable Mulberry32 algorithm implemented with defined
+  32-bit bitwise and `Math.imul` operations. Seeds are integers in
+  `0..4294967295`, including zero. `nextFloat()` divides the next uint32 by `2^32`,
+  `nextInt()` uses that float, and `shuffle()` is a copied-array Fisher–Yates
+  shuffle. The algorithm, constants, and consumption order are content/save
+  compatibility: changing them intentionally changes generated levels.
+- `findLegalMoves()` groups occupied cells by tile ID, tests matching coordinate
+  pairs through the production `findPath()`, and returns tile-ID then row-major
+  order. `applyMove()` revalidates endpoints/path availability and creates a new
+  board with two empty cells.
+- `solveBoard()` supports the v1 structure of exactly two cells per tile ID. It
+  reports structurally unsupported input separately from a valid-but-unsolvable
+  board and repeatedly takes the first ordered legal move. Removal monotonicity
+  proves this greedy policy complete for any solvable unique-pair board.
+- `generateLevel()` validates the public 1×1..6×8 configuration, creates a snake
+  Hamiltonian path, divides it into adjacent disjoint pairs, and uses the seeded
+  RNG to select pairs, removal order, and unique ID assignment. Every selected
+  pair remains directly adjacent, so construction cannot fail or retry. It records
+  each path against its actual intermediate board as a replayable witness.
+- `validateGeneratedLevel()` verifies dimensions, occupied and distinct counts,
+  exact multiplicity two, witness length, every current-state witness path, and an
+  empty replay result. Generated results also expose objective solution metrics;
+  no difficulty score is inferred.
+
+Metrics count legal moves immediately before each solution step. Minimum, maximum,
+and average use those samples, while `forcedMoveSteps` counts samples equal to one.
+Path length is Manhattan segment length. Turn buckets use zero, one, or two bends;
+an outer-border move has at least one vertex outside real-board coordinates.

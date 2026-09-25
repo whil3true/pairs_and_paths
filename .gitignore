@@ -82,6 +82,7 @@ out
 .nuxt
 dist
 .test-dist/
+.simulation-dist/
 .output
 
 # Gatsby files
