@@ -1,6 +1,11 @@
 :root { color-scheme: dark; font-family: system-ui, sans-serif; background: #10182b; }
 * { box-sizing: border-box; }
 html, body { width: 100%; min-height: 100%; margin: 0; }
-body { min-height: 100dvh; overflow: hidden; }
-#game { width: 100vw; height: 100dvh; }
+body { min-height: 100dvh; overflow: hidden; background: #10182b; }
+/* The body owns the full-viewport background; Phaser fits only inside this safe-area frame. */
+#game {
+  position: fixed;
+  inset: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px)
+    env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
+}
 #game canvas { display: block; }

@@ -8,7 +8,7 @@
 
 `PlayScene` owns the current session level number, starting at 1. Next increments it before regeneration; Replay regenerates without changing it. Level 100 instead reports campaign completion and can restart the session at Level 1, never requesting Level 101. No level progress is persisted, so a browser refresh intentionally returns to Level 1. `BoardLayout` maps only real cells; route graphics consume arbitrary-length compact polylines. A blocked matching pair receives a brief red stroke before the second tile becomes selection. `src/platform` remains the existing small platform boundary. The project retains plain `tsc`, no bundler, and Phaser 4.2.1.
 
-`TileSymbols` is the presentation-only mapping from domain `TileId` to 30 ordered local SVG keys and six reusable accents. `PlayScene` preloads those relative assets, asks the catalog for each tile definition, and owns Phaser card/image creation and feedback. The build needs no asset manager or bundler because the existing static `public` copy includes the SVG directory.
+`TileSymbols` is the presentation-only mapping from domain `TileId` to 30 ordered PNG runtime texture keys and six reusable accents. The runtime assets live under `public/assets/symbols/*.png`; `PlayScene` preloads them through `scene.load.image(...)`, asks the catalog for each tile definition, and owns Phaser card/image creation and feedback. Editable prototype SVG masters remain under `art/source/symbols/*.svg`, outside `public`, so they are not shipped in the production build.
 
 
 Task 5.1 revises only the progression data after human playtesting; it does not alter domain generation, solving, path rules, or introduce new mechanics. Later difficulty mechanics remain deferred.
@@ -20,6 +20,14 @@ Task 5.1 revises only the progression data after human playtesting; it does not 
 `LevelSequence` owns `CAMPAIGN_BLOCKERS`, a flat content table of level number, pattern family, and exact coordinates. `getLevelConfig` combines the unchanged progression band and derived seed with its optional table entry; there is no runtime terrain randomizer or manager. `PlayScene` draws non-interactive dark stone placeholders for fixed cells. Production art and mutable terrain mechanics remain deferred.
 
 The headless blocker analyzer copies each solver state's exact tile rows into a blocker-free `Board` and compares matching-pair routes. This isolates terrain from tile placement and is diagnostic only: it neither changes nor wraps the production solver strategy.
+
+## Portrait display and experimental render density
+
+The permanent gameplay coordinate system is portrait `480×800`. `BoardLayout`, UI positions, routes, and hit zones remain in that logical world on phones, tablets, and desktop browsers. The HTML body owns the full `100vw × 100dvh` prototype background, while `#game` is inset by CSS safe-area environment values and Phaser `Scale.FIT` uniformly contains and centers its portrait canvas. Thus a wide desktop shows background gutters rather than a desktop board variant; unusually tall phones may show top/bottom background. Browser chrome can still change the reported dynamic viewport as it opens or closes, but no gameplay is intentionally placed under the reported safe-area insets.
+
+Phaser 4.2.1 has no supported global `GameConfig.resolution` field. The debug-only `?debug=1&hidpi=1` experiment instead configures the backing game/canvas as `480 × renderScale` by `800 × renderScale`, then uses the supported main-camera zoom and a compensating centered scroll. This keeps the visible world at logical `480×800`; Phaser's camera/input transforms keep pointer world coordinates aligned for both WebGL and Canvas renderers. Phaser Text objects use `setResolution(renderScale)` in this mode. Normal rendering retains the original `480×800` backing canvas, FIT behavior, antialiasing, and linear texture filtering.
+
+`renderScale` is finite device pixel ratio clamped to `[1, 2]`. The approximate render-pixel costs are 1× at scale 1, 2.25× at 1.5, and 4× at 2. The cap is fixed for this experiment; there is no device detection, FPS adaptation, orientation lock, or production enablement.
 
 ## Sequential stage composition
 
