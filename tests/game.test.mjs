@@ -131,14 +131,36 @@ test("only levels 1 through 99 have a next level", () => {
   assert.throws(() => createLevel(101), RangeError);
 });
 
-test("multi-stage pilot is limited to levels 21, 24, and 30", () => {
-  assert.deepEqual(MULTI_STAGE_LEVELS.map(({ levelNumber }) => levelNumber), [21, 24, 30]);
+test("campaign multi-stage distribution and stage split are frozen", () => {
+  const expected = [21, 24, 30, 35, 39, 43, 48, 54, 59, 63, 68, 73, 77, 80, 82, 87, 91, 94, 100];
+  assert.deepEqual(MULTI_STAGE_LEVELS.map(({ levelNumber }) => levelNumber), expected);
   assert.equal(TOTAL_LEVELS, 100);
-  assert.equal(getStageCount(21), 2);
-  assert.equal(getStageCount(24), 2);
-  assert.equal(getStageCount(30), 3);
+  assert.equal(expected.filter((level) => getStageCount(level) === 2).length, 14);
+  assert.equal(expected.filter((level) => getStageCount(level) === 3).length, 5);
   for (let level = 1; level <= TOTAL_LEVELS; level += 1) {
-    if (![21, 24, 30].includes(level)) assert.equal(getStageCount(level), 1);
+    if (!expected.includes(level)) assert.equal(getStageCount(level), 1);
+    if (level <= 20) assert.equal(getStageCount(level), 1);
+  }
+});
+
+test("authored preludes are unique, in range, blocker-free, fit, and progress toward the final", () => {
+  const levelNumbers = MULTI_STAGE_LEVELS.map(({ levelNumber }) => levelNumber);
+  assert.equal(new Set(levelNumbers).size, levelNumbers.length);
+  for (const { levelNumber, preStages } of MULTI_STAGE_LEVELS) {
+    assert.ok(levelNumber >= 1 && levelNumber <= TOTAL_LEVELS);
+    assert.ok(preStages.length >= 1 && preStages.length <= 2);
+    const configs = getLevelStageConfigs(levelNumber);
+    for (let index = 0; index < configs.length - 1; index += 1) {
+      const config = configs[index];
+      const next = configs[index + 1];
+      assert.equal(config.blockedCells, undefined);
+      assert.ok(config.pairCount * 2 <= config.width * config.height);
+      assert.ok(config.pairCount < next.pairCount);
+      assert.ok(config.width * config.height <= next.width * next.height);
+      if (![21, 24, 30].includes(levelNumber)) {
+        assert.ok(createLevelStage(levelNumber, index).metrics.initialLegalMoveCount >= 2);
+      }
+    }
   }
 });
 
@@ -190,7 +212,7 @@ test("stage clear outcomes keep the level stable and reset actions target stage 
   assert.deepEqual(getStageClearOutcome(30, 0), { kind: "next-stage", stageIndex: 1 });
   assert.deepEqual(getStageClearOutcome(30, 1), { kind: "next-stage", stageIndex: 2 });
   assert.deepEqual(getStageClearOutcome(30, 2), { kind: "level-complete" });
-  assert.deepEqual(getStageClearOutcome(100, 0), { kind: "level-complete" });
+  assert.deepEqual(getStageClearOutcome(99, 0), { kind: "level-complete" });
   assert.equal(hasNextLevel(100), false);
   // Replay, Next Level, and campaign restart all call PlayScene.startLevel(), whose first action is stageIndex = 0.
   assert.deepEqual(createLevelStage(21, 0).config, getLevelStageConfigs(21)[0]);
