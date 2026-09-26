@@ -66,7 +66,7 @@ function bruteForceOracle(board, start, end) {
       const [dc, dr] = directions[direction];
       const next = { col: current.col + dc, row: current.row + dr };
       const key = `${next.col},${next.row}`;
-      if (!board.contains(next) || visited.has(key) || (!same(next, end) && board.isOccupied(next))) continue;
+      if (!board.contains(next) || board.isBlocked(next) || visited.has(key) || (!same(next, end) && board.isOccupied(next))) continue;
       const nextTurns = turns + Number(previousDirection >= 0 && previousDirection !== direction);
       const nextLength = length + 1;
       if (best !== null && (nextTurns > best.turns
@@ -107,7 +107,7 @@ function referenceSearch(board, start, end) {
       const turns = state.direction < 0 || state.direction === direction ? state.turns : state.turns + 1;
       if (col < 0 || col >= board.width || row < 0 || row >= board.height) return;
       const next = { col, row };
-      if (board.contains(next) && !same(next, end) && board.isOccupied(next)) return;
+      if (board.isBlocked(next) || (board.contains(next) && !same(next, end) && board.isOccupied(next))) return;
       queue.push({ col, row, direction, turns, length: state.length + 1 });
     });
   }
@@ -142,6 +142,27 @@ test("Board validates data, exposes cells, and creates immutable revisions", () 
   assert.throws(() => Board.fromRows([[1, 1, 1, 1, 1, 1, 1]]), RangeError);
   assert.throws(() => Board.fromRows(Array.from({ length: 9 }, () => [1])), RangeError);
   assert.throws(() => board.tileAt(point(-1, 0)), RangeError);
+});
+
+test("Board keeps static blockers separate from tile occupancy", () => {
+  const blocker = point(1, 0);
+  const board = Board.fromRows([[1, null, 1], [null, null, null]], [blocker]);
+  assert.equal(board.tileAt(blocker), null);
+  assert.equal(board.isBlocked(blocker), true);
+  assert.equal(board.isEmpty(blocker), false);
+  assert.equal(board.isOccupied(blocker), false);
+  assert.deepEqual(board.blockedCells(), [blocker]);
+  assert.throws(() => board.withTile(blocker, 2), /blocked/);
+  assert.throws(() => Board.fromRows([[null]], [point(0, 0), point(0, 0)]), /unique/);
+});
+
+test("pathfinder rejects blocker endpoints, routes around terrain, and stays canonical", () => {
+  const board = Board.fromRows([[1, null, 1], [null, null, null]], [point(1, 0)]);
+  const path = findPath(board, point(0, 0), point(2, 0));
+  assert.deepEqual(path.points, [point(0, 0), point(0, 1), point(2, 1), point(2, 0)]);
+  assert.deepEqual(findPath(board, point(0, 0), point(2, 0)), path);
+  assert.ok(path.points.every((value) => !board.isBlocked(value)));
+  assert.equal(findPath(board, point(1, 0), point(2, 0)), null);
 });
 
 test("invalid pair queries return null", () => {

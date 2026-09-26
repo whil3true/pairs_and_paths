@@ -77,6 +77,11 @@ export class PlayScene extends Phaser.Scene {
       const { x, y } = this.layout.cellCenter(point);
       this.add.rectangle(x, y, 64, 64, 0x1a2941, 0.52)
         .setStrokeStyle(1, 0x324663, 0.65).setName("board-cell");
+      if (this.board.isBlocked(point)) {
+        this.add.rectangle(x, y, 58, 58, 0x26303d, 1)
+          .setStrokeStyle(3, 0x59687a, 1).setName("board-cell");
+        continue;
+      }
       this.add.zone(x, y, this.layout.pitch - 2, this.layout.pitch - 2)
         .setName("board-cell").setInteractive({ useHandCursor: true })
         .on("pointerdown", () => this.onCellTapped(point));
@@ -99,7 +104,7 @@ export class PlayScene extends Phaser.Scene {
   }
 
   private onCellTapped(point: GridPoint): void {
-    if (this.inputLocked) return;
+    if (this.inputLocked || this.board.isBlocked(point)) return;
     if (this.board.isEmpty(point)) {
       this.setSelected(null);
       return;

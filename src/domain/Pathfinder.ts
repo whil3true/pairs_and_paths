@@ -78,7 +78,8 @@ const compact = (cells: readonly GridPoint[]): GridPoint[] => {
  * length, then stable direction/queue order. There is no turn limit.
  */
 export const findPath = (board: Board, start: GridPoint, end: GridPoint): ConnectionPath | null => {
-  if (!board.contains(start) || !board.contains(end) || samePoint(start, end)) return null;
+  if (!board.contains(start) || !board.contains(end) || samePoint(start, end)
+      || board.isBlocked(start) || board.isBlocked(end)) return null;
   const tile = board.tileAt(start);
   if (tile === null || board.tileAt(end) !== tile) return null;
 
@@ -92,7 +93,7 @@ export const findPath = (board: Board, start: GridPoint, end: GridPoint): Connec
     const delta = DIRECTIONS[direction]!;
     const col = start.col + delta.col, row = start.row + delta.row;
     const point = { col, row };
-    if (!board.contains(point) || (!samePoint(point, end) && board.isOccupied(point))) continue;
+    if (!board.contains(point) || board.isBlocked(point) || (!samePoint(point, end) && board.isOccupied(point))) continue;
     const state = (row * board.width + col) * 4 + direction;
     bestTurns[state] = 0;
     bestLengths[state] = 1;
@@ -119,7 +120,7 @@ export const findPath = (board: Board, start: GridPoint, end: GridPoint): Connec
     for (let nextDirection = 0; nextDirection < DIRECTIONS.length; nextDirection += 1) {
       const delta = DIRECTIONS[nextDirection]!;
       const next = { col: col + delta.col, row: row + delta.row };
-      if (!board.contains(next) || (!samePoint(next, end) && board.isOccupied(next))) continue;
+      if (!board.contains(next) || board.isBlocked(next) || (!samePoint(next, end) && board.isOccupied(next))) continue;
       const turns = current.turns + Number(direction !== nextDirection);
       const length = current.length + 1;
       const state = (next.row * board.width + next.col) * 4 + nextDirection;

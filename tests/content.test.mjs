@@ -67,6 +67,21 @@ test("legal moves are stable, matching, and applyMove is pure and explicit", () 
   assert.deepEqual(findLegalMoves(board), moves);
 });
 
+test("moves and solver preserve and ignore static blocker terrain", () => {
+  const blockers = [{ col: 1, row: 0 }];
+  const board = Board.fromRows([[1, null, 1], [null, null, null], [2, null, 2]], blockers);
+  const moves = findLegalMoves(board);
+  assert.deepEqual(moves.map(({ tileId }) => tileId), [1, 2]);
+  const changed = applyMove(board, moves[0]);
+  assert.deepEqual(changed.blockedCells(), blockers);
+  const result = solveBoard(board);
+  assert.equal(result.status, "solved");
+  assert.equal(replay(board, result.moves).hasTiles(), false);
+  assert.deepEqual(replay(board, result.moves).blockedCells(), blockers);
+  const sealed = Board.fromRows([[1, null, 1]], [{ col: 1, row: 0 }]);
+  assert.equal(solveBoard(sealed).status, "unsolvable");
+});
+
 test("solver distinguishes solved, unsolvable, and unsupported boards", () => {
   assert.deepEqual(solveBoard(Board.fromRows([[null]])).status, "solved");
   assert.equal(solveBoard(Board.fromRows([[1]])).status, "unsupported");
@@ -113,6 +128,21 @@ test("seeded reverse generation preserves pair, witness, solver, and product inv
   }
 });
 
+test("blocker generation validates config, is deterministic, and preserves terrain", () => {
+  const config = { width: 5, height: 5, pairCount: 8, seed: 41, avoidAdjacentMatchingPairs: true,
+    blockedCells: [{ col: 2, row: 1 }, { col: 2, row: 2 }] };
+  const level = generateLevel(config);
+  assert.equal(validateGeneratedLevel(level).valid, true);
+  assert.equal(snapshot(generateLevel(config)), snapshot(level));
+  for (const blocker of config.blockedCells) assert.equal(level.board.tileAt(blocker), null);
+  const cleared = replay(level.board, level.witness);
+  assert.equal(cleared.hasTiles(), false);
+  assert.deepEqual(cleared.blockedCells(), config.blockedCells);
+  assert.throws(() => generateLevel({ width: 2, height: 2, pairCount: 1, seed: 0, blockedCells: [{ col: 2, row: 0 }] }), RangeError);
+  assert.throws(() => generateLevel({ width: 2, height: 2, pairCount: 1, seed: 0, blockedCells: [{ col: 0, row: 0 }, { col: 0, row: 0 }] }), TypeError);
+  assert.throws(() => generateLevel({ width: 2, height: 2, pairCount: 2, seed: 0, blockedCells: [{ col: 0, row: 0 }] }), RangeError);
+});
+
 test("small generated boards agree with independent exhaustive solver", () => {
   for (let seed = 0; seed < 200; seed += 1) {
     const level = generateLevel({ width: 4, height: 2, pairCount: 1 + seed % 4, seed });
@@ -150,6 +180,24 @@ test("exhaustive small pair boards confirm every legal choice preserves solvabil
   }
   match([0, 1, 2, 3, 4, 5]);
   assert.ok(solvableBoards > 0);
+});
+
+test("static-blocker small boards preserve solvability after every legal first move", () => {
+  let checked = 0;
+  for (let blockerMask = 1; blockerMask < 1 << 6; blockerMask += 1) {
+    const playable = Array.from({ length: 6 }, (_, index) => index).filter((index) => !(blockerMask & (1 << index)));
+    if (playable.length < 4) continue;
+    for (let seed = 0; seed < 8; seed += 1) {
+      const blockedCells = Array.from({ length: 6 }, (_, index) => index).filter((index) => blockerMask & (1 << index))
+        .map((index) => ({ col: index % 3, row: Math.floor(index / 3) }));
+      let level;
+      try { level = generateLevel({ width: 3, height: 2, pairCount: 2, seed, blockedCells }); } catch { continue; }
+      assert.equal(oracleSolvable(level.board), true);
+      for (const move of findLegalMoves(level.board)) assert.equal(oracleSolvable(applyMove(level.board, move)), true);
+      checked += 1;
+    }
+  }
+  assert.ok(checked > 0);
 });
 
 test("generated-level validator detects structural and stale-witness corruption", () => {

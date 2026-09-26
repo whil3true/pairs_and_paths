@@ -58,7 +58,11 @@ export const getLevelConfig = (levelNumber: number): GenerationConfig => {
   const band = PROGRESSION_BANDS.find(({ startLevel, endLevel }) =>
     levelNumber >= startLevel && levelNumber <= endLevel)!;
   const { width, height, pairCount } = band;
-  return { width, height, pairCount, seed: levelSeed(levelNumber), avoidAdjacentMatchingPairs: true };
+  const blockedCells = levelNumber === 11 ? [{ col: 2, row: 2 }]
+    : levelNumber === 12 ? [{ col: 2, row: 1 }, { col: 2, row: 3 }]
+      : levelNumber === 13 ? [{ col: 1, row: 1 }, { col: 2, row: 2 }, { col: 3, row: 2 }]
+        : undefined;
+  return { width, height, pairCount, seed: levelSeed(levelNumber), avoidAdjacentMatchingPairs: true, ...(blockedCells === undefined ? {} : { blockedCells }) };
 };
 
 export const createLevel = (levelNumber: number): GeneratedLevel => generateLevel(getLevelConfig(levelNumber));

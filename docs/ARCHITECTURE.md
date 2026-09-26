@@ -10,3 +10,9 @@
 
 
 Task 5.1 revises only the progression data after human playtesting; it does not alter domain generation, solving, path rules, or introduce new mechanics. Later difficulty mechanics remain deferred.
+
+## Static blocker foundation
+
+`Board` stores tile occupancy (`Cell = TileId | null`) and an independent immutable blocked-coordinate mask. `isBlocked`, `isOccupied`, and `isEmpty` distinguish wall terrain, real tiles, and traversable emptiness. Revisions share the immutable mask; placing a tile on it is rejected. Pathfinding excludes blocked endpoints and transit cells. Solving and pair multiplicity inspect tiles only, and completion means no tiles, not no terrain. Optional generator `blockedCells` are validated, excluded from capacity and candidates, and supplied to every construction board without changing blocker-free random consumption. Validation checks the exact mask and its persistence through replay.
+
+Levels 11–13 alone form the blocker pilot. `PlayScene` draws non-interactive dark stone placeholders for fixed cells. Wider blocker progression, production art, and all multi-stage or mutable terrain mechanics remain deferred.

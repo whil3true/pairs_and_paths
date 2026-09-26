@@ -12,3 +12,7 @@
 This is the agreed product nucleus, not a complete game design document.
 
 Task 5.1 changes pacing only. It adds no mechanics; further difficulty mechanics and the planned player aids remain deliberately deferred.
+
+## Static blockers
+
+A static blocker is permanent wall terrain, never a tile: it cannot be selected, occupied, removed, or entered by a connection path. Levels 11–13 are a small playtest pilot (one, two, and three blockers); Levels 1–10 and 14–100 remain blocker-free until a separate post-playtest progression task. Removing a legal pair only increases traversable empty space while terrain stays fixed, so removal monotonicity remains valid and blockers do not introduce a normal deadlock or loss state.
