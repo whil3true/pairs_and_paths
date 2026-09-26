@@ -2,16 +2,18 @@ import { PlayScene } from "./game/PlayScene.js";
 import { isSymbolGalleryRequested, parseDebugStart } from "./game/DebugStart.js";
 import { SymbolGalleryScene } from "./game/SymbolGalleryScene.js";
 import {
-  computeRenderScale, isHiDpiDebugRequested, LOGICAL_GAME_HEIGHT, LOGICAL_GAME_WIDTH,
+  computeRenderScale, isLegacyRenderScaleDebugRequested, LOGICAL_GAME_HEIGHT, LOGICAL_GAME_WIDTH,
 } from "./game/Display.js";
 import { WebPlatform } from "./platform/WebPlatform.js";
 
 const platform = new WebPlatform();
 const debugStart = parseDebugStart(window.location.search);
-const hiDpiEnabled = isHiDpiDebugRequested(window.location.search);
-const renderScale = hiDpiEnabled ? computeRenderScale(window.devicePixelRatio || 1) : 1;
+const automaticRenderScale = computeRenderScale(window.devicePixelRatio || 1);
+const renderScale = isLegacyRenderScaleDebugRequested(window.location.search)
+  ? 1
+  : automaticRenderScale;
 const scene = isSymbolGalleryRequested(window.location.search)
-  ? new SymbolGalleryScene(renderScale, hiDpiEnabled)
+  ? new SymbolGalleryScene(renderScale)
   : new PlayScene(platform, debugStart, renderScale);
 
 new Phaser.Game({
@@ -22,8 +24,7 @@ new Phaser.Game({
   scale: {
     mode: Phaser.Scale.FIT,
     autoCenter: Phaser.Scale.CENTER_BOTH,
-    // Phaser 4.2.1 exposes no global render-resolution config. In the gated
-    // experiment the backing canvas grows while the camera retains this world view.
+    // The backing canvas follows the capped DPR while the camera retains this world view.
     width: LOGICAL_GAME_WIDTH * renderScale,
     height: LOGICAL_GAME_HEIGHT * renderScale,
   },

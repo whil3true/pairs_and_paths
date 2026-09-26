@@ -28,9 +28,9 @@ export const computePortraitFrame = (
   };
 };
 
-export const isHiDpiDebugRequested = (search: string): boolean => {
+export const isLegacyRenderScaleDebugRequested = (search: string): boolean => {
   const params = new URLSearchParams(search);
-  return params.get("debug") === "1" && params.get("hidpi") === "1";
+  return params.get("debug") === "1" && params.get("renderScale") === "1";
 };
 
 export const computeRenderScale = (devicePixelRatio: number): number =>

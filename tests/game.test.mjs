@@ -5,7 +5,7 @@ import test from "node:test";
 import { BoardLayout, getVisibleBackingCount } from "../.test-dist/game/BoardLayout.js";
 import { isSymbolGalleryRequested, parseDebugStart } from "../.test-dist/game/DebugStart.js";
 import {
-  computePortraitFrame, computeRenderScale, isHiDpiDebugRequested,
+  computePortraitFrame, computeRenderScale, isLegacyRenderScaleDebugRequested,
 } from "../.test-dist/game/Display.js";
 import { applyMove, findLegalMoves, findPath, solveBoard, validateGeneratedLevel } from "../.test-dist/domain/index.js";
 import {
@@ -84,15 +84,21 @@ test("portrait frame uniformly contains the canonical game in representative vie
   assert.ok(computePortraitFrame(1080, 1920).topBottomGutter > 0);
 });
 
-test("HiDPI rendering requires both debug flags and clamps finite DPR to 1 through 2", () => {
-  for (const search of ["", "?hidpi=1", "?debug=0&hidpi=1", "?debug=1", "?debug=1&hidpi=0"]) {
-    assert.equal(isHiDpiDebugRequested(search), false);
-  }
-  assert.equal(isHiDpiDebugRequested("?debug=1&hidpi=1"), true);
+test("production render scale clamps finite DPR to 1 through 2", () => {
   assert.deepEqual([0.75, 1, 1.5, 2, 2.5, 3].map(computeRenderScale), [1, 1, 1.5, 2, 2, 2]);
   assert.equal(computeRenderScale(Number.NaN), 1);
   assert.equal(computeRenderScale(Number.POSITIVE_INFINITY), 1);
   assert.equal(computeRenderScale(Number.NEGATIVE_INFINITY), 1);
+});
+
+test("only debug renderScale 1 requests the legacy render density", () => {
+  assert.equal(isLegacyRenderScaleDebugRequested("?debug=1&renderScale=1"), true);
+  for (const search of [
+    "", "?renderScale=1", "?debug=0&renderScale=1", "?debug=1&renderScale=2",
+    "?debug=1&renderScale=3", "?debug=1&renderScale=abc", "?debug=1&hidpi=1",
+  ]) {
+    assert.equal(isLegacyRenderScaleDebugRequested(search), false);
+  }
 });
 
 const layout = (boardWidth, boardHeight) => new BoardLayout({
