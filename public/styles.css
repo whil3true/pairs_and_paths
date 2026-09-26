@@ -5,7 +5,7 @@ body { min-height: 100dvh; overflow: hidden; background: #10182b; }
 /* The body owns the full-viewport background; Phaser fits only inside this safe-area frame. */
 #game {
   position: fixed;
-  inset: env(safe-area-inset-top) env(safe-area-inset-right)
-    env(safe-area-inset-bottom) env(safe-area-inset-left);
+  inset: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px)
+    env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
 }
 #game canvas { display: block; }
