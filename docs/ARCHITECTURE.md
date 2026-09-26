@@ -8,6 +8,8 @@
 
 `PlayScene` owns the current session level number, starting at 1. Next increments it before regeneration; Replay regenerates without changing it. Level 100 instead reports campaign completion and can restart the session at Level 1, never requesting Level 101. No level progress is persisted, so a browser refresh intentionally returns to Level 1. `BoardLayout` maps only real cells; route graphics consume arbitrary-length compact polylines. A blocked matching pair receives a brief red stroke before the second tile becomes selection. `src/platform` remains the existing small platform boundary. The project retains plain `tsc`, no bundler, and Phaser 4.2.1.
 
+`TileSymbols` is the presentation-only mapping from domain `TileId` to 30 ordered local SVG keys and six reusable accents. `PlayScene` preloads those relative assets, asks the catalog for each tile definition, and owns Phaser card/image creation and feedback. The build needs no asset manager or bundler because the existing static `public` copy includes the SVG directory.
+
 
 Task 5.1 revises only the progression data after human playtesting; it does not alter domain generation, solving, path rules, or introduce new mechanics. Later difficulty mechanics remain deferred.
 

@@ -7,7 +7,12 @@ Technical bootstrap for **Pairs & Paths: Connect the Tiles** / **Пары и п�
 - Phaser 4, TypeScript, HTML and CSS
 - plain `tsc` compilation; no bundler or development server
 - GitHub Actions CI and GitHub Pages deployment
-- **Current state:** infrastructure smoke test only; gameplay is not implemented
+- **Current state:** playable deterministic 100-level prototype campaign with static blockers,
+  multi-stage levels, and a local symbol-first tile art prototype
+
+Developer QA can jump directly into the campaign with `?debug=1&level=N` (and optional
+one-based `&stage=N`). Tile symbols are current visual-difficulty prototype assets rather than
+final production art.
 
 ## Commands
 
