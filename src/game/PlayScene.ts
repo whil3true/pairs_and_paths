@@ -1,7 +1,7 @@
 import { applyMove, findPath, type Board, type GridPoint, type LegalMove } from "../domain/index.js";
 import type { PlatformService } from "../platform/PlatformService.js";
 import { BoardLayout } from "./BoardLayout.js";
-import { createLevel, hasNextLevel } from "./LevelSequence.js";
+import { createLevelStage, getStageClearOutcome, getStageCount, hasNextLevel } from "./LevelSequence.js";
 
 interface TileVisual {
   readonly card: Phaser.GameObjects.Rectangle;
@@ -24,6 +24,7 @@ export class PlayScene extends Phaser.Scene {
   private seedText!: Phaser.GameObjects.Text;
   private completeOverlay: Phaser.GameObjects.Container | null = null;
   private currentLevelNumber = 1;
+  private currentStageIndex = 0;
 
   constructor(private readonly platform: PlatformService) {
     super({ key: "PlayScene" });
@@ -47,6 +48,11 @@ export class PlayScene extends Phaser.Scene {
   }
 
   private startLevel(): void {
+    this.currentStageIndex = 0;
+    this.loadStage();
+  }
+
+  private loadStage(): void {
     this.completeOverlay?.destroy(true);
     this.completeOverlay = null;
     this.route.clear();
@@ -59,9 +65,11 @@ export class PlayScene extends Phaser.Scene {
     this.tiles.clear();
     this.children.list.filter((child) => child.name === "board-cell").forEach((child) => child.destroy());
 
-    const level = createLevel(this.currentLevelNumber);
+    const level = createLevelStage(this.currentLevelNumber, this.currentStageIndex);
     this.board = level.board;
-    this.levelText.setText(`Level ${this.currentLevelNumber}`);
+    const stageCount = getStageCount(this.currentLevelNumber);
+    this.levelText.setText(stageCount === 1 ? `Level ${this.currentLevelNumber}`
+      : `Level ${this.currentLevelNumber} · Stage ${this.currentStageIndex + 1}/${stageCount}`);
     this.seedText.setText(`Prototype · ${this.platform.displayName} · seed ${level.config.seed}`);
     this.layout = new BoardLayout({
       sceneWidth: Number(this.scale.width), sceneHeight: Number(this.scale.height),
@@ -163,7 +171,7 @@ export class PlayScene extends Phaser.Scene {
       this.removeTile(move.end);
       this.route.clear();
       this.updateRemaining();
-      if (this.tiles.size === 0) this.showComplete();
+      if (this.tiles.size === 0) this.finishStage();
       else this.inputLocked = false;
     });
   }
@@ -188,6 +196,23 @@ export class PlayScene extends Phaser.Scene {
 
   private updateRemaining(): void {
     this.remainingText.setText(`Pairs remaining: ${this.tiles.size / 2}`);
+  }
+
+  private finishStage(): void {
+    const outcome = getStageClearOutcome(this.currentLevelNumber, this.currentStageIndex);
+    if (outcome.kind === "level-complete") {
+      this.showComplete();
+      return;
+    }
+    const feedback = this.add.text(240, 420, `Stage ${this.currentStageIndex + 1} complete`, {
+      color: "#ffffff", backgroundColor: "#152238", padding: { x: 22, y: 14 },
+      fontFamily: "Arial, sans-serif", fontSize: "24px", fontStyle: "bold",
+    }).setOrigin(0.5).setDepth(35);
+    this.time.delayedCall(400, () => {
+      feedback.destroy();
+      this.currentStageIndex = outcome.stageIndex;
+      this.loadStage();
+    });
   }
 
   private showComplete(): void {
