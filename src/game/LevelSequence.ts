@@ -56,7 +56,7 @@ export interface MultiStageLevelPlan {
   readonly preStages: readonly StagePrelude[];
 }
 
-/** Pilot-only preludes. The existing campaign config is always appended as the final stage. */
+/** Authored campaign preludes. The existing campaign config is always appended as the final stage. */
 export const MULTI_STAGE_LEVELS: readonly MultiStageLevelPlan[] = [
   { levelNumber: 21, preStages: [{ width: 5, height: 5, pairCount: 8 }] },
   { levelNumber: 24, preStages: [{ width: 5, height: 6, pairCount: 10 }] },
@@ -64,6 +64,34 @@ export const MULTI_STAGE_LEVELS: readonly MultiStageLevelPlan[] = [
     { width: 4, height: 5, pairCount: 6 },
     { width: 5, height: 6, pairCount: 9 },
   ] },
+  { levelNumber: 35, preStages: [{ width: 5, height: 6, pairCount: 9 }] },
+  { levelNumber: 39, preStages: [{ width: 5, height: 6, pairCount: 9 }] },
+  { levelNumber: 43, preStages: [{ width: 5, height: 6, pairCount: 9 }] },
+  { levelNumber: 48, preStages: [
+    { width: 5, height: 5, pairCount: 7 },
+    { width: 5, height: 7, pairCount: 10 },
+  ] },
+  { levelNumber: 54, preStages: [{ width: 5, height: 7, pairCount: 10 }] },
+  { levelNumber: 59, preStages: [{ width: 6, height: 6, pairCount: 11 }] },
+  { levelNumber: 63, preStages: [{ width: 5, height: 7, pairCount: 10 }] },
+  { levelNumber: 68, preStages: [
+    { width: 5, height: 5, pairCount: 7 },
+    { width: 5, height: 6, pairCount: 10 },
+  ] },
+  { levelNumber: 73, preStages: [{ width: 6, height: 6, pairCount: 11 }] },
+  { levelNumber: 77, preStages: [{ width: 5, height: 7, pairCount: 12 }] },
+  { levelNumber: 80, preStages: [{ width: 6, height: 6, pairCount: 11 }] },
+  { levelNumber: 82, preStages: [
+    { width: 5, height: 6, pairCount: 8 },
+    { width: 6, height: 6, pairCount: 12 },
+  ] },
+  { levelNumber: 87, preStages: [{ width: 6, height: 6, pairCount: 12 }] },
+  { levelNumber: 91, preStages: [{ width: 5, height: 7, pairCount: 11 }] },
+  { levelNumber: 94, preStages: [
+    { width: 5, height: 6, pairCount: 8 },
+    { width: 6, height: 7, pairCount: 13 },
+  ] },
+  { levelNumber: 100, preStages: [{ width: 6, height: 7, pairCount: 13 }] },
 ];
 
 /** Explicit campaign terrain. Coordinates are content data, not runtime placement. */
