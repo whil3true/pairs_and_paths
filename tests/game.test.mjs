@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 import { BoardLayout, getVisibleBackingCount } from "../.test-dist/game/BoardLayout.js";
@@ -30,6 +31,22 @@ test("tile symbol catalog covers the campaign with stable unique assets and vali
   }
   assert.throws(() => getTileSymbol(0), RangeError);
   assert.throws(() => getTileSymbol(TILE_SYMBOLS.length + 1), RangeError);
+});
+
+test("tile symbol SVG assets have intrinsic dimensions and catalog-assigned source colors", async () => {
+  for (const definition of TILE_SYMBOLS) {
+    const assetUrl = new URL(`../public/${definition.assetPath}`, import.meta.url);
+    const svg = await readFile(assetUrl, "utf8");
+    const expectedAccent = `#${TILE_ACCENT_COLORS[definition.accentIndex].toString(16).padStart(6, "0")}`;
+
+    assert.match(svg, /^<svg\b/, `${definition.name} must be an SVG text file`);
+    assert.match(svg, /\bwidth="64"/, `${definition.name} must declare its width`);
+    assert.match(svg, /\bheight="64"/, `${definition.name} must declare its height`);
+    assert.match(svg, /\bviewBox="0 0 64 64"/, `${definition.name} must retain its viewBox`);
+    assert.doesNotMatch(svg, /stroke="#fff"/i, `${definition.name} must not rely on runtime tint`);
+    assert.match(svg, new RegExp(`stroke="${expectedAccent}"`, "i"),
+      `${definition.name} must use catalog accent ${expectedAccent}`);
+  }
 });
 
 const layout = (boardWidth, boardHeight) => new BoardLayout({
