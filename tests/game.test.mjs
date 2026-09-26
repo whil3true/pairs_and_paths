@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { BoardLayout } from "../.test-dist/game/BoardLayout.js";
+import { BoardLayout, getVisibleBackingCount } from "../.test-dist/game/BoardLayout.js";
 import { applyMove, findLegalMoves, findPath, solveBoard, validateGeneratedLevel } from "../.test-dist/domain/index.js";
 import {
   CAMPAIGN_BLOCKERS, CHAPTER_COUNT, LEVELS_PER_CHAPTER, PROGRESSION_BANDS, TOTAL_LEVELS,
@@ -256,6 +256,14 @@ test("real cell centers and the full board fit the portrait play area", () => {
   );
   assert.equal(full.pitch, 72);
   assert.equal(full.tileSize, 64);
+});
+
+test("stage stack backing count communicates remaining stages", () => {
+  assert.equal(getVisibleBackingCount(0, 3), 2);
+  assert.equal(getVisibleBackingCount(1, 3), 1);
+  assert.equal(getVisibleBackingCount(2, 3), 0);
+  assert.equal(getVisibleBackingCount(0, 2), 1);
+  assert.equal(getVisibleBackingCount(0, 1), 0);
 });
 
 test("smaller boards remain centered in the same safe play area", () => {

@@ -12,6 +12,10 @@ export interface BoardLayoutOptions {
   readonly boardHeight: number;
 }
 
+/** Number of metaphorical sheets visible beneath the active stage. */
+export const getVisibleBackingCount = (stageIndex: number, stageCount: number): number =>
+  Math.min(Math.max(stageCount - stageIndex - 1, 0), 2);
+
 /** Pure coordinate mapping for real board cells. */
 export class BoardLayout {
   static readonly CELL_PITCH = 72;
