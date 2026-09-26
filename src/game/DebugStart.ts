@@ -27,3 +27,9 @@ export const parseDebugStart = (search: string): DebugStartPosition | null => {
     : 0;
   return { levelNumber, stageIndex };
 };
+
+/** The symbol sheet is deliberately hidden behind both developer query flags. */
+export const isSymbolGalleryRequested = (search: string): boolean => {
+  const params = new URLSearchParams(search);
+  return params.get("debug") === "1" && params.get("symbols") === "1";
+};
