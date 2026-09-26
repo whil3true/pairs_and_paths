@@ -6,6 +6,7 @@ import { applyMove, findLegalMoves, findPath, solveBoard, validateGeneratedLevel
 import {
   CAMPAIGN_BLOCKERS, CHAPTER_COUNT, LEVELS_PER_CHAPTER, PROGRESSION_BANDS, TOTAL_LEVELS,
   createLevel, getChapterNumber, getLevelConfig, hasNextLevel, levelSeed,
+  MULTI_STAGE_LEVELS, createLevelStage, getLevelStageConfigs, getStageClearOutcome, getStageCount, preStageSeed,
 } from "../.test-dist/game/LevelSequence.js";
 
 const layout = (boardWidth, boardHeight) => new BoardLayout({
@@ -128,6 +129,71 @@ test("only levels 1 through 99 have a next level", () => {
   for (let level = 1; level < TOTAL_LEVELS; level += 1) assert.equal(hasNextLevel(level), true);
   assert.equal(hasNextLevel(100), false);
   assert.throws(() => createLevel(101), RangeError);
+});
+
+test("multi-stage pilot is limited to levels 21, 24, and 30", () => {
+  assert.deepEqual(MULTI_STAGE_LEVELS.map(({ levelNumber }) => levelNumber), [21, 24, 30]);
+  assert.equal(TOTAL_LEVELS, 100);
+  assert.equal(getStageCount(21), 2);
+  assert.equal(getStageCount(24), 2);
+  assert.equal(getStageCount(30), 3);
+  for (let level = 1; level <= TOTAL_LEVELS; level += 1) {
+    if (![21, 24, 30].includes(level)) assert.equal(getStageCount(level), 1);
+  }
+});
+
+test("pre-stage seeds and exact pilot configs are stable", () => {
+  assert.deepEqual([preStageSeed(21, 0), preStageSeed(24, 0), preStageSeed(30, 0), preStageSeed(30, 1)],
+    [422698975, 1803337488, 1422392722, 319819725]);
+  const profiles = [21, 24, 30].map((level) => getLevelStageConfigs(level)
+    .map(({ width, height, pairCount, seed, blockedCells }) =>
+      ({ width, height, pairCount, seed, blockerCount: blockedCells?.length ?? 0 })));
+  assert.deepEqual(profiles, [
+    [{ width: 5, height: 5, pairCount: 8, seed: 422698975, blockerCount: 0 },
+      { width: 5, height: 7, pairCount: 12, seed: levelSeed(21), blockerCount: 0 }],
+    [{ width: 5, height: 6, pairCount: 10, seed: 1803337488, blockerCount: 0 },
+      { width: 6, height: 6, pairCount: 13, seed: levelSeed(24), blockerCount: 0 }],
+    [{ width: 4, height: 5, pairCount: 6, seed: 1422392722, blockerCount: 0 },
+      { width: 5, height: 6, pairCount: 9, seed: 319819725, blockerCount: 0 },
+      { width: 6, height: 7, pairCount: 15, seed: levelSeed(30), blockerCount: 3 }],
+  ]);
+  assert.equal(new Set(profiles.flat().map(({ seed }) => seed)).size, 7);
+});
+
+test("every campaign stage validates, solves, replays, preserves blockers, and avoids adjacent pairs", () => {
+  for (let levelNumber = 1; levelNumber <= TOTAL_LEVELS; levelNumber += 1) {
+    const configs = getLevelStageConfigs(levelNumber);
+    assert.deepEqual(configs.at(-1), getLevelConfig(levelNumber));
+    for (let stageIndex = 0; stageIndex < configs.length; stageIndex += 1) {
+      const generated = createLevelStage(levelNumber, stageIndex);
+      assert.deepEqual(generated.board.toRows(), createLevelStage(levelNumber, stageIndex).board.toRows());
+      assert.equal(validateGeneratedLevel(generated).valid, true, `${levelNumber}:${stageIndex} validates`);
+      const solved = solveBoard(generated.board);
+      assert.equal(solved.status, "solved", `${levelNumber}:${stageIndex} solves`);
+      let replay = generated.board;
+      for (const move of solved.moves) replay = applyMove(replay, move);
+      assert.equal(replay.hasTiles(), false);
+      assert.deepEqual(replay.blockedCells(), generated.board.blockedCells());
+      for (const move of generated.witness) {
+        assert.notEqual(Math.abs(move.start.col - move.end.col) + Math.abs(move.start.row - move.end.row), 1);
+      }
+    }
+    const final = createLevelStage(levelNumber, configs.length - 1);
+    const original = createLevel(levelNumber);
+    assert.deepEqual(final.board.toRows(), original.board.toRows());
+    assert.deepEqual(final.board.blockedCells(), original.board.blockedCells());
+    assert.deepEqual(final.witness, original.witness);
+  }
+});
+
+test("stage clear outcomes keep the level stable and reset actions target stage zero", () => {
+  assert.deepEqual(getStageClearOutcome(30, 0), { kind: "next-stage", stageIndex: 1 });
+  assert.deepEqual(getStageClearOutcome(30, 1), { kind: "next-stage", stageIndex: 2 });
+  assert.deepEqual(getStageClearOutcome(30, 2), { kind: "level-complete" });
+  assert.deepEqual(getStageClearOutcome(100, 0), { kind: "level-complete" });
+  assert.equal(hasNextLevel(100), false);
+  // Replay, Next Level, and campaign restart all call PlayScene.startLevel(), whose first action is stageIndex = 0.
+  assert.deepEqual(createLevelStage(21, 0).config, getLevelStageConfigs(21)[0]);
 });
 
 test("first 100 sequence levels are distinct, valid, non-adjacent, and solvable", () => {
