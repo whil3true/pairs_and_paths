@@ -1,5 +1,7 @@
 # Multi-stage pilot
 
+> **Historical note:** The Task 7 pilot was completed and then expanded in Task 7.2. The current campaign distribution is documented in `STAGE_PROGRESSION.md`.
+
 Task 7 introduces sequential boards inside only Levels 21, 24, and 30. It does not distribute the mechanic across the campaign or create stacked/hidden tiles.
 
 | Level | Stage | Dimensions | Pairs | Blockers | Seed |

@@ -213,6 +213,9 @@ test("stage clear outcomes keep the level stable and reset actions target stage 
   assert.deepEqual(getStageClearOutcome(30, 1), { kind: "next-stage", stageIndex: 2 });
   assert.deepEqual(getStageClearOutcome(30, 2), { kind: "level-complete" });
   assert.deepEqual(getStageClearOutcome(99, 0), { kind: "level-complete" });
+  assert.equal(getStageCount(100), 2);
+  assert.deepEqual(getStageClearOutcome(100, 0), { kind: "next-stage", stageIndex: 1 });
+  assert.deepEqual(getStageClearOutcome(100, 1), { kind: "level-complete" });
   assert.equal(hasNextLevel(100), false);
   // Replay, Next Level, and campaign restart all call PlayScene.startLevel(), whose first action is stageIndex = 0.
   assert.deepEqual(createLevelStage(21, 0).config, getLevelStageConfigs(21)[0]);

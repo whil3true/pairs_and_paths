@@ -34,7 +34,7 @@ Every row lists only preludes as `width×height / pairs / seed`; the unchanged c
 | 94 | 5×6 / 8 / 3388085842 → 6×7 / 13 / 2384847885 |
 | 100 | 6×7 / 13 / 3044889812 |
 
-Prelude pair counts strictly increase toward the final board, board area never decreases, and preludes remain blocker-free. The profiles vary between compact 5×5/5×6 openings and 5×7/6×6/6×7 mid-sized boards. New prelude boards all have at least two initial legal moves. Three-stage levels are separated by 12–18 campaign levels and use a light → medium → existing-final progression rather than repeating full-size boards.
+Prelude pair counts strictly increase toward the final board, board area never decreases, and preludes remain blocker-free. The profiles vary between compact 5×5/5×6 openings and 5×7/6×6/6×7 mid-sized boards. New prelude boards all have at least two initial legal moves. Three-stage levels are separated by 12–20 campaign levels and use a light → medium → existing-final progression rather than repeating full-size boards.
 
 ## Workload and diagnostics
 
