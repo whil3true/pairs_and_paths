@@ -90,6 +90,8 @@ export class PlayScene extends Phaser.Scene {
   }
 
   private destroyBoardVisuals(): void {
+    if (this.frontSheet !== null) this.tweens.killTweensOf(this.frontSheet);
+    if (this.nextSheet !== null) this.tweens.killTweensOf(this.nextSheet);
     if (this.stageStackVisual !== null) this.tweens.killTweensOf(this.stageStackVisual);
     if (this.currentBoardVisual !== null) this.tweens.killTweensOf(this.currentBoardVisual);
     this.stageStackVisual?.destroy(true);
