@@ -43,4 +43,8 @@ Campaign tests freeze the exact distribution of 19 multi-stage levels, comprisin
 
 The pure presentation calculation is also checked: Stage 1/3 exposes two backing sheets, Stage 2/3 one, and final or single stages none. Phaser tween pixels are intentionally not unit-tested. Manual checks cover the visible stack before the first move, promotion during the short transition, cleanup on Replay/Next/restart, and disappearance when moving from Level 30 to single-stage Level 31. The rectangles are prototype affordance only; production visual design remains deferred.
 
+## Tile visual verification
+
+Pure tests freeze the first eight catalog entries, require 30 unique asset keys, validate every accent index, check deterministic lookup identity, and cover every campaign `TileId` through the maximum of 22. Phaser SVG pixels are intentionally not unit-tested. Manual visual targets are Levels 1, 5, 10, 21, 35, 48, 59, 68, 80, 82, 94, and 100; see `TILE_VISUALS.md` for the checklist.
+
 `npm run analyze:stages` prints exact per-stage dimensions, pairs, blockers, seeds, opening moves, solver/replay status, turn/path metrics, campaign workload, distribution and spacing, campaign stage count, and final-board preservation. It is a diagnostic report, not a synthetic difficulty score. Manual playtesting should sample early, mid, and late placements, including automatic transition clarity, two-stage pacing, occasional three-stage length, blocker-bearing finals, and terminal Level 100 completion.

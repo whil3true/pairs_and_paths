@@ -3,10 +3,12 @@ import type { PlatformService } from "../platform/PlatformService.js";
 import { BoardLayout, getVisibleBackingCount } from "./BoardLayout.js";
 import type { DebugStartPosition } from "./DebugStart.js";
 import { createLevelStage, getStageClearOutcome, getStageCount, hasNextLevel } from "./LevelSequence.js";
+import { getTileSymbol, TILE_ACCENT_COLORS, TILE_SYMBOLS } from "./TileSymbols.js";
 
 interface TileVisual {
   readonly card: Phaser.GameObjects.Rectangle;
-  readonly label: Phaser.GameObjects.Text;
+  readonly symbol: Phaser.GameObjects.Image;
+  readonly symbolSize: number;
 }
 
 const keyOf = ({ col, row }: GridPoint): string => `${col},${row}`;
@@ -35,6 +37,10 @@ export class PlayScene extends Phaser.Scene {
   constructor(private readonly platform: PlatformService, initialPosition: DebugStartPosition | null = null) {
     super({ key: "PlayScene" });
     this.initialPosition = initialPosition;
+  }
+
+  preload(): void {
+    for (const symbol of TILE_SYMBOLS) this.load.svg(symbol.assetKey, symbol.assetPath);
   }
 
   create(): void {
@@ -159,16 +165,14 @@ export class PlayScene extends Phaser.Scene {
 
   private createTile(point: GridPoint, tileId: number): void {
     const { x, y } = this.layout.cellCenter(point);
-    const hue = (tileId * 47) % 360;
-    const color = Phaser.Display.Color.HSLToColor(hue / 360, 0.55, 0.48).color;
-    const card = this.add.rectangle(x, y, this.layout.tileSize, this.layout.tileSize, color)
-      .setStrokeStyle(3, 0xe8f3ff).setDepth(5).setName("board-cell");
-    const label = this.add.text(x, y, String(tileId).padStart(2, "0"), {
-      color: "#ffffff", fontFamily: "Arial, sans-serif", fontSize: "25px", fontStyle: "bold",
-      stroke: "#152238", strokeThickness: 3,
-    }).setOrigin(0.5).setDepth(6);
-    this.currentBoardVisual!.add([card, label]);
-    this.tiles.set(keyOf(point), { card, label });
+    const definition = getTileSymbol(tileId);
+    const card = this.add.rectangle(x, y, this.layout.tileSize, this.layout.tileSize, 0x253b57)
+      .setStrokeStyle(3, 0xb9cce2).setDepth(5).setName("board-cell");
+    const symbolSize = Math.round(this.layout.tileSize * 0.66);
+    const symbol = this.add.image(x, y, definition.assetKey).setDisplaySize(symbolSize, symbolSize)
+      .setTint(TILE_ACCENT_COLORS[definition.accentIndex]!).setDepth(6);
+    this.currentBoardVisual!.add([card, symbol]);
+    this.tiles.set(keyOf(point), { card, symbol, symbolSize });
   }
 
   private onCellTapped(point: GridPoint): void {
@@ -218,7 +222,8 @@ export class PlayScene extends Phaser.Scene {
     if (visual === undefined) return;
     visual.card.setStrokeStyle(selected ? 5 : 3, selected ? 0xffd34e : 0xe8f3ff);
     visual.card.setScale(selected ? 1.06 : 1);
-    visual.label.setScale(selected ? 1.06 : 1);
+    visual.symbol.setDisplaySize(visual.symbolSize * (selected ? 1.06 : 1),
+      visual.symbolSize * (selected ? 1.06 : 1));
   }
 
   private completeMove(move: LegalMove): void {
@@ -250,7 +255,7 @@ export class PlayScene extends Phaser.Scene {
   private removeTile(point: GridPoint): void {
     const visual = this.tiles.get(keyOf(point));
     visual?.card.destroy();
-    visual?.label.destroy();
+    visual?.symbol.destroy();
     this.tiles.delete(keyOf(point));
   }
 

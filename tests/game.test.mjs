@@ -9,6 +9,28 @@ import {
   createLevel, getChapterNumber, getLevelConfig, hasNextLevel, levelSeed,
   MULTI_STAGE_LEVELS, createLevelStage, getLevelStageConfigs, getStageClearOutcome, getStageCount, preStageSeed,
 } from "../.test-dist/game/LevelSequence.js";
+import { getTileSymbol, TILE_ACCENT_COLORS, TILE_SYMBOLS } from "../.test-dist/game/TileSymbols.js";
+
+test("tile symbol catalog covers the campaign with stable unique assets and valid reusable accents", () => {
+  const maxCampaignTileId = Math.max(...Array.from({ length: TOTAL_LEVELS }, (_, index) => index + 1)
+    .flatMap((level) => getLevelStageConfigs(level).map(({ pairCount }) => pairCount)));
+  assert.equal(maxCampaignTileId, 22);
+  assert.equal(TILE_SYMBOLS.length, 30);
+  assert.deepEqual(TILE_SYMBOLS.slice(0, 8).map(({ name }) => name),
+    ["sun", "moon", "drop", "star", "leaf", "flame", "cloud", "mountain"]);
+  assert.equal(Object.isFrozen(TILE_SYMBOLS), true);
+  assert.ok(TILE_SYMBOLS.slice(0, 8).every(Object.isFrozen));
+  assert.equal(new Set(TILE_SYMBOLS.map(({ assetKey }) => assetKey)).size, TILE_SYMBOLS.length);
+  assert.ok(new Set(TILE_SYMBOLS.map(({ accentIndex }) => accentIndex)).size < TILE_SYMBOLS.length);
+  for (let tileId = 1; tileId <= maxCampaignTileId; tileId += 1) {
+    const first = getTileSymbol(tileId);
+    assert.strictEqual(getTileSymbol(tileId), first);
+    assert.ok(first.accentIndex >= 0 && first.accentIndex < TILE_ACCENT_COLORS.length);
+    assert.match(first.assetPath, /^assets\/symbols\/[a-z]+\.svg$/);
+  }
+  assert.throws(() => getTileSymbol(0), RangeError);
+  assert.throws(() => getTileSymbol(TILE_SYMBOLS.length + 1), RangeError);
+});
 
 const layout = (boardWidth, boardHeight) => new BoardLayout({
   sceneWidth: 480, sceneHeight: 800, boardWidth, boardHeight,
