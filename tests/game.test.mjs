@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
+import { readFile, readdir } from "node:fs/promises";
 import test from "node:test";
 
 import { BoardLayout, getVisibleBackingCount } from "../.test-dist/game/BoardLayout.js";
@@ -27,27 +27,29 @@ test("tile symbol catalog covers the campaign with stable unique assets and vali
     const first = getTileSymbol(tileId);
     assert.strictEqual(getTileSymbol(tileId), first);
     assert.ok(first.accentIndex >= 0 && first.accentIndex < TILE_ACCENT_COLORS.length);
-    assert.match(first.assetPath, /^assets\/symbols\/[a-z]+\.svg$/);
+    assert.match(first.assetPath, /^assets\/symbols\/[a-z]+\.png$/);
   }
   assert.throws(() => getTileSymbol(0), RangeError);
   assert.throws(() => getTileSymbol(TILE_SYMBOLS.length + 1), RangeError);
 });
 
-test("tile symbol SVG assets have intrinsic dimensions and catalog-assigned source colors", async () => {
-  for (const definition of TILE_SYMBOLS) {
-    const assetUrl = new URL(`../public/${definition.assetPath}`, import.meta.url);
-    const svg = await readFile(assetUrl, "utf8");
-    const expectedAccent = `#${TILE_ACCENT_COLORS[definition.accentIndex].toString(16).padStart(6, "0")}`;
+test("tile symbol runtime PNGs are committed 256x256 RGBA textures with preserved SVG masters", async () => {
+  const runtimeDir = new URL("../public/assets/symbols/", import.meta.url);
+  const runtimeFiles = (await readdir(runtimeDir)).sort();
+  assert.deepEqual(runtimeFiles, TILE_SYMBOLS.map(({ name }) => `${name}.png`).sort());
 
-    assert.match(svg, /^<svg\b/, `${definition.name} must be an SVG text file`);
-    assert.match(svg, /\bwidth="64"/, `${definition.name} must declare its width`);
-    assert.match(svg, /\bheight="64"/, `${definition.name} must declare its height`);
-    assert.match(svg, /\bviewBox="0 0 64 64"/, `${definition.name} must retain its viewBox`);
-    assert.doesNotMatch(svg, /stroke="#fff"/i, `${definition.name} must not rely on runtime tint`);
-    assert.match(svg, new RegExp(`stroke="${expectedAccent}"`, "i"),
-      `${definition.name} must use catalog accent ${expectedAccent}`);
-    assert.doesNotMatch(svg, /<script|on\w+\s*=|transform="(?!translate|scale)/i,
-      `${definition.name} must use only safe, simple SVG geometry`);
+  for (const definition of TILE_SYMBOLS) {
+    assert.match(definition.assetPath, /^assets\/symbols\/[a-z]+\.png$/);
+    const png = await readFile(new URL(`../public/${definition.assetPath}`, import.meta.url));
+    assert.equal(png.subarray(0, 8).toString("hex"), "89504e470d0a1a0a",
+      `${definition.name} must have a valid PNG signature`);
+    assert.equal(png.readUInt32BE(16), 256, `${definition.name} must be 256 px wide`);
+    assert.equal(png.readUInt32BE(20), 256, `${definition.name} must be 256 px high`);
+    assert.equal(png[24], 8, `${definition.name} must use 8-bit channels`);
+    assert.equal(png[25], 6, `${definition.name} must use RGBA color type`);
+
+    const svg = await readFile(new URL(`../art/source/symbols/${definition.name}.svg`, import.meta.url), "utf8");
+    assert.match(svg, /^<svg\b/, `${definition.name} must retain its SVG source master`);
   }
 });
 

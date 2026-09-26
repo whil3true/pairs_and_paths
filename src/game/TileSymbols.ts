@@ -12,7 +12,7 @@ export const TILE_ACCENT_COLORS = Object.freeze([
 const symbol = (name: string, accentIndex: number): TileSymbolDefinition => Object.freeze({
   name,
   assetKey: `tile-symbol-${name}`,
-  assetPath: `assets/symbols/${name}.svg`,
+  assetPath: `assets/symbols/${name}.png`,
   accentIndex,
 });
 
@@ -30,7 +30,7 @@ export const TILE_SYMBOLS: readonly TileSymbolDefinition[] = Object.freeze([
 
 /** Loads the single shared symbol catalog into any scene that presents tiles. */
 export function preloadTileSymbols(scene: Phaser.Scene): void {
-  for (const definition of TILE_SYMBOLS) scene.load.svg(definition.assetKey, definition.assetPath);
+  for (const definition of TILE_SYMBOLS) scene.load.image(definition.assetKey, definition.assetPath);
 }
 
 export function getTileSymbol(tileId: number): TileSymbolDefinition {
