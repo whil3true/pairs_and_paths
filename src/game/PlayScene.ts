@@ -3,7 +3,7 @@ import type { PlatformService } from "../platform/PlatformService.js";
 import { BoardLayout, getVisibleBackingCount } from "./BoardLayout.js";
 import type { DebugStartPosition } from "./DebugStart.js";
 import { createLevelStage, getStageClearOutcome, getStageCount, hasNextLevel } from "./LevelSequence.js";
-import { getTileSymbol, TILE_ACCENT_COLORS, TILE_SYMBOLS } from "./TileSymbols.js";
+import { getTileSymbol, TILE_SYMBOLS } from "./TileSymbols.js";
 
 interface TileVisual {
   readonly card: Phaser.GameObjects.Rectangle;
@@ -170,7 +170,7 @@ export class PlayScene extends Phaser.Scene {
       .setStrokeStyle(3, 0xb9cce2).setDepth(5).setName("board-cell");
     const symbolSize = Math.round(this.layout.tileSize * 0.66);
     const symbol = this.add.image(x, y, definition.assetKey).setDisplaySize(symbolSize, symbolSize)
-      .setTint(TILE_ACCENT_COLORS[definition.accentIndex]!).setDepth(6);
+      .setDepth(6);
     this.currentBoardVisual!.add([card, symbol]);
     this.tiles.set(keyOf(point), { card, symbol, symbolSize });
   }

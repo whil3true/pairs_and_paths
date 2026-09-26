@@ -41,6 +41,8 @@ All artwork is project-local, original simple vector geometry in square, transpa
 
 The catalog ordering and small palette intentionally make visual search depend on silhouette, raising realism relative to unique hues and large numbers without changing campaign content or rules. Phaser preloads each SVG from a relative static path; the existing build copies `public` unchanged.
 
+Task 8 originally used white SVG strokes and applied the catalog accent with Phaser's runtime tint. Human QA on Android exposed a renderer-specific failure in which every symbol appeared as a solid black square, while cards, borders, positions, and gameplay remained correct. Task 8.1 therefore bakes each catalog accent into its SVG stroke and renders the source-colored image without runtime tint. Every SVG also declares an intrinsic 64×64 size. The same six colors are still reused across all 30 shapes, so recognition remains symbol-first and color remains secondary.
+
 ## Manual visual QA
 
-Use the existing developer jump at Levels **1, 5, 10, 21, 35, 48, 59, 68, 80, 82, 94, and 100**, for example `?debug=1&level=80`. Confirm symbol readability, shared-color disambiguation, selection scale/yellow border, blocked-pair red feedback, and unchanged route animation. Pay particular attention to the late 6×8 boards with 21–22 pairs.
+Use the existing developer jump at Levels **1, 5, 10, 21, 35, 48, 59, 68, 80, 82, 94, and 100**, for example `?debug=1&level=80`. On an Android device, confirm that source-colored symbols render as line artwork rather than black squares in both available Canvas/WebGL paths. Also confirm symbol readability, shared-color disambiguation, selection scale/yellow border, blocked-pair red feedback, and unchanged route animation. Pay particular attention to the late 6×8 boards with 21–22 pairs.
