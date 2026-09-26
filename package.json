@@ -9,6 +9,7 @@
     "test": "node scripts/test.mjs",
     "analyze:progression": "node scripts/analyze-progression.mjs",
     "simulate": "node scripts/simulate.mjs",
+    "simulate:blockers": "node scripts/simulate-blockers.mjs",
     "build": "node scripts/build.mjs"
   },
   "dependencies": {

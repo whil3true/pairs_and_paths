@@ -56,6 +56,16 @@ test("campaign constants and chapter boundaries are stable", () => {
   assert.deepEqual([1, 10, 11, 90, 91, 100].map(getChapterNumber), [1, 1, 2, 9, 10, 10]);
 });
 
+test("only levels 11 through 13 contain the blocker pilot", () => {
+  const expected = new Map([[11, [{ col: 2, row: 2 }]], [12, [{ col: 2, row: 1 }, { col: 2, row: 3 }]],
+    [13, [{ col: 1, row: 1 }, { col: 2, row: 2 }, { col: 3, row: 2 }]]]);
+  for (let levelNumber = 1; levelNumber <= 100; levelNumber += 1) {
+    const wanted = expected.get(levelNumber) ?? [];
+    assert.deepEqual(getLevelConfig(levelNumber).blockedCells ?? [], wanted);
+    assert.deepEqual(createLevel(levelNumber).board.blockedCells(), wanted);
+  }
+});
+
 test("progression bands cover the campaign exactly once without gaps or overlaps", () => {
   assert.equal(PROGRESSION_BANDS[0].startLevel, 1);
   assert.equal(PROGRESSION_BANDS.at(-1).endLevel, TOTAL_LEVELS);
@@ -108,7 +118,7 @@ test("first 100 sequence levels are distinct, valid, non-adjacent, and solvable"
     const config = getLevelConfig(levelNumber);
     assert.deepEqual(config, getLevelConfig(levelNumber), `level ${levelNumber} config must be deterministic`);
     const level = createLevel(levelNumber);
-    const snapshot = JSON.stringify(level.board.toRows());
+    const snapshot = JSON.stringify({ rows: level.board.toRows(), blocked: level.board.blockedCells() });
     seeds.add(config.seed);
     assert.equal(validateGeneratedLevel(level).valid, true, `level ${levelNumber} must validate`);
     const solver = solveBoard(level.board);
@@ -119,6 +129,7 @@ test("first 100 sequence levels are distinct, valid, non-adjacent, and solvable"
       replay = applyMove(replay, move);
     }
     assert.ok(replay.toRows().flat().every((tile) => tile === null), `level ${levelNumber} solver replay must empty board`);
+    assert.deepEqual(replay.blockedCells(), level.board.blockedCells(), `level ${levelNumber} blockers must survive replay`);
     for (const move of level.witness) {
       const distance = Math.abs(move.start.col - move.end.col) + Math.abs(move.start.row - move.end.row);
       assert.notEqual(distance, 1, `level ${levelNumber} must not start with adjacent pairs`);
@@ -126,7 +137,8 @@ test("first 100 sequence levels are distinct, valid, non-adjacent, and solvable"
     if (previousSnapshot !== null) {
       assert.notEqual(snapshot, previousSnapshot, `level ${levelNumber} must differ from its predecessor`);
     }
-    assert.equal(snapshot, JSON.stringify(createLevel(levelNumber).board.toRows()), "replay must reproduce the board");
+    const repeated = createLevel(levelNumber).board;
+    assert.equal(snapshot, JSON.stringify({ rows: repeated.toRows(), blocked: repeated.blockedCells() }), "replay must reproduce the board");
     if (levelNumber <= 5) assert.ok(level.metrics.initialLegalMoveCount >= 2, `level ${levelNumber} must start with at least two moves`);
     assert.ok(level.metrics.initialLegalMoveCount >= 1, `level ${levelNumber} must start with a move`);
     previousSnapshot = snapshot;
