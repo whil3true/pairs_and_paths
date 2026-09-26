@@ -1,6 +1,7 @@
 import { applyMove, findPath, type Board, type GridPoint, type LegalMove } from "../domain/index.js";
 import type { PlatformService } from "../platform/PlatformService.js";
 import { BoardLayout, getVisibleBackingCount } from "./BoardLayout.js";
+import type { DebugStartPosition } from "./DebugStart.js";
 import { createLevelStage, getStageClearOutcome, getStageCount, hasNextLevel } from "./LevelSequence.js";
 
 interface TileVisual {
@@ -29,9 +30,11 @@ export class PlayScene extends Phaser.Scene {
   private completeOverlay: Phaser.GameObjects.Container | null = null;
   private currentLevelNumber = 1;
   private currentStageIndex = 0;
+  private initialPosition: DebugStartPosition | null;
 
-  constructor(private readonly platform: PlatformService) {
+  constructor(private readonly platform: PlatformService, initialPosition: DebugStartPosition | null = null) {
     super({ key: "PlayScene" });
+    this.initialPosition = initialPosition;
   }
 
   create(): void {
@@ -47,7 +50,14 @@ export class PlayScene extends Phaser.Scene {
     this.seedText = this.add.text(240, 766, "", {
       color: "#6f86a5", fontFamily: "Arial, sans-serif", fontSize: "13px",
     }).setOrigin(0.5);
-    this.startLevel();
+    if (this.initialPosition === null) {
+      this.startLevel();
+    } else {
+      this.currentLevelNumber = this.initialPosition.levelNumber;
+      this.currentStageIndex = this.initialPosition.stageIndex;
+      this.initialPosition = null;
+      this.loadStage();
+    }
   }
 
   private startLevel(): void {
