@@ -1,6 +1,6 @@
 import { applyMove, findPath, type Board, type GridPoint, type LegalMove } from "../domain/index.js";
 import type { PlatformService } from "../platform/PlatformService.js";
-import { BoardLayout } from "./BoardLayout.js";
+import { BoardLayout, getVisibleBackingCount } from "./BoardLayout.js";
 import { createLevelStage, getStageClearOutcome, getStageCount, hasNextLevel } from "./LevelSequence.js";
 
 interface TileVisual {
@@ -19,6 +19,10 @@ export class PlayScene extends Phaser.Scene {
   private inputLocked = false;
   private readonly tiles = new Map<string, TileVisual>();
   private route!: Phaser.GameObjects.Graphics;
+  private stageStackVisual: Phaser.GameObjects.Container | null = null;
+  private currentBoardVisual: Phaser.GameObjects.Container | null = null;
+  private frontSheet: Phaser.GameObjects.Rectangle | null = null;
+  private nextSheet: Phaser.GameObjects.Rectangle | null = null;
   private levelText!: Phaser.GameObjects.Text;
   private remainingText!: Phaser.GameObjects.Text;
   private seedText!: Phaser.GameObjects.Text;
@@ -43,7 +47,6 @@ export class PlayScene extends Phaser.Scene {
     this.seedText = this.add.text(240, 766, "", {
       color: "#6f86a5", fontFamily: "Arial, sans-serif", fontSize: "13px",
     }).setOrigin(0.5);
-    this.route = this.add.graphics().setDepth(20);
     this.startLevel();
   }
 
@@ -52,18 +55,12 @@ export class PlayScene extends Phaser.Scene {
     this.loadStage();
   }
 
-  private loadStage(): void {
+  private loadStage(animateIn = false): void {
     this.completeOverlay?.destroy(true);
     this.completeOverlay = null;
-    this.route.clear();
+    this.destroyBoardVisuals();
     this.selected = null;
-    this.inputLocked = false;
-    for (const visual of this.tiles.values()) {
-      visual.card.destroy();
-      visual.label.destroy();
-    }
-    this.tiles.clear();
-    this.children.list.filter((child) => child.name === "board-cell").forEach((child) => child.destroy());
+    this.inputLocked = animateIn;
 
     const level = createLevelStage(this.currentLevelNumber, this.currentStageIndex);
     this.board = level.board;
@@ -75,24 +72,74 @@ export class PlayScene extends Phaser.Scene {
       sceneWidth: Number(this.scale.width), sceneHeight: Number(this.scale.height),
       boardWidth: this.board.width, boardHeight: this.board.height,
     });
+    this.renderStageStack(stageCount);
+    this.currentBoardVisual = this.add.container(0, 0).setDepth(10);
     this.renderBoard();
+    this.route = this.add.graphics().setDepth(20);
+    this.currentBoardVisual.add(this.route);
+    this.currentBoardVisual.sort("depth");
     this.updateRemaining();
+    if (animateIn) {
+      this.stageStackVisual!.setAlpha(0).setPosition(7, 7);
+      this.currentBoardVisual.setAlpha(0).setPosition(7, 7);
+      this.tweens.add({
+        targets: [this.stageStackVisual, this.currentBoardVisual], x: 0, y: 0, alpha: 1,
+        duration: 140, ease: "Quad.Out", onComplete: () => { this.inputLocked = false; },
+      });
+    }
+  }
+
+  private destroyBoardVisuals(): void {
+    if (this.stageStackVisual !== null) this.tweens.killTweensOf(this.stageStackVisual);
+    if (this.currentBoardVisual !== null) this.tweens.killTweensOf(this.currentBoardVisual);
+    this.stageStackVisual?.destroy(true);
+    this.currentBoardVisual?.destroy(true);
+    this.stageStackVisual = null;
+    this.currentBoardVisual = null;
+    this.frontSheet = null;
+    this.nextSheet = null;
+    this.tiles.clear();
+  }
+
+  private renderStageStack(stageCount: number): void {
+    const padding = 8;
+    const offset = 7;
+    const width = this.layout.boardRight - this.layout.boardLeft + padding * 2;
+    const height = this.layout.boardBottom - this.layout.boardTop + padding * 2;
+    const centerX = (this.layout.boardLeft + this.layout.boardRight) / 2;
+    const centerY = (this.layout.boardTop + this.layout.boardBottom) / 2;
+    const backingCount = getVisibleBackingCount(this.currentStageIndex, stageCount);
+    const sheets: Phaser.GameObjects.Rectangle[] = [];
+    for (let depth = backingCount; depth >= 1; depth -= 1) {
+      const sheet = this.add.rectangle(centerX + depth * offset, centerY + depth * offset,
+        width, height, depth === 1 ? 0x263b58 : 0x1f314a, 1)
+        .setStrokeStyle(2, depth === 1 ? 0x6684a8 : 0x526b8b, 0.9);
+      sheets.push(sheet);
+      if (depth === 1) this.nextSheet = sheet;
+    }
+    this.frontSheet = this.add.rectangle(centerX, centerY, width, height, 0x14243a, 1)
+      .setStrokeStyle(2, 0x7694b8, 0.9);
+    sheets.push(this.frontSheet);
+    this.stageStackVisual = this.add.container(0, 0, sheets).setDepth(1);
   }
 
   private renderBoard(): void {
     for (let row = 0; row < this.board.height; row += 1) for (let col = 0; col < this.board.width; col += 1) {
       const point = { col, row };
       const { x, y } = this.layout.cellCenter(point);
-      this.add.rectangle(x, y, 64, 64, 0x1a2941, 0.52)
-        .setStrokeStyle(1, 0x324663, 0.65).setName("board-cell");
+      const cell = this.add.rectangle(x, y, 64, 64, 0x1a2941, 0.52)
+        .setStrokeStyle(1, 0x324663, 0.65);
+      this.currentBoardVisual!.add(cell);
       if (this.board.isBlocked(point)) {
-        this.add.rectangle(x, y, 58, 58, 0x26303d, 1)
-          .setStrokeStyle(3, 0x59687a, 1).setName("board-cell");
+        const blocker = this.add.rectangle(x, y, 58, 58, 0x26303d, 1)
+          .setStrokeStyle(3, 0x59687a, 1);
+        this.currentBoardVisual!.add(blocker);
         continue;
       }
-      this.add.zone(x, y, this.layout.pitch - 2, this.layout.pitch - 2)
-        .setName("board-cell").setInteractive({ useHandCursor: true })
+      const zone = this.add.zone(x, y, this.layout.pitch - 2, this.layout.pitch - 2)
+        .setInteractive({ useHandCursor: true })
         .on("pointerdown", () => this.onCellTapped(point));
+      this.currentBoardVisual!.add(zone);
       const tileId = this.board.tileAt(point);
       if (tileId !== null) this.createTile(point, tileId);
     }
@@ -107,7 +154,8 @@ export class PlayScene extends Phaser.Scene {
     const label = this.add.text(x, y, String(tileId).padStart(2, "0"), {
       color: "#ffffff", fontFamily: "Arial, sans-serif", fontSize: "25px", fontStyle: "bold",
       stroke: "#152238", strokeThickness: 3,
-    }).setOrigin(0.5).setDepth(6).setName("board-cell");
+    }).setOrigin(0.5).setDepth(6);
+    this.currentBoardVisual!.add([card, label]);
     this.tiles.set(keyOf(point), { card, label });
   }
 
@@ -204,15 +252,16 @@ export class PlayScene extends Phaser.Scene {
       this.showComplete();
       return;
     }
-    const feedback = this.add.text(240, 420, `Stage ${this.currentStageIndex + 1} complete`, {
-      color: "#ffffff", backgroundColor: "#152238", padding: { x: 22, y: 14 },
-      fontFamily: "Arial, sans-serif", fontSize: "24px", fontStyle: "bold",
-    }).setOrigin(0.5).setDepth(35);
-    this.time.delayedCall(400, () => {
-      feedback.destroy();
-      this.currentStageIndex = outcome.stageIndex;
-      this.loadStage();
+    this.tweens.add({
+      targets: [this.frontSheet, this.currentBoardVisual], x: -14, y: -18, alpha: 0,
+      duration: 220, ease: "Quad.In", onComplete: () => {
+        this.currentStageIndex = outcome.stageIndex;
+        this.loadStage(true);
+      },
     });
+    if (this.nextSheet !== null) {
+      this.tweens.add({ targets: this.nextSheet, x: "-=7", y: "-=7", duration: 220, ease: "Quad.InOut" });
+    }
   }
 
   private showComplete(): void {

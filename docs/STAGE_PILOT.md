@@ -16,4 +16,6 @@ Pair removals grow from 12 to 20 (1.67×) on Level 21, 13 to 23 (1.77×) on Leve
 
 The final config is never copied into pilot data. It is appended from `getLevelConfig`, preserving the playtested level seed, layout, blockers, and witness by construction. Prelude seeds occupy a separate deterministic uint32 namespace and are frozen by tests.
 
-Known limitations are intentional: transitions use a simple 400 ms text cue; there is no persistence or level select; no boards coexist; and distribution beyond the three pilots is deferred until a human playtest of Levels 20–30 confirms clarity, pacing, small-to-large progression, and the Level 30 blocker combination.
+The pilot now uses a prototype sheet-stack affordance. The active grid sits on a front sheet, with up to two offset backing sheets visible from the start of a stage; their count communicates how many stages remain. Clearing a non-final stage lifts and fades the front layer while the nearest backing moves forward, then the newly generated board fades into the front position. This remains presentation only: future tiles and exact future board dimensions are not rendered.
+
+Known limitations are intentional: the sheets are simple Phaser rectangles rather than production art; final visual design, persistence, level select, and distribution beyond the three pilots remain deferred.
