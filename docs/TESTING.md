@@ -1,5 +1,23 @@
 # Testing strategy
 
+## Developer campaign jump
+
+For developer testing only, add `debug=1` and a campaign level to the game URL. This is not
+player-facing progression or a level-select feature. Examples:
+
+- `?debug=1&level=21`
+- `?debug=1&level=35`
+- `?debug=1&level=48&stage=2`
+- `?debug=1&level=68`
+- `?debug=1&level=82&stage=2`
+- `?debug=1&level=94`
+- `?debug=1&level=100`
+- `?debug=1&level=100&stage=2`
+
+The optional `stage` is one-based and defaults to Stage 1. Without `debug=1`, all `level` and
+`stage` parameters are ignored. Replay always returns to Stage 1 of the current level; Next Level
+also begins at Stage 1. Refreshing the browser re-applies the initial position from the URL.
+
 `npm test` compiles to a temporary directory and uses `node:test`. The independent exhaustive path oracle is a brute-force simple-path DFS with no outside cells and no turn limit. Exhaustive boards compare existence, minimum turns, and minimum length; every returned production path is independently checked for bounds, occupancy, orthogonality, compactness, and deterministic repetition. Focused regressions cover 0, 1, 2, 3, and 5 turns, blocking, edge confinement, route ranking, and removal monotonicity.
 
 Generator tests check exact pair multiplicity, deterministic regeneration, non-adjacent product pairs, witness replay, solver replay, metrics, and product density. Campaign tests freeze the 100/10/10 constants, chapter boundaries, progression-band coverage, and important early band transitions; reject out-of-range levels; check next-level boundaries; and check all 100 levels for validity, solver replay, non-adjacency, deterministic replay, distinct consecutive snapshots, at least two initial moves in Levels 1..5, and at least one initial move throughout. `npm run simulate -- --count 10000` retains the established deterministic 6×8/20-pair generator quality gate.

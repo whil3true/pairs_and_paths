@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { BoardLayout, getVisibleBackingCount } from "../.test-dist/game/BoardLayout.js";
+import { parseDebugStart } from "../.test-dist/game/DebugStart.js";
 import { applyMove, findLegalMoves, findPath, solveBoard, validateGeneratedLevel } from "../.test-dist/domain/index.js";
 import {
   CAMPAIGN_BLOCKERS, CHAPTER_COUNT, LEVELS_PER_CHAPTER, PROGRESSION_BANDS, TOTAL_LEVELS,
@@ -11,6 +12,28 @@ import {
 
 const layout = (boardWidth, boardHeight) => new BoardLayout({
   sceneWidth: 480, sceneHeight: 800, boardWidth, boardHeight,
+});
+
+test("debug campaign start requires its explicit gate and a valid level", () => {
+  assert.equal(parseDebugStart(""), null);
+  assert.equal(parseDebugStart("?level=58"), null);
+  assert.equal(parseDebugStart("?debug=0&level=58"), null);
+  assert.deepEqual(parseDebugStart("?debug=1&level=58"), { levelNumber: 58, stageIndex: 0 });
+  for (const level of ["0", "101", "-1", "abc", "1.5", ""]) {
+    assert.equal(parseDebugStart(`?debug=1&level=${level}`), null);
+  }
+});
+
+test("debug campaign stages are one-based and fall back to stage one", () => {
+  assert.deepEqual(parseDebugStart("?debug=1&level=48&stage=1"), { levelNumber: 48, stageIndex: 0 });
+  assert.deepEqual(parseDebugStart("?debug=1&level=48&stage=2"), { levelNumber: 48, stageIndex: 1 });
+  assert.deepEqual(parseDebugStart("?debug=1&level=48&stage=3"), { levelNumber: 48, stageIndex: 2 });
+  assert.deepEqual(parseDebugStart("?debug=1&level=48&stage=4"), { levelNumber: 48, stageIndex: 0 });
+  assert.deepEqual(parseDebugStart("?debug=1&level=50&stage=2"), { levelNumber: 50, stageIndex: 0 });
+  assert.deepEqual(parseDebugStart("?debug=1&level=100&stage=2"), { levelNumber: 100, stageIndex: 1 });
+  for (const stage of ["0", "-1", "abc", "1.5", "999"]) {
+    assert.deepEqual(parseDebugStart(`?debug=1&level=48&stage=${stage}`), { levelNumber: 48, stageIndex: 0 });
+  }
 });
 
 test("level 1 starts the calibrated campaign with a small deterministic board", () => {
