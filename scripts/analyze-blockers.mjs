@@ -75,8 +75,10 @@ for (const pattern of CAMPAIGN_BLOCKERS) {
 }
 
 const ranges = [[1, 10], [11, 20], [21, 40], [41, 60], [61, 80], [81, 100]];
-const impact = (report) => report.totalAffectedPairStates + report.totalUnavailablePairStates
-  + report.totalExtraTurns + report.totalExtraPathLength;
+const hasMeasuredRelevance = (report) => report.totalAffectedPairStates > 0
+  || report.totalUnavailablePairStates > 0
+  || report.totalExtraTurns !== 0
+  || report.totalExtraPathLength !== 0;
 console.log(JSON.stringify({ levels: reports, summary: {
   blockerLevelCount: reports.length,
   frequencyByRange: Object.fromEntries(ranges.map(([start, end]) => {
@@ -84,7 +86,7 @@ console.log(JSON.stringify({ levels: reports, summary: {
     return [`${start}-${end}`, { count, levels: end - start + 1, percent: count * 100 / (end - start + 1) }];
   })),
   averageBlockersPerBlockerLevel: reports.reduce((sum, report) => sum + report.blockerCount, 0) / reports.length,
-  zeroMeasuredRelevance: reports.filter((report) => impact(report) === 0).map((report) => report.level),
+  zeroMeasuredRelevance: reports.filter((report) => !hasMeasuredRelevance(report)).map((report) => report.level),
   strongestByAffectedStates: [...reports].sort((a, b) => b.totalAffectedPairStates - a.totalAffectedPairStates).slice(0, 5)
     .map(({ level, totalAffectedPairStates }) => ({ level, totalAffectedPairStates })),
   strongestByUnavailableStates: [...reports].sort((a, b) => b.totalUnavailablePairStates - a.totalUnavailablePairStates).slice(0, 5)
