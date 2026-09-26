@@ -28,6 +28,11 @@ export const TILE_SYMBOLS: readonly TileSymbolDefinition[] = Object.freeze([
   symbol("planet", 4), symbol("heart", 5),
 ]);
 
+/** Loads the single shared symbol catalog into any scene that presents tiles. */
+export function preloadTileSymbols(scene: Phaser.Scene): void {
+  for (const definition of TILE_SYMBOLS) scene.load.svg(definition.assetKey, definition.assetPath);
+}
+
 export function getTileSymbol(tileId: number): TileSymbolDefinition {
   if (!Number.isInteger(tileId) || tileId < 1 || tileId > TILE_SYMBOLS.length) {
     throw new RangeError(`No tile symbol for TileId ${tileId}`);

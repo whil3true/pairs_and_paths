@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 import { BoardLayout, getVisibleBackingCount } from "../.test-dist/game/BoardLayout.js";
-import { parseDebugStart } from "../.test-dist/game/DebugStart.js";
+import { isSymbolGalleryRequested, parseDebugStart } from "../.test-dist/game/DebugStart.js";
 import { applyMove, findLegalMoves, findPath, solveBoard, validateGeneratedLevel } from "../.test-dist/domain/index.js";
 import {
   CAMPAIGN_BLOCKERS, CHAPTER_COUNT, LEVELS_PER_CHAPTER, PROGRESSION_BANDS, TOTAL_LEVELS,
@@ -46,7 +46,19 @@ test("tile symbol SVG assets have intrinsic dimensions and catalog-assigned sour
     assert.doesNotMatch(svg, /stroke="#fff"/i, `${definition.name} must not rely on runtime tint`);
     assert.match(svg, new RegExp(`stroke="${expectedAccent}"`, "i"),
       `${definition.name} must use catalog accent ${expectedAccent}`);
+    assert.doesNotMatch(svg, /<script|on\w+\s*=|transform="(?!translate|scale)/i,
+      `${definition.name} must use only safe, simple SVG geometry`);
   }
+});
+
+test("developer symbol gallery requires both flags and reuses the shared catalog", async () => {
+  assert.equal(isSymbolGalleryRequested("?debug=1&symbols=1"), true);
+  for (const search of ["", "?symbols=1", "?debug=1", "?debug=0&symbols=1", "?debug=1&symbols=0"]) {
+    assert.equal(isSymbolGalleryRequested(search), false);
+  }
+  const gallerySource = await readFile(new URL("../src/game/SymbolGalleryScene.ts", import.meta.url), "utf8");
+  assert.match(gallerySource, /TILE_SYMBOLS\.forEach/);
+  assert.doesNotMatch(gallerySource, /assets\/symbols\//);
 });
 
 const layout = (boardWidth, boardHeight) => new BoardLayout({

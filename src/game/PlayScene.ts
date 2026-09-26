@@ -3,7 +3,7 @@ import type { PlatformService } from "../platform/PlatformService.js";
 import { BoardLayout, getVisibleBackingCount } from "./BoardLayout.js";
 import type { DebugStartPosition } from "./DebugStart.js";
 import { createLevelStage, getStageClearOutcome, getStageCount, hasNextLevel } from "./LevelSequence.js";
-import { getTileSymbol, TILE_SYMBOLS } from "./TileSymbols.js";
+import { getTileSymbol, preloadTileSymbols } from "./TileSymbols.js";
 
 interface TileVisual {
   readonly card: Phaser.GameObjects.Rectangle;
@@ -40,7 +40,7 @@ export class PlayScene extends Phaser.Scene {
   }
 
   preload(): void {
-    for (const symbol of TILE_SYMBOLS) this.load.svg(symbol.assetKey, symbol.assetPath);
+    preloadTileSymbols(this);
   }
 
   create(): void {
