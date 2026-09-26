@@ -2,9 +2,9 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { BoardLayout } from "../.test-dist/game/BoardLayout.js";
-import { applyMove, findPath, solveBoard, validateGeneratedLevel } from "../.test-dist/domain/index.js";
+import { applyMove, findLegalMoves, findPath, solveBoard, validateGeneratedLevel } from "../.test-dist/domain/index.js";
 import {
-  CHAPTER_COUNT, LEVELS_PER_CHAPTER, PROGRESSION_BANDS, TOTAL_LEVELS,
+  CAMPAIGN_BLOCKERS, CHAPTER_COUNT, LEVELS_PER_CHAPTER, PROGRESSION_BANDS, TOTAL_LEVELS,
   createLevel, getChapterNumber, getLevelConfig, hasNextLevel, levelSeed,
 } from "../.test-dist/game/LevelSequence.js";
 
@@ -56,13 +56,32 @@ test("campaign constants and chapter boundaries are stable", () => {
   assert.deepEqual([1, 10, 11, 90, 91, 100].map(getChapterNumber), [1, 1, 2, 9, 10, 10]);
 });
 
-test("only levels 11 through 13 contain the blocker pilot", () => {
+test("campaign blockers preserve the pilot and exact curated rhythm", () => {
   const expected = new Map([[11, [{ col: 2, row: 2 }]], [12, [{ col: 2, row: 1 }, { col: 2, row: 3 }]],
     [13, [{ col: 1, row: 1 }, { col: 2, row: 2 }, { col: 3, row: 2 }]]]);
-  for (let levelNumber = 1; levelNumber <= 100; levelNumber += 1) {
-    const wanted = expected.get(levelNumber) ?? [];
-    assert.deepEqual(getLevelConfig(levelNumber).blockedCells ?? [], wanted);
-    assert.deepEqual(createLevel(levelNumber).board.blockedCells(), wanted);
+  for (const [levelNumber, wanted] of expected) assert.deepEqual(getLevelConfig(levelNumber).blockedCells, wanted);
+  assert.deepEqual(CAMPAIGN_BLOCKERS.map(({ levelNumber }) => levelNumber), [
+    11, 12, 13, 16, 19, 22, 25, 28, 30, 32, 34, 36, 38, 40, 42, 44, 46, 48, 50, 52, 54, 56,
+    58, 60, 62, 64, 66, 68, 70, 72, 74, 76, 78, 80, 82, 84, 86, 88, 90, 92, 94, 96, 98, 100,
+  ]);
+  for (const levelNumber of [1, 10, 14, 15, 17, 20, 21, 31, 41, 61, 81, 99]) {
+    assert.equal(getLevelConfig(levelNumber).blockedCells, undefined, `level ${levelNumber} must remain a breathing level`);
+  }
+});
+
+test("campaign blocker data has unique in-range levels and valid coordinates and capacity", () => {
+  assert.equal(new Set(CAMPAIGN_BLOCKERS.map(({ levelNumber }) => levelNumber)).size, CAMPAIGN_BLOCKERS.length);
+  for (const { levelNumber, blockedCells } of CAMPAIGN_BLOCKERS) {
+    assert.ok(levelNumber >= 1 && levelNumber <= TOTAL_LEVELS);
+    const { width, height, pairCount } = getLevelConfig(levelNumber);
+    assert.ok(2 * pairCount + blockedCells.length <= width * height, `level ${levelNumber} capacity`);
+    const keys = new Set();
+    for (const { col, row } of blockedCells) {
+      assert.ok(col >= 0 && col < width && row >= 0 && row < height, `level ${levelNumber} blocker bounds`);
+      keys.add(`${col},${row}`);
+    }
+    assert.equal(keys.size, blockedCells.length, `level ${levelNumber} blocker uniqueness`);
+    assert.deepEqual(createLevel(levelNumber).board.blockedCells(), blockedCells);
   }
 });
 
@@ -145,6 +164,20 @@ test("first 100 sequence levels are distinct, valid, non-adjacent, and solvable"
   }
   assert.equal(seeds.size, 100);
   assert.notEqual(getLevelConfig(42).seed, getLevelConfig(43).seed);
+});
+
+test("every legal move encountered in campaign blocker solver replay preserves solvability", () => {
+  for (const { levelNumber } of CAMPAIGN_BLOCKERS) {
+    let board = createLevel(levelNumber).board;
+    const replay = solveBoard(board);
+    assert.equal(replay.status, "solved");
+    for (const chosen of replay.moves) {
+      for (const move of findLegalMoves(board)) {
+        assert.equal(solveBoard(applyMove(board, move)).status, "solved", `level ${levelNumber} legal move must remain solvable`);
+      }
+      board = applyMove(board, chosen);
+    }
+  }
 });
 
 test("real cell centers and the full board fit the portrait play area", () => {
