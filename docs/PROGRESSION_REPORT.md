@@ -158,3 +158,17 @@ Run recorded with `npm run analyze:progression -- --campaign-only`. It analyzes 
 | 10 | 48.00 | 22.00 | 4.00 | 2.70 (2) | 1.595 | .218 | 5.359 |
 
 This revision changes only deterministic profile selection. It adds no gameplay mechanics, and human difficulty remains a limitation of solver-derived diagnostics. Further difficulty mechanics are deliberately deferred.
+
+## Task 5.2 — opening progression polish
+
+A human playtest of the Task 5.1 campaign found the overall curve through Level 32 substantially improved, but Levels 1–3 repeated the same **4×4/4** profile. This targeted pass keeps Level 1 as the simplest onboarding board and changes only Levels 2 and 3:
+
+| Level | Old profile | New profile | Empty | Initial legal moves | Avg turns | 3+ turn moves (rate) | Avg path length |
+|---:|---:|---:|---:|---:|---:|---:|---:|
+| 1 | 4×4/4 | 4×4/4 | 8 | 2 | 0.750 | 0 (.000) | 2.250 |
+| 2 | 4×4/4 | 4×4/5 | 6 | 2 | 1.600 | 0 (.000) | 4.200 |
+| 3 | 4×4/4 | 4×4/6 | 4 | 2 | 0.500 | 0 (.000) | 2.500 |
+| 4 | 4×5/5 | 4×5/5 | 10 | 3 | 1.200 | 0 (.000) | 3.600 |
+| 5 | 4×5/5 | 4×5/5 | 10 | 2 | 1.400 | 2 (.400) | 5.000 |
+
+These are exact production-solver diagnostics for the unchanged derived seeds (`0`, `2654435769`, `1013904242`, `3668340011`, and `2027808484`), produced by `npm run analyze:progression -- --campaign-only`. The preferred **4×4/6** Level 3 was retained because its exact board does not have the aggregate profile's concerning forced start: it has two initial legal moves, validates, solves, replays to empty, and has no adjacent matching pair. The **4×5/5** alternative also passed those checks, but was rejected because it would reduce pair workload from Level 2 to Level 3 and duplicate Level 4's profile. A **4×5/6** alternative passed as well, but adds unnecessary geometry churn before Level 4. No seed override or runtime retry was introduced; Levels 4–100 remain on their Task 5.1 profiles.

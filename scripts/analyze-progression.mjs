@@ -139,12 +139,24 @@ const milestones = Object.fromEntries([1, 5, 10, 15, 20, 25, 30, 40, 50, 75, 100
   const { width, height, pairCount } = campaignLevels[levelNumber - 1].level.config;
   return [levelNumber, { width, height, pairCount, emptyCells: width * height - pairCount * 2 }];
 }));
+const openingLevels = campaignLevels.slice(0, 5).map(({ levelNumber, level, metrics }) => ({
+  level: levelNumber,
+  width: level.config.width,
+  height: level.config.height,
+  pairCount: level.config.pairCount,
+  emptyCells: level.config.width * level.config.height - level.config.pairCount * 2,
+  initialLegalMoves: metrics.initialLegalMoveCount,
+  averageTurns: metrics.averageTurns,
+  threePlusTurnMoves: metrics.threePlusTurnMoves,
+  threePlusTurnRate: metrics.threePlusTurnRate,
+  averagePathLength: metrics.averageSolutionPathLength,
+}));
 console.log(JSON.stringify({
   sampleSize: campaignOnly ? undefined : sampleSize,
   campaignOnly,
   elapsedMs: Math.round(performance.now() - started),
   candidates,
   campaignValidation: { levels: campaignLevels.length, valid: true, solved: true, replayEmptied: true, adjacentMatchingPairs: 0 },
-  milestones, cumulativePairRemovals, longestForcedStartRun, rangeAggregates, campaign,
+  openingLevels, milestones, cumulativePairRemovals, longestForcedStartRun, rangeAggregates, campaign,
 }, null, 2));
 if (candidates.some((candidate) => candidate.generationFailures || candidate.solverFailures || candidate.adjacentMatchingPairs)) process.exit(1);

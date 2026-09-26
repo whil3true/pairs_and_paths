@@ -15,7 +15,9 @@ export interface ProgressionBand {
 }
 
 export const PROGRESSION_BANDS: readonly ProgressionBand[] = [
-  { startLevel: 1, endLevel: 3, width: 4, height: 4, pairCount: 4 },
+  { startLevel: 1, endLevel: 1, width: 4, height: 4, pairCount: 4 },
+  { startLevel: 2, endLevel: 2, width: 4, height: 4, pairCount: 5 },
+  { startLevel: 3, endLevel: 3, width: 4, height: 4, pairCount: 6 },
   { startLevel: 4, endLevel: 5, width: 4, height: 5, pairCount: 5 },
   { startLevel: 6, endLevel: 7, width: 4, height: 5, pairCount: 6 },
   { startLevel: 8, endLevel: 10, width: 5, height: 5, pairCount: 7 },
