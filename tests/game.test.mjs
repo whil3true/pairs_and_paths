@@ -23,6 +23,32 @@ test("level 1 starts the calibrated campaign with a small deterministic board", 
   assert.ok(first.metrics.initialLegalMoveCount >= 2);
 });
 
+test("opening levels increase pair workload and satisfy exact-board invariants", () => {
+  const expected = [
+    { width: 4, height: 4, pairCount: 4, seed: levelSeed(1), avoidAdjacentMatchingPairs: true },
+    { width: 4, height: 4, pairCount: 5, seed: levelSeed(2), avoidAdjacentMatchingPairs: true },
+    { width: 4, height: 4, pairCount: 6, seed: levelSeed(3), avoidAdjacentMatchingPairs: true },
+  ];
+  assert.deepEqual([1, 2, 3].map(getLevelConfig), expected);
+
+  for (const levelNumber of [1, 2, 3]) {
+    const first = createLevel(levelNumber);
+    const second = createLevel(levelNumber);
+    assert.deepEqual(first.board.toRows(), second.board.toRows(), `level ${levelNumber} must replay deterministically`);
+    assert.equal(validateGeneratedLevel(first).valid, true, `level ${levelNumber} must validate`);
+    assert.ok(first.metrics.initialLegalMoveCount >= 2, `level ${levelNumber} must start with at least two moves`);
+    for (const move of first.witness) {
+      const distance = Math.abs(move.start.col - move.end.col) + Math.abs(move.start.row - move.end.row);
+      assert.notEqual(distance, 1, `level ${levelNumber} must not contain adjacent matching pairs`);
+    }
+    const solver = solveBoard(first.board);
+    assert.equal(solver.status, "solved", `level ${levelNumber} must solve`);
+    let replay = first.board;
+    for (const move of solver.moves) replay = applyMove(replay, move);
+    assert.ok(replay.toRows().flat().every((tile) => tile === null), `level ${levelNumber} replay must empty board`);
+  }
+});
+
 test("campaign constants and chapter boundaries are stable", () => {
   assert.equal(TOTAL_LEVELS, 100);
   assert.equal(CHAPTER_COUNT, 10);
@@ -48,7 +74,7 @@ test("early progression transitions have frozen profiles", () => {
   };
   assert.deepEqual([3, 4, 5, 6, 7, 8, 10, 11, 13, 14, 16, 17, 20, 21, 23, 24, 26, 27, 30, 31]
     .map((level) => [level, profile(level)]), [
-    [3, { width: 4, height: 4, pairCount: 4 }], [4, { width: 4, height: 5, pairCount: 5 }],
+    [3, { width: 4, height: 4, pairCount: 6 }], [4, { width: 4, height: 5, pairCount: 5 }],
     [5, { width: 4, height: 5, pairCount: 5 }], [6, { width: 4, height: 5, pairCount: 6 }],
     [7, { width: 4, height: 5, pairCount: 6 }], [8, { width: 5, height: 5, pairCount: 7 }],
     [10, { width: 5, height: 5, pairCount: 7 }], [11, { width: 5, height: 5, pairCount: 8 }],
