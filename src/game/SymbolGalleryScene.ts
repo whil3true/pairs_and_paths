@@ -5,7 +5,7 @@ import {
 
 /** Developer-only contact sheet using the same textures and card treatment as gameplay. */
 export class SymbolGalleryScene extends Phaser.Scene {
-  constructor(private readonly renderScale = 1, private readonly hiDpiEnabled = false) {
+  constructor(private readonly renderScale = 1) {
     super({ key: "SymbolGalleryScene" });
   }
 
@@ -38,7 +38,7 @@ export class SymbolGalleryScene extends Phaser.Scene {
       }).setOrigin(0.5), this.renderScale);
     });
 
-    if (this.hiDpiEnabled) this.addDiagnostics();
+    this.addDiagnostics();
   }
 
   private addDiagnostics(): void {

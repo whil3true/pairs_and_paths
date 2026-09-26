@@ -21,13 +21,13 @@ Task 5.1 revises only the progression data after human playtesting; it does not 
 
 The headless blocker analyzer copies each solver state's exact tile rows into a blocker-free `Board` and compares matching-pair routes. This isolates terrain from tile placement and is diagnostic only: it neither changes nor wraps the production solver strategy.
 
-## Portrait display and experimental render density
+## Portrait display and production render density
 
 The permanent gameplay coordinate system is portrait `480×800`. `BoardLayout`, UI positions, routes, and hit zones remain in that logical world on phones, tablets, and desktop browsers. The HTML body owns the full `100vw × 100dvh` prototype background, while `#game` is inset by CSS safe-area environment values and Phaser `Scale.FIT` uniformly contains and centers its portrait canvas. Thus a wide desktop shows background gutters rather than a desktop board variant; unusually tall phones may show top/bottom background. Browser chrome can still change the reported dynamic viewport as it opens or closes, but no gameplay is intentionally placed under the reported safe-area insets.
 
-Phaser 4.2.1 has no supported global `GameConfig.resolution` field. The debug-only `?debug=1&hidpi=1` experiment instead configures the backing game/canvas as `480 × renderScale` by `800 × renderScale`, then uses the supported main-camera zoom and a compensating centered scroll. This keeps the visible world at logical `480×800`; Phaser's camera/input transforms keep pointer world coordinates aligned for both WebGL and Canvas renderers. Phaser Text objects use `setResolution(renderScale)` in this mode. Normal rendering retains the original `480×800` backing canvas, FIT behavior, antialiasing, and linear texture filtering.
+Phaser 4.2.1 has no supported global `GameConfig.resolution` field. Production therefore configures the backing game/canvas as `480 × renderScale` by `800 × renderScale`, then uses the supported main-camera zoom and a compensating centered scroll. This keeps the permanent visible world at logical `480×800`; Phaser's camera/input transforms keep pointer world coordinates aligned for both WebGL and Canvas renderers. Phaser Text objects use `setResolution(renderScale)` above 1×. `Scale.FIT`, `CENTER_BOTH`, the safe-area shell, and full-viewport background ownership are unchanged, so desktop gameplay remains portrait-centered with background gutters.
 
-`renderScale` is finite device pixel ratio clamped to `[1, 2]`. The approximate render-pixel costs are 1× at scale 1, 2.25× at 1.5, and 4× at 2. The cap is fixed for this experiment; there is no device detection, FPS adaptation, orientation lock, or production enablement.
+`renderScale` follows finite device pixel ratio clamped to `[1, 2]` by default. The approximate render-pixel costs are 1× at scale 1, 2.25× at 1.5, and 4× at 2; the maximum backing canvas is therefore `960×1600`. POCO X6 Pro QA observed DPR ≈ 2.994 and correctly selected scale 2. The developer-only `?debug=1&renderScale=1` override forces the legacy `480×800` backing canvas for comparison and regression; other explicit scale values are ignored, and the former `hidpi=1` activation gate is retired. There is no device detection, user-agent check, FPS adaptation, or orientation lock.
 
 ## Sequential stage composition
 
