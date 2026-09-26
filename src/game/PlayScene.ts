@@ -4,6 +4,9 @@ import { BoardLayout, getVisibleBackingCount } from "./BoardLayout.js";
 import type { DebugStartPosition } from "./DebugStart.js";
 import { createLevelStage, getStageClearOutcome, getStageCount, hasNextLevel } from "./LevelSequence.js";
 import { getTileSymbol, preloadTileSymbols } from "./TileSymbols.js";
+import {
+  configureLogicalCamera, LOGICAL_GAME_HEIGHT, LOGICAL_GAME_WIDTH, setHiDpiTextResolution,
+} from "./Display.js";
 
 interface TileVisual {
   readonly card: Phaser.GameObjects.Rectangle;
@@ -34,7 +37,11 @@ export class PlayScene extends Phaser.Scene {
   private currentStageIndex = 0;
   private initialPosition: DebugStartPosition | null;
 
-  constructor(private readonly platform: PlatformService, initialPosition: DebugStartPosition | null = null) {
+  constructor(
+    private readonly platform: PlatformService,
+    initialPosition: DebugStartPosition | null = null,
+    private readonly renderScale = 1,
+  ) {
     super({ key: "PlayScene" });
     this.initialPosition = initialPosition;
   }
@@ -44,18 +51,19 @@ export class PlayScene extends Phaser.Scene {
   }
 
   create(): void {
-    this.add.text(240, 30, "Pairs & Paths", {
+    configureLogicalCamera(this, this.renderScale);
+    setHiDpiTextResolution(this.add.text(240, 30, "Pairs & Paths", {
       color: "#f7fbff", fontFamily: "Arial, sans-serif", fontSize: "32px", fontStyle: "bold",
-    }).setOrigin(0.5);
-    this.levelText = this.add.text(240, 70, "", {
+    }).setOrigin(0.5), this.renderScale);
+    this.levelText = setHiDpiTextResolution(this.add.text(240, 70, "", {
       color: "#dceaff", fontFamily: "Arial, sans-serif", fontSize: "20px", fontStyle: "bold",
-    }).setOrigin(0.5);
-    this.remainingText = this.add.text(240, 98, "", {
+    }).setOrigin(0.5), this.renderScale);
+    this.remainingText = setHiDpiTextResolution(this.add.text(240, 98, "", {
       color: "#bcd1ec", fontFamily: "Arial, sans-serif", fontSize: "20px",
-    }).setOrigin(0.5);
-    this.seedText = this.add.text(240, 766, "", {
+    }).setOrigin(0.5), this.renderScale);
+    this.seedText = setHiDpiTextResolution(this.add.text(240, 766, "", {
       color: "#6f86a5", fontFamily: "Arial, sans-serif", fontSize: "13px",
-    }).setOrigin(0.5);
+    }).setOrigin(0.5), this.renderScale);
     if (this.initialPosition === null) {
       this.startLevel();
     } else {
@@ -85,7 +93,7 @@ export class PlayScene extends Phaser.Scene {
       : `Level ${this.currentLevelNumber} · Stage ${this.currentStageIndex + 1}/${stageCount}`);
     this.seedText.setText(`Prototype · ${this.platform.displayName} · seed ${level.config.seed}`);
     this.layout = new BoardLayout({
-      sceneWidth: Number(this.scale.width), sceneHeight: Number(this.scale.height),
+      sceneWidth: LOGICAL_GAME_WIDTH, sceneHeight: LOGICAL_GAME_HEIGHT,
       boardWidth: this.board.width, boardHeight: this.board.height,
     });
     this.renderStageStack(stageCount);
@@ -284,22 +292,22 @@ export class PlayScene extends Phaser.Scene {
   private showComplete(): void {
     const shade = this.add.rectangle(240, 420, 440, 260, 0x0b1220, 0.96).setStrokeStyle(2, 0x7fa8d8);
     const campaignComplete = !hasNextLevel(this.currentLevelNumber);
-    const title = this.add.text(240, 342, campaignComplete ? "Campaign complete" : "Complete", {
+    const title = setHiDpiTextResolution(this.add.text(240, 342, campaignComplete ? "Campaign complete" : "Complete", {
       color: "#ffffff", fontFamily: "Arial, sans-serif", fontSize: "36px", fontStyle: "bold",
-    }).setOrigin(0.5);
+    }).setOrigin(0.5), this.renderScale);
     const nextButton = this.add.rectangle(240, 418, 210, 58, 0x3976b9).setStrokeStyle(2, 0xd6eaff)
       .setInteractive({ useHandCursor: true }).on("pointerdown", () => {
         this.currentLevelNumber = campaignComplete ? 1 : this.currentLevelNumber + 1;
         this.startLevel();
       });
-    const nextText = this.add.text(240, 418, campaignComplete ? "Restart from Level 1" : "Next level", {
+    const nextText = setHiDpiTextResolution(this.add.text(240, 418, campaignComplete ? "Restart from Level 1" : "Next level", {
       color: "#ffffff", fontFamily: "Arial, sans-serif", fontSize: "22px", fontStyle: "bold",
-    }).setOrigin(0.5);
+    }).setOrigin(0.5), this.renderScale);
     const replayButton = this.add.rectangle(240, 489, 180, 46, 0x243c5c).setStrokeStyle(1, 0x91acce)
       .setInteractive({ useHandCursor: true }).on("pointerdown", () => this.startLevel());
-    const replayText = this.add.text(240, 489, "Replay level", {
+    const replayText = setHiDpiTextResolution(this.add.text(240, 489, "Replay level", {
       color: "#dceaff", fontFamily: "Arial, sans-serif", fontSize: "18px",
-    }).setOrigin(0.5);
+    }).setOrigin(0.5), this.renderScale);
     this.completeOverlay = this.add.container(
       0, 0, [shade, title, nextButton, nextText, replayButton, replayText],
     ).setDepth(40);

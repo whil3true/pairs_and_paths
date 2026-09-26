@@ -4,6 +4,9 @@ import test from "node:test";
 
 import { BoardLayout, getVisibleBackingCount } from "../.test-dist/game/BoardLayout.js";
 import { isSymbolGalleryRequested, parseDebugStart } from "../.test-dist/game/DebugStart.js";
+import {
+  computePortraitFrame, computeRenderScale, isHiDpiDebugRequested,
+} from "../.test-dist/game/Display.js";
 import { applyMove, findLegalMoves, findPath, solveBoard, validateGeneratedLevel } from "../.test-dist/domain/index.js";
 import {
   CAMPAIGN_BLOCKERS, CHAPTER_COUNT, LEVELS_PER_CHAPTER, PROGRESSION_BANDS, TOTAL_LEVELS,
@@ -61,6 +64,35 @@ test("developer symbol gallery requires both flags and reuses the shared catalog
   const gallerySource = await readFile(new URL("../src/game/SymbolGalleryScene.ts", import.meta.url), "utf8");
   assert.match(gallerySource, /TILE_SYMBOLS\.forEach/);
   assert.doesNotMatch(gallerySource, /assets\/symbols\//);
+});
+
+test("portrait frame uniformly contains the canonical game in representative viewports", () => {
+  for (const [width, height] of [
+    [480, 800], [1080, 1920], [1220, 2712], [1920, 1080], [2560, 1440], [1024, 768],
+  ]) {
+    const frame = computePortraitFrame(width, height);
+    assert.ok(frame.displayWidth <= width + Number.EPSILON);
+    assert.ok(frame.displayHeight <= height + Number.EPSILON);
+    assert.equal(frame.displayWidth / frame.displayHeight, 480 / 800);
+    assert.equal(frame.sideGutter * 2 + frame.displayWidth, width);
+    assert.equal(frame.topBottomGutter * 2 + frame.displayHeight, height);
+  }
+  assert.deepEqual(computePortraitFrame(480, 800), {
+    scale: 1, displayWidth: 480, displayHeight: 800, sideGutter: 0, topBottomGutter: 0,
+  });
+  assert.ok(computePortraitFrame(1920, 1080).sideGutter > 0);
+  assert.ok(computePortraitFrame(1080, 1920).topBottomGutter > 0);
+});
+
+test("HiDPI rendering requires both debug flags and clamps finite DPR to 1 through 2", () => {
+  for (const search of ["", "?hidpi=1", "?debug=0&hidpi=1", "?debug=1", "?debug=1&hidpi=0"]) {
+    assert.equal(isHiDpiDebugRequested(search), false);
+  }
+  assert.equal(isHiDpiDebugRequested("?debug=1&hidpi=1"), true);
+  assert.deepEqual([0.75, 1, 1.5, 2, 2.5, 3].map(computeRenderScale), [1, 1, 1.5, 2, 2, 2]);
+  assert.equal(computeRenderScale(Number.NaN), 1);
+  assert.equal(computeRenderScale(Number.POSITIVE_INFINITY), 1);
+  assert.equal(computeRenderScale(Number.NEGATIVE_INFINITY), 1);
 });
 
 const layout = (boardWidth, boardHeight) => new BoardLayout({

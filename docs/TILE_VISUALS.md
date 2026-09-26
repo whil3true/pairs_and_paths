@@ -63,3 +63,5 @@ After deployment verify:
 - gallery and gameplay render the same artwork.
 
 Then compare `?debug=1&level=1` and `?debug=1&level=80`. The known semantic/art-quality limitations listed above are deliberately deferred until the final visual theme is chosen.
+
+For render-density A/B testing only, append `&hidpi=1` while retaining `debug=1`. This does not replace or regenerate the identical 30 PNGs, cards, positions, text, or colors. It increases the backing render density up to 2× and raises Phaser Text texture resolution while preserving the same logical `480×800` portrait composition and display footprint. Without both flags the original density is unchanged. At the 2× cap the canvas has four times the render pixels, so sharpness gains must be judged alongside real-device memory and frame-rate behavior before any production decision.
