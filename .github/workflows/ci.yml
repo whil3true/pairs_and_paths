@@ -21,4 +21,5 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run simulate -- --count 10000
+      - run: npm run simulate:blockers
       - run: npm run build
