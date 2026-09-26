@@ -11,7 +11,7 @@
 
 This is the agreed product nucleus, not a complete game design document.
 
-Tile recognition is symbol-first: simple silhouettes carry identity and a small reused accent palette is secondary. Numeric IDs are not visible during normal play. The current 30 local SVG symbols are visual-difficulty prototype art and may be replaced by final production art without changing `TileId` or campaign content.
+Tile recognition is symbol-first: simple silhouettes carry identity and a small reused accent palette is secondary. Numeric IDs are not visible during normal play. The current 30 prototype symbols keep local SVG masters under `art/source/symbols` and ship as 256×256 transparent PNG runtime textures under `public/assets/symbols`; final themed art may replace them without changing `TileId` or campaign content.
 
 Task 5.1 changes pacing only. It adds no mechanics; further difficulty mechanics and the planned player aids remain deliberately deferred.
 
