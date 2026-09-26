@@ -42,7 +42,7 @@ The compact table columns are: profile; area/occupied/empty cells; average initi
 | 6×8/21 | 48 42/6 | 2.88 (1–6) | 8.3% | 3.82 | .082 | 1.617 | 10 | .196 | 5.32 |
 | 6×8/22 | 48 44/4 | 2.43 (1–5) | 13.3% | 3.63 | .096 | 1.562 | 9 | .184 | 5.19 |
 
-## Selected curve
+## Task 5 original selected curve (historical calibration)
 
 | Chapter | Profile | Why selected |
 |---:|---:|---|
@@ -61,7 +61,7 @@ All omitted profiles also generated and solved successfully. They were rejected 
 
 No campaign seed overrides were needed. Direct derived seeds give Levels 1..20 at least two initial legal moves; Level 1 has two. Level 1 retains seed 0 but changes from the prototype 6×8/20 profile to 4×4/4.
 
-## Exact campaign aggregates
+## Task 5 original campaign aggregates (historical calibration)
 
 These values cover the exact ten deterministic levels in each chapter and use solver moves, not generator witnesses.
 
@@ -83,3 +83,78 @@ All 100 campaign boards validate, solve, replay to empty, contain zero orthogona
 ## Limitations
 
 These are reproducible content diagnostics, not a model of human difficulty. The deterministic solver makes one fixed sequence of locally legal choices; a person may choose a different route, overlook a visible pair, plan ahead, or respond differently to board shape and tile art. More legal moves can mean either welcome clarity or distracting choice, while a higher forced-step ratio is not automatically harder. Aggregate results also hide level-to-level variation, and 300 sequential seeds are evidence rather than a proof about every possible seed. The curve therefore remains provisional pending playtesting and may later need curated seeds or profiles.
+
+## Task 5.1 playtest pacing revision
+
+Human playtesting superseded the provisional chapter-only curve: the first ten levels felt too easy and repetitive, ten consecutive levels on one profile felt too long, and the campaign still felt easy with quickly completed levels around Level 25. The measured 33-profile calibration above remains useful context, but chapters are now organizational boundaries rather than profile boundaries.
+
+### Revised bands
+
+| Levels | Profile | Empty cells |
+|---:|---:|---:|
+| 1–3 | 4×4/4 | 8 |
+| 4–5 | 4×5/5 | 10 |
+| 6–7 | 4×5/6 | 8 |
+| 8–10 | 5×5/7 | 11 |
+| 11–13 | 5×5/8 | 9 |
+| 14–16 | 5×6/9 | 12 |
+| 17–20 | 5×6/11 | 8 |
+| 21–23 | 5×7/12 | 11 |
+| 24–26 | 6×6/13 | 10 |
+| 27–30 | 6×7/15 | 12 |
+| 31–35 | 6×7/16 | 10 |
+| 36–40 | 6×7/17 | 8 |
+| 41–50 | 6×8/18 | 12 |
+| 51–60 | 6×8/19 | 10 |
+| 61–70 | 6×8/20 | 8 |
+| 71–85 | 6×8/21 | 6 |
+| 86–100 | 6×8/22 | 4 |
+
+The ten-level plateaus were removed because they delayed both visual-search workload and pair-removal workload despite technically sound boards. Levels 1–30 now change profile nine times, every two to four levels, while preserving three onboarding levels. Once the full 6×8 geometry arrives, longer density bands refine workload without needless board-shape churn. Progression frequency therefore intentionally slows from fast early differentiation to slower late refinement.
+
+### Old versus new milestones
+
+| Level | Old profile | Old empty | New profile | New empty |
+|---:|---:|---:|---:|---:|
+| 1 | 4×4/4 | 8 | 4×4/4 | 8 |
+| 5 | 4×4/4 | 8 | 4×5/5 | 10 |
+| 10 | 4×4/4 | 8 | 5×5/7 | 11 |
+| 15 | 4×5/5 | 10 | 5×6/9 | 12 |
+| 20 | 4×5/5 | 10 | 5×6/11 | 8 |
+| 25 | 5×5/7 | 11 | 6×6/13 | 10 |
+| 30 | 5×5/7 | 11 | 6×7/15 | 12 |
+| 40 | 5×6/9 | 12 | 6×7/17 | 8 |
+| 50 | 5×6/11 | 8 | 6×8/18 | 12 |
+| 75 | 6×7/15 | 12 | 6×8/21 | 6 |
+| 100 | 6×8/22 | 4 | 6×8/22 | 4 |
+
+Cumulative pair removals are **22 through Level 5**, **55 through Level 10**, **150 through Level 20**, **212 through Level 25**, and **285 through Level 30**.
+
+### Exact revised campaign diagnostics
+
+Run recorded with `npm run analyze:progression -- --campaign-only`. It analyzes only the 100 exact campaign seeds rather than repeating candidate-profile discovery. All **100/100** boards validated and solved, every solver replay emptied its board, consecutive boards differed, and there were zero adjacent matching pairs. No seed overrides were needed. Levels 1–5 and 6–10 each have a minimum of two initial legal moves. The longest campaign-wide run of levels with exactly one initial legal move is **1**, so Levels 1–30 cannot exceed the desired run limit of two.
+
+| Levels | Area avg | Pairs avg | Empty avg | Initial avg | Turns | 3+ rate | Length |
+|---:|---:|---:|---:|---:|---:|---:|---:|
+| 1–5 | 17.60 | 4.40 | 8.80 | 2.60 | 1.136 | .136 | 3.727 |
+| 6–10 | 23.00 | 6.60 | 9.80 | 2.40 | 1.152 | .061 | 4.212 |
+| 11–20 | 28.50 | 9.50 | 9.50 | 2.60 | 1.337 | .084 | 4.316 |
+| 21–30 | 38.10 | 13.50 | 11.10 | 3.80 | 1.393 | .133 | 4.689 |
+| 31–50 | 45.00 | 17.25 | 10.50 | 3.65 | 1.554 | .183 | 5.023 |
+| 51–75 | 48.00 | 19.80 | 8.40 | 3.28 | 1.584 | .196 | 5.196 |
+| 76–100 | 48.00 | 21.60 | 4.80 | 2.88 | 1.576 | .207 | 5.206 |
+
+| Chapter | Area avg | Pairs avg | Empty avg | Initial avg (min) | Turns | 3+ rate | Length |
+|---:|---:|---:|---:|---:|---:|---:|---:|
+| 1 | 20.30 | 5.50 | 9.30 | 2.50 (2) | 1.145 | .091 | 4.018 |
+| 2 | 28.50 | 9.50 | 9.50 | 2.60 (1) | 1.337 | .084 | 4.316 |
+| 3 | 38.10 | 13.50 | 11.10 | 3.80 (3) | 1.393 | .133 | 4.689 |
+| 4 | 42.00 | 16.50 | 9.00 | 3.30 (2) | 1.533 | .182 | 4.909 |
+| 5 | 48.00 | 18.00 | 12.00 | 4.00 (3) | 1.572 | .183 | 5.128 |
+| 6 | 48.00 | 19.00 | 10.00 | 3.90 (2) | 1.611 | .200 | 5.347 |
+| 7 | 48.00 | 20.00 | 8.00 | 2.90 (1) | 1.570 | .205 | 5.150 |
+| 8 | 48.00 | 21.00 | 6.00 | 3.10 (1) | 1.500 | .176 | 4.795 |
+| 9 | 48.00 | 21.50 | 5.00 | 2.80 (1) | 1.623 | .209 | 5.353 |
+| 10 | 48.00 | 22.00 | 4.00 | 2.70 (2) | 1.595 | .218 | 5.359 |
+
+This revision changes only deterministic profile selection. It adds no gameplay mechanics, and human difficulty remains a limitation of solver-derived diagnostics. Further difficulty mechanics are deliberately deferred.
