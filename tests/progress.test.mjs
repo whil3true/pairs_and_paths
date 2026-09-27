@@ -1,8 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { resolveCampaignStartup } from "../.test-dist/game/CampaignStartup.js";
-import { isProgressResetRequested } from "../.test-dist/game/DebugStart.js";
+import { resolveStartupRoute } from "../.test-dist/game/CampaignStartup.js";
+import { getChapterLevelRange, getDefaultChapter, getLevelState, getPrimaryMenuAction, isLevelSelectable } from "../.test-dist/game/CampaignNavigation.js";
+import { isProgressResetRequested, parseDebugSetProgress } from "../.test-dist/game/DebugStart.js";
 import {
   getHighestUnlockedLevel, getResumeLevel, initialCampaignProgress, isCampaignCompleted,
   parseCampaignProgress, recordLevelCompletion, recordStageCompletion, serializeCampaignProgress,
@@ -88,18 +89,40 @@ test("web progress store contains unavailable and throwing storage", () => {
   }
 });
 
-test("campaign startup resumes normal progress but isolates debug campaign jumps", () => {
+test("startup routing sends normal users to menu and preserves debug bypasses", () => {
+  assert.deepEqual(resolveStartupRoute(null, false), { kind: "menu" });
+  assert.deepEqual(resolveStartupRoute({ levelNumber: 80, stageIndex: 1 }, false), {
+    kind: "play", position: { levelNumber: 80, stageIndex: 1 }, persistenceEnabled: false,
+  });
+  assert.deepEqual(resolveStartupRoute({ levelNumber: 80, stageIndex: 0 }, true), { kind: "gallery" });
+});
+
+test("campaign navigation derives menu actions and all level states", () => {
   const progress = (completedThroughLevel) => ({ version: 1, completedThroughLevel });
-  assert.deepEqual(resolveCampaignStartup(progress(0), null), {
-    position: { levelNumber: 1, stageIndex: 0 }, persistenceEnabled: true,
-  });
-  assert.equal(resolveCampaignStartup(progress(20), null).position.levelNumber, 21);
-  assert.equal(resolveCampaignStartup(progress(99), null).position.levelNumber, 100);
-  assert.equal(resolveCampaignStartup(progress(100), null).position.levelNumber, 1);
-  assert.deepEqual(resolveCampaignStartup(progress(20), { levelNumber: 80, stageIndex: 1 }), {
-    position: { levelNumber: 80, stageIndex: 1 }, persistenceEnabled: false,
-  });
-  assert.equal(resolveCampaignStartup(progress(20), null).persistenceEnabled, true);
+  assert.deepEqual(getPrimaryMenuAction(progress(0)), { label: "Play", levelNumber: 1 });
+  assert.equal(getLevelState(progress(0), 1), "available");
+  assert.equal(getLevelState(progress(0), 2), "locked");
+  assert.deepEqual(getPrimaryMenuAction(progress(20)), { label: "Continue", levelNumber: 21 });
+  for (let level = 1; level <= 20; level += 1) assert.equal(getLevelState(progress(20), level), "completed");
+  assert.equal(getLevelState(progress(20), 21), "available");
+  assert.equal(getLevelState(progress(20), 22), "locked");
+  assert.deepEqual(getPrimaryMenuAction(progress(99)), { label: "Continue", levelNumber: 100 });
+  assert.deepEqual(getPrimaryMenuAction(progress(100)), { label: "Play again", levelNumber: 1 });
+  for (let level = 1; level <= 100; level += 1) {
+    assert.equal(getLevelState(progress(100), level), "completed");
+    assert.equal(isLevelSelectable(progress(100), level), true);
+  }
+});
+
+test("chapter ranges and frontier chapters are exact", () => {
+  const progress = (completedThroughLevel) => ({ version: 1, completedThroughLevel });
+  assert.deepEqual(getChapterLevelRange(1), [1, 10]);
+  assert.deepEqual(getChapterLevelRange(2), [11, 20]);
+  assert.deepEqual(getChapterLevelRange(10), [91, 100]);
+  for (const invalid of [0, 11, 1.5]) assert.throws(() => getChapterLevelRange(invalid), RangeError);
+  for (const [completed, chapter] of [[0, 1], [9, 1], [10, 2], [20, 3], [99, 10], [100, 10]]) {
+    assert.equal(getDefaultChapter(progress(completed)), chapter);
+  }
 });
 
 test("only final stages cross the campaign persistence boundary", () => {
@@ -123,4 +146,20 @@ test("developer progress reset requires debug=1", () => {
   for (const search of ["?resetProgress=1", "?debug=0&resetProgress=1", "?debug=1&resetProgress=0"]) {
     assert.equal(isProgressResetRequested(search), false);
   }
+});
+
+
+test("developer setProgress parser is strict and debug-gated", () => {
+  assert.equal(parseDebugSetProgress("?debug=1&setProgress=20"), 20);
+  for (const search of [
+    "?setProgress=20", "?debug=0&setProgress=20", "?debug=1&setProgress=-1",
+    "?debug=1&setProgress=101", "?debug=1&setProgress=1.5",
+    "?debug=1&setProgress=abc", "?debug=1&setProgress=",
+  ]) assert.equal(parseDebugSetProgress(search), null, search);
+});
+
+test("startup mutation precedence makes reset win over setProgress", () => {
+  const search = "?debug=1&resetProgress=1&setProgress=20";
+  const applied = isProgressResetRequested(search) ? "reset" : parseDebugSetProgress(search);
+  assert.equal(applied, "reset");
 });

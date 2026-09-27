@@ -1,14 +1,16 @@
-import { getResumeLevel, type CampaignProgress } from "../progress/CampaignProgress.js";
 import type { DebugStartPosition } from "./DebugStart.js";
 
-export interface CampaignStartup {
-  readonly position: DebugStartPosition;
-  readonly persistenceEnabled: boolean;
-}
+export type StartupRoute =
+  | { readonly kind: "menu" }
+  | { readonly kind: "gallery" }
+  | { readonly kind: "play"; readonly position: DebugStartPosition; readonly persistenceEnabled: false };
 
-export const resolveCampaignStartup = (
-  progress: CampaignProgress,
+/** Pure startup route selection. Progress mutations are applied before this decision. */
+export const resolveStartupRoute = (
   debugStart: DebugStartPosition | null,
-): CampaignStartup => debugStart === null
-  ? { position: { levelNumber: getResumeLevel(progress), stageIndex: 0 }, persistenceEnabled: true }
-  : { position: debugStart, persistenceEnabled: false };
+  symbolGalleryRequested: boolean,
+): StartupRoute => symbolGalleryRequested
+  ? { kind: "gallery" }
+  : debugStart === null
+    ? { kind: "menu" }
+    : { kind: "play", position: debugStart, persistenceEnabled: false };
