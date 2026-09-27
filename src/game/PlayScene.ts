@@ -27,6 +27,7 @@ export class PlayScene extends Phaser.Scene {
   private selected: GridPoint | null = null;
   private inputLocked = false;
   private hintActive = false;
+  private hintedPoints: readonly [GridPoint, GridPoint] | null = null;
   private hintTimer: Phaser.Time.TimerEvent | null = null;
   private readonly tiles = new Map<string, TileVisual>();
   private route!: Phaser.GameObjects.Graphics;
@@ -268,7 +269,8 @@ export class PlayScene extends Phaser.Scene {
       return;
     }
     this.hintActive = true;
-    for (const point of [move.start, move.end]) {
+    this.hintedPoints = [move.start, move.end];
+    for (const point of this.hintedPoints) {
       this.tiles.get(keyOf(point))?.card.setStrokeStyle(5, 0x45d8d0);
     }
     this.hintTimer = this.time.delayedCall(900, () => this.clearHintFeedback(true));
@@ -277,12 +279,10 @@ export class PlayScene extends Phaser.Scene {
   private clearHintFeedback(restoreStyle: boolean): void {
     this.hintTimer?.remove(false);
     this.hintTimer = null;
-    if (restoreStyle && this.hintActive) {
-      for (const visual of this.tiles.values()) {
-        visual.card.setStrokeStyle(3, 0xe8f3ff).setScale(1);
-        visual.symbol.setDisplaySize(visual.symbolSize, visual.symbolSize);
-      }
+    if (restoreStyle && this.hintedPoints !== null) {
+      for (const point of this.hintedPoints) this.styleTile(point, false);
     }
+    this.hintedPoints = null;
     this.hintActive = false;
   }
 
