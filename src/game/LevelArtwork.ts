@@ -24,33 +24,47 @@ export const isArtworkRevealStage = (levelNumber: number, stageIndex: number): b
 export const isArtworkUnlocked = (progress: CampaignProgress, levelNumber: number): boolean =>
   progress.completedThroughLevel >= levelNumber;
 
-export interface CoverPlacement {
-  readonly x: number;
-  readonly y: number;
-  readonly width: number;
-  readonly height: number;
+export interface CoverCrop {
+  readonly destinationX: number;
+  readonly destinationY: number;
+  readonly destinationWidth: number;
+  readonly destinationHeight: number;
+  readonly sourceX: number;
+  readonly sourceY: number;
+  readonly sourceWidth: number;
+  readonly sourceHeight: number;
   readonly scale: number;
 }
 
-/** Centers an undistorted source while covering the complete destination rectangle. */
-export const computeCoverPlacement = (
+/** Returns the centered source crop that covers exactly the requested destination rectangle. */
+export const computeCoverCrop = (
   sourceWidth: number,
   sourceHeight: number,
   destinationX: number,
   destinationY: number,
   destinationWidth: number,
   destinationHeight: number,
-): CoverPlacement => {
+): CoverCrop => {
+  if ([sourceWidth, sourceHeight, destinationX, destinationY, destinationWidth, destinationHeight]
+    .some((value) => !Number.isFinite(value))) {
+    throw new RangeError("Artwork and destination values must be finite numbers");
+  }
   if ([sourceWidth, sourceHeight, destinationWidth, destinationHeight]
-    .some((value) => !Number.isFinite(value) || value <= 0)) {
+    .some((value) => value <= 0)) {
     throw new RangeError("Artwork and destination dimensions must be positive finite numbers");
   }
   const scale = Math.max(destinationWidth / sourceWidth, destinationHeight / sourceHeight);
+  const croppedSourceWidth = destinationWidth / scale;
+  const croppedSourceHeight = destinationHeight / scale;
   return {
-    x: destinationX + destinationWidth / 2,
-    y: destinationY + destinationHeight / 2,
-    width: sourceWidth * scale,
-    height: sourceHeight * scale,
+    destinationX,
+    destinationY,
+    destinationWidth,
+    destinationHeight,
+    sourceX: (sourceWidth - croppedSourceWidth) / 2,
+    sourceY: (sourceHeight - croppedSourceHeight) / 2,
+    sourceWidth: croppedSourceWidth,
+    sourceHeight: croppedSourceHeight,
     scale,
   };
 };

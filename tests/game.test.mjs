@@ -15,7 +15,7 @@ import {
 } from "../.test-dist/game/LevelSequence.js";
 import { getTileSymbol, TILE_ACCENT_COLORS, TILE_SYMBOLS } from "../.test-dist/game/TileSymbols.js";
 import {
-  computeCoverPlacement, getLevelArtwork, isArtworkRevealStage, isArtworkUnlocked, LEVEL_ARTWORK,
+  computeCoverCrop, getLevelArtwork, isArtworkRevealStage, isArtworkUnlocked, LEVEL_ARTWORK,
 } from "../.test-dist/game/LevelArtwork.js";
 
 test("pilot artwork catalog and final-stage reveal eligibility are explicit", () => {
@@ -28,7 +28,7 @@ test("pilot artwork catalog and final-stage reveal eligibility are explicit", ()
   assert.equal(isArtworkRevealStage(30, 2), true);
 });
 
-test("pilot artwork assets are self-contained 960x1280 SVG files", async () => {
+test("pilot artwork assets are self-contained 960x960 SVG files", async () => {
   const artworkDir = new URL("../public/assets/artwork/pilot/", import.meta.url);
   assert.deepEqual((await readdir(artworkDir)).sort(),
     ["level-001.svg", "level-030.svg", "level-080.svg"]);
@@ -40,7 +40,7 @@ test("pilot artwork assets are self-contained 960x1280 SVG files", async () => {
   for (const artwork of LEVEL_ARTWORK) {
     const svg = await readFile(new URL(`../public/${artwork.path}`, import.meta.url), "utf8");
     assert.match(svg, /^<svg\b/);
-    assert.match(svg, /viewBox="0 0 960 1280"/);
+    assert.match(svg, /viewBox="0 0 960 960"/);
     assert.doesNotMatch(svg, /<(?:script|image)\b/i);
     assert.doesNotMatch(svg, /\bhref\s*=/i);
     assert.doesNotMatch(svg, /data:/i);
@@ -55,21 +55,40 @@ test("artwork unlock is derived only from completed campaign progress", () => {
   assert.equal(isArtworkUnlocked({ version: 1, completedThroughLevel: 30 }, 31), false);
 });
 
-test("cover placement preserves aspect ratio, covers, and centers square and 6x8 boards", () => {
-  for (const destination of [{ x: 96, y: 276, width: 288, height: 288 },
-    { x: 24, y: 132, width: 432, height: 576 }]) {
-    const result = computeCoverPlacement(960, 1280,
-      destination.x, destination.y, destination.width, destination.height);
-    assert.equal(result.width / result.height, 960 / 1280);
-    assert.ok(result.width >= destination.width);
-    assert.ok(result.height >= destination.height);
-    assert.equal(result.x, destination.x + destination.width / 2);
-    assert.equal(result.y, destination.y + destination.height / 2);
-    assert.equal(result.width, 960 * result.scale);
-    assert.equal(result.height, 1280 * result.scale);
+test("square artwork cover crops are centered and exactly match final board bounds", () => {
+  const cases = [
+    { columns: 4, rows: 4 },
+    { columns: 6, rows: 7 },
+    { columns: 6, rows: 8 },
+  ];
+  for (const { columns, rows } of cases) {
+    const board = new BoardLayout({
+      sceneWidth: 480, sceneHeight: 800, boardWidth: columns, boardHeight: rows,
+    });
+    const width = board.boardRight - board.boardLeft;
+    const height = board.boardBottom - board.boardTop;
+    const crop = computeCoverCrop(960, 960, board.boardLeft, board.boardTop, width, height);
+    assert.equal(crop.destinationX, board.boardLeft);
+    assert.equal(crop.destinationY, board.boardTop);
+    assert.equal(crop.destinationX + crop.destinationWidth, board.boardRight);
+    assert.equal(crop.destinationY + crop.destinationHeight, board.boardBottom);
+    assert.equal(crop.sourceWidth / crop.sourceHeight, width / height);
+    assert.equal(crop.sourceX, (960 - crop.sourceWidth) / 2);
+    assert.equal(crop.sourceY, (960 - crop.sourceHeight) / 2);
+    assert.equal(crop.sourceWidth * crop.scale, width);
+    assert.equal(crop.sourceHeight * crop.scale, height);
+    assert.deepEqual(computeCoverCrop(960, 960, board.boardLeft, board.boardTop, width, height), crop);
   }
-  assert.deepEqual(computeCoverPlacement(960, 1280, 0, 0, 432, 576),
-    { x: 216, y: 288, width: 432, height: 576, scale: 0.45 });
+
+  const square = computeCoverCrop(960, 960, 96, 276, 288, 288);
+  assert.deepEqual({
+    sourceX: square.sourceX, sourceY: square.sourceY,
+    sourceWidth: square.sourceWidth, sourceHeight: square.sourceHeight,
+  }, { sourceX: 0, sourceY: 0, sourceWidth: 960, sourceHeight: 960 });
+  for (const dimensions of [
+    [0, 960, 0, 0, 100, 100], [960, -1, 0, 0, 100, 100],
+    [960, 960, 0, 0, 0, 100], [960, 960, 0, 0, 100, Number.NaN],
+  ]) assert.throws(() => computeCoverCrop(...dimensions), RangeError);
 });
 
 test("tile symbol catalog covers the campaign with stable unique assets and valid reusable accents", () => {

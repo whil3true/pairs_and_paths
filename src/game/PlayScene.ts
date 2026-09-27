@@ -10,7 +10,7 @@ import {
   configureLogicalCamera, LOGICAL_GAME_HEIGHT, LOGICAL_GAME_WIDTH, setHiDpiTextResolution,
 } from "./Display.js";
 import { getHintMove } from "./Hint.js";
-import { computeCoverPlacement, getLevelArtwork, isArtworkRevealStage } from "./LevelArtwork.js";
+import { computeCoverCrop, getLevelArtwork, isArtworkRevealStage } from "./LevelArtwork.js";
 
 interface TileVisual {
   readonly card: Phaser.GameObjects.Rectangle;
@@ -206,16 +206,16 @@ export class PlayScene extends Phaser.Scene {
     const source = this.textures.get(artwork.assetKey).getSourceImage() as { width: number; height: number };
     const width = this.layout.boardRight - this.layout.boardLeft;
     const height = this.layout.boardBottom - this.layout.boardTop;
-    const placement = computeCoverPlacement(
+    const crop = computeCoverCrop(
       source.width, source.height, this.layout.boardLeft, this.layout.boardTop, width, height,
     );
-    const clip = this.add.graphics().fillStyle(0xffffff).fillRect(
-      this.layout.boardLeft, this.layout.boardTop, width, height,
-    ).setVisible(false);
-    const mask = clip.createGeometryMask();
-    const image = this.add.image(placement.x, placement.y, artwork.assetKey)
-      .setDisplaySize(placement.width, placement.height).setMask(mask).setDepth(-2);
-    this.currentBoardVisual!.add([clip, image]);
+    const image = this.add.image(
+      crop.destinationX + crop.destinationWidth / 2,
+      crop.destinationY + crop.destinationHeight / 2,
+      artwork.assetKey,
+    ).setCrop(crop.sourceX, crop.sourceY, crop.sourceWidth, crop.sourceHeight)
+      .setScale(crop.scale).setDepth(-2);
+    this.currentBoardVisual!.add(image);
     this.currentArtworkVisual = image;
   }
 
@@ -437,10 +437,8 @@ export class PlayScene extends Phaser.Scene {
     this.remainingText.setVisible(false);
     this.seedText.setVisible(false);
     const backdrop = this.add.rectangle(240, 400, 480, 800, 0x07101d, 1).setInteractive();
-    const source = this.textures.get(artwork.assetKey).getSourceImage() as { width: number; height: number };
-    const scale = Math.min(400 / source.width, 540 / source.height);
     const image = this.add.image(240, 382, artwork.assetKey)
-      .setDisplaySize(source.width * scale, source.height * scale);
+      .setDisplaySize(400, 400);
     const title = setHiDpiTextResolution(this.add.text(240, 690, "Image unlocked", {
       color: "#ffffff", fontFamily: "Arial, sans-serif", fontSize: "30px", fontStyle: "bold",
     }).setOrigin(0.5), this.renderScale);

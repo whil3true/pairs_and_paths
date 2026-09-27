@@ -28,12 +28,13 @@ only the current Level texture (initial preload or dynamic load before Next), re
 for Replay, and never bulk-prefetches. A missing/failed texture simply preserves ordinary gameplay
 and the Complete overlay. Main Menu loads no artwork.
 
-The pure `computeCoverPlacement` uses one maximum scale, preserving aspect ratio while centering and
-covering board bounds; a Phaser geometry mask clips overflow. Artwork is a separately referenced
-image beneath cell, tile, route, and blocker visuals, with reduced cell-backing opacity only on an
-eligible final Stage. Final-stage completion retains the strict order: derive completion, save when
-persistence is enabled, then show the clean artwork presentation, then the existing Complete flow.
-Debug jumps remain non-persistent. Gallery unlock state is derived solely from
+The pure `computeCoverCrop` derives a centered source crop and exact destination rectangle from the
+active final-stage `BoardLayout` bounds. `PlayScene` applies that crop directly to the Phaser image,
+preserving aspect ratio and physically limiting rectangular-board rendering without a geometry mask.
+Artwork is a separately referenced image beneath cell, tile, route, and blocker visuals, with reduced
+cell-backing opacity only on an eligible final Stage. Final-stage completion retains the strict order:
+derive completion, save when persistence is enabled, then show the clean full-square artwork
+presentation, then the existing Complete flow. Debug jumps remain non-persistent. Gallery unlock state is derived solely from
 `completedThroughLevel`, without changing `CampaignProgressV1`.
 
 `npm run check:package-size` recursively reports total `dist`, artwork totals/files, and largest
