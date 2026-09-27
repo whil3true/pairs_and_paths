@@ -44,6 +44,9 @@ export class PlayScene extends Phaser.Scene {
   private remainingText!: Phaser.GameObjects.Text;
   private seedText!: Phaser.GameObjects.Text;
   private completeOverlay: Phaser.GameObjects.Container | null = null;
+  private pauseOverlay: Phaser.GameObjects.Container | null = null;
+  private pauseButton!: Phaser.GameObjects.Rectangle;
+  private pauseText!: Phaser.GameObjects.Text;
   private hintButton!: Phaser.GameObjects.Rectangle;
   private hintText!: Phaser.GameObjects.Text;
   private currentLevelNumber = 1;
@@ -84,13 +87,13 @@ export class PlayScene extends Phaser.Scene {
     this.seedText = setHiDpiTextResolution(this.add.text(240, 766, "", {
       color: "#6f86a5", fontFamily: "Arial, sans-serif", fontSize: "13px",
     }).setOrigin(0.5), this.renderScale);
-    const menuButton = this.add.rectangle(54, 34, 84, 38, 0x243c5c).setStrokeStyle(1, 0x91acce)
-      .setInteractive({ useHandCursor: true }).on("pointerdown", () => this.scene.start("MainMenuScene"));
-    const menuText = setHiDpiTextResolution(this.add.text(54, 34, "Menu", {
+    this.pauseButton = this.add.rectangle(54, 34, 84, 38, 0x243c5c).setStrokeStyle(1, 0x91acce)
+      .setInteractive({ useHandCursor: true }).on("pointerdown", () => this.showPause());
+    this.pauseText = setHiDpiTextResolution(this.add.text(54, 34, "Pause", {
       color: "#dceaff", fontFamily: "Arial, sans-serif", fontSize: "16px",
     }).setOrigin(0.5), this.renderScale);
-    menuButton.setDepth(30);
-    menuText.setDepth(31);
+    this.pauseButton.setDepth(30);
+    this.pauseText.setDepth(31);
     this.hintButton = this.add.rectangle(426, 34, 84, 38, 0x243c5c).setStrokeStyle(1, 0x91acce)
       .setInteractive({ useHandCursor: true }).on("pointerdown", () => this.showHint());
     this.hintText = setHiDpiTextResolution(this.add.text(426, 34, "Hint", {
@@ -98,7 +101,10 @@ export class PlayScene extends Phaser.Scene {
     }).setOrigin(0.5), this.renderScale);
     this.hintButton.setDepth(30);
     this.hintText.setDepth(31);
-    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.clearHintFeedback(false));
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.clearHintFeedback(false);
+      this.hidePause();
+    });
     this.loadStage();
   }
 
@@ -108,9 +114,12 @@ export class PlayScene extends Phaser.Scene {
   }
 
   private loadStage(animateIn = false): void {
+    this.hidePause();
     this.completeOverlay?.destroy(true);
     this.completeOverlay = null;
     this.destroyBoardVisuals();
+    this.pauseButton.setVisible(true).setInteractive({ useHandCursor: true });
+    this.pauseText.setVisible(true);
     this.hintButton.setVisible(true).setInteractive({ useHandCursor: true });
     this.hintText.setVisible(true);
     this.selected = null;
@@ -215,7 +224,7 @@ export class PlayScene extends Phaser.Scene {
   }
 
   private onCellTapped(point: GridPoint): void {
-    if (this.inputLocked || this.hintActive || this.board.isBlocked(point)) return;
+    if (this.inputLocked || this.hintActive || this.pauseOverlay !== null || this.board.isBlocked(point)) return;
     if (this.board.isEmpty(point)) {
       this.setSelected(null);
       return;
@@ -269,7 +278,7 @@ export class PlayScene extends Phaser.Scene {
   }
 
   private showHint(): void {
-    if (this.inputLocked || this.hintActive || this.completeOverlay !== null) return;
+    if (this.inputLocked || this.hintActive || this.pauseOverlay !== null || this.completeOverlay !== null) return;
     this.setSelected(null);
     const move = getHintMove(this.board);
     if (move === null) {
@@ -358,7 +367,10 @@ export class PlayScene extends Phaser.Scene {
   }
 
   private showComplete(): void {
+    this.hidePause();
     this.clearHintFeedback(false);
+    this.pauseButton.disableInteractive().setVisible(false);
+    this.pauseText.setVisible(false);
     this.hintButton.disableInteractive().setVisible(false);
     this.hintText.setVisible(false);
     const shade = this.add.rectangle(240, 420, 440, 330, 0x0b1220, 0.96).setStrokeStyle(2, 0x7fa8d8);
@@ -387,5 +399,85 @@ export class PlayScene extends Phaser.Scene {
     this.completeOverlay = this.add.container(
       0, 0, [shade, title, nextButton, nextText, replayButton, replayText, menuButton, menuText],
     ).setDepth(40);
+  }
+
+  private showPause(): void {
+    if (this.inputLocked || this.hintActive || this.completeOverlay !== null || this.pauseOverlay !== null) return;
+    this.showPauseMenu();
+  }
+
+  private showPauseMenu(): void {
+    this.replacePauseOverlay(
+      "PAUSED",
+      undefined,
+      [
+        { label: "Resume", action: () => this.hidePause() },
+        { label: "Restart level", action: () => this.showRestartConfirmation() },
+        { label: "Exit to menu", action: () => this.showExitConfirmation() },
+      ],
+    );
+  }
+
+  private showRestartConfirmation(): void {
+    this.replacePauseOverlay(
+      "Restart level?",
+      "Current level progress will be lost.",
+      [
+        { label: "Restart", action: () => { this.hidePause(); this.startLevel(); } },
+        { label: "Cancel", action: () => this.showPauseMenu() },
+      ],
+    );
+  }
+
+  private showExitConfirmation(): void {
+    this.replacePauseOverlay(
+      "Exit to menu?",
+      "Current level progress will be lost.",
+      [
+        { label: "Exit", action: () => { this.hidePause(); this.scene.start("MainMenuScene"); } },
+        { label: "Cancel", action: () => this.showPauseMenu() },
+      ],
+    );
+  }
+
+  private replacePauseOverlay(
+    titleCopy: string,
+    message: string | undefined,
+    actions: readonly { readonly label: string; readonly action: () => void }[],
+  ): void {
+    this.pauseOverlay?.destroy(true);
+    const objects: Phaser.GameObjects.GameObject[] = [];
+    const backdrop = this.add.rectangle(240, 400, 480, 800, 0x07101d, 0.72).setInteractive();
+    const panelHeight = message === undefined ? 350 : 300;
+    const panel = this.add.rectangle(240, 410, 420, panelHeight, 0x0b1220, 0.98)
+      .setStrokeStyle(2, 0x7fa8d8);
+    const titleY = message === undefined ? 280 : 320;
+    const title = setHiDpiTextResolution(this.add.text(240, titleY, titleCopy, {
+      color: "#ffffff", fontFamily: "Arial, sans-serif", fontSize: "34px", fontStyle: "bold",
+    }).setOrigin(0.5), this.renderScale);
+    objects.push(backdrop, panel, title);
+    if (message !== undefined) {
+      objects.push(setHiDpiTextResolution(this.add.text(240, 370, message, {
+        color: "#bcd1ec", fontFamily: "Arial, sans-serif", fontSize: "17px",
+      }).setOrigin(0.5), this.renderScale));
+    }
+    const firstButtonY = message === undefined ? 365 : 440;
+    actions.forEach(({ label, action }, index) => {
+      const y = firstButtonY + index * 68;
+      const button = this.add.rectangle(240, y, 220, 50, index === 0 ? 0x3976b9 : 0x243c5c)
+        .setStrokeStyle(index === 0 ? 2 : 1, index === 0 ? 0xd6eaff : 0x91acce)
+        .setInteractive({ useHandCursor: true }).on("pointerdown", action);
+      const text = setHiDpiTextResolution(this.add.text(240, y, label, {
+        color: "#ffffff", fontFamily: "Arial, sans-serif", fontSize: "19px",
+        fontStyle: index === 0 ? "bold" : "normal",
+      }).setOrigin(0.5), this.renderScale);
+      objects.push(button, text);
+    });
+    this.pauseOverlay = this.add.container(0, 0, objects).setDepth(50);
+  }
+
+  private hidePause(): void {
+    this.pauseOverlay?.destroy(true);
+    this.pauseOverlay = null;
   }
 }
