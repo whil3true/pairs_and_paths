@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 1280" role="img" aria-label="Moonlit purple sea">
+  <defs>
+    <linearGradient id="night" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#111747"/>
+      <stop offset="1" stop-color="#733b86"/>
+    </linearGradient>
+    <radialGradient id="moon">
+      <stop offset="0" stop-color="#fff4d5"/>
+      <stop offset="1" stop-color="#f4dcc8" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="960" height="1280" fill="url(#night)"/>
+  <circle cx="285" cy="285" r="155" fill="url(#moon)"/>
+  <path d="M0 770 Q160 715 320 770 T640 770 T960 770 V1280 H0Z" fill="#17385e"/>
+  <path d="M0 850 Q180 770 360 850 T720 850 T960 830 V1280 H0Z" fill="#0b274b"/>
+  <path d="M420 785 L665 675 L960 805 V1280 H420Z" fill="#14243d" opacity=".9"/>
+  <g stroke="#62a9c6" stroke-width="12" opacity=".65">
+    <path d="M0 910 L390 740"/><path d="M0 1080 L500 850"/><path d="M120 1280 L650 1040"/>
+  </g>
+</svg>
