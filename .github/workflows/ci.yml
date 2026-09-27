@@ -23,3 +23,4 @@ jobs:
       - run: npm run simulate -- --count 10000
       - run: npm run simulate:blockers
       - run: npm run build
+      - run: npm run check:package-size

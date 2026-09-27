@@ -81,6 +81,28 @@ Pure tests cover the v1 schema and derived values, monotonic completion, strict 
 After deployment, reset with `?debug=1&resetProgress=1`, then use the normal URL and confirm Level 1. Complete Level 1 and refresh on its Complete overlay before pressing Next: normal play must open Level 2 Stage 1. Remove tiles from Level 2 and refresh before completion: Level 2 must restart with its fresh Stage 1 board. On a multi-stage level, verify intermediate clearance does not update the stored payload. With real progress through Level 1, complete `?debug=1&level=80`, then return to the normal URL and confirm it still opens Level 2. Finally, reset again and confirm normal play returns to Level 1.
 
 
+## Collectible artwork pilot QA
+
+- Level 1 (`?debug=1&level=1`): confirm small gap glimpses, readable cards/symbols, progressive
+  reveal, centered undistorted crop, clean “Image unlocked” presentation, and Continue opening the
+  ordinary Complete overlay. Partially reveal, Pause, and Resume; board and artwork must be unchanged.
+- Level 30 (`?debug=1&level=30&stage=2`): Stage 2 has no art; Stage 3 gains it. Direct Stage 3 does
+  too, while Restart returns to art-free Stage 1.
+- Level 80 (`?debug=1&level=80`): advance to the final Stage and confirm tiles and opaque blockers
+  cover the art; the clean presentation contains neither.
+- Level 2 (`?debug=1&level=2`): no request, placeholder, or reward presentation; completion goes
+  directly to Complete. Temporarily remove a pilot file in a local build and confirm the same
+  graceful fallback without blocked gameplay.
+- Persistence order: reset with `?debug=1&resetProgress=1`, return to the normal URL, clear Level 1,
+  refresh while “Image unlocked” is waiting, and confirm Main Menu offers Continue Level 2. Debug
+  artwork sessions themselves must never change real progress.
+- Replay starts deterministic Stage 1 and presents artwork again on the final Stage even when already
+  unlocked. During reward presentation Pause and Hint are hidden and no Pause overlay may coexist.
+
+Pure tests cover catalog presence/absence, final-stage eligibility, derived unlock state, and centered
+cover geometry for square and 6×8-style destinations. Phaser pixels remain manual QA. After build,
+run `npm run check:package-size`; pilot SVG sizes do not forecast a 100-image art package.
+
 ## Navigation verification
 
 Pure tests cover fresh/in-progress/completed primary actions, all three level states, selection eligibility, chapter ranges/defaults, strict `setProgress` parsing, reset precedence, and normal/gallery/debug-play startup routes. Manual QA should verify the 5×2 chapter grid and non-wrapping arrows, current frontier defaults, fresh progress after a confirmed pause-menu exit, and old-level replay without regression. Complete overlays retain Next/Restart and Replay and add a direct Menu exit. Debug jumps remain persistence-disabled.

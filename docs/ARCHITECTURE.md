@@ -21,6 +21,26 @@ Startup resolves normal play to Stage 1 of the first uncompleted level (or Level
 
 `TileSymbols` is the presentation-only mapping from domain `TileId` to 30 ordered PNG runtime texture keys and six reusable accents. The runtime assets live under `public/assets/symbols/*.png`; `PlayScene` preloads them through `scene.load.image(...)`, asks the catalog for each tile definition, and owns Phaser card/image creation and feedback. Editable prototype SVG masters remain under `art/source/symbols/*.svg`, outside `public`, so they are not shipped in the production build.
 
+`LevelArtwork` is similarly campaign/presentation metadata; the domain, generator, solver, moves,
+and pathfinder remain unaware of it. Its pilot catalog maps Levels 1/30/80 to opaque texture keys and
+real asset paths, so a later SVG-to-WebP/AVIF switch does not affect game logic. `PlayScene` requests
+only the current Level texture (initial preload or dynamic load before Next), reuses cached textures
+for Replay, and never bulk-prefetches. A missing/failed texture simply preserves ordinary gameplay
+and the Complete overlay. Main Menu loads no artwork.
+
+The pure `computeCoverPlacement` uses one maximum scale, preserving aspect ratio while centering and
+covering board bounds; a Phaser geometry mask clips overflow. Artwork is a separately referenced
+image beneath cell, tile, route, and blocker visuals, with reduced cell-backing opacity only on an
+eligible final Stage. Final-stage completion retains the strict order: derive completion, save when
+persistence is enabled, then show the clean artwork presentation, then the existing Complete flow.
+Debug jumps remain non-persistent. Gallery unlock state is derived solely from
+`completedThroughLevel`, without changing `CampaignProgressV1`.
+
+`npm run check:package-size` recursively reports total `dist`, artwork totals/files, and largest
+files after a build. It warns above 80,000,000 bytes and fails above 100,000,000. Future Gallery
+overview thumbnails and selected-image full-view loading prevent 100 full images becoming startup
+downloads; thumbnail production is intentionally deferred.
+
 
 Task 5.1 revises only the progression data after human playtesting; it does not alter domain generation, solving, path rules, or introduce new mechanics. Later difficulty mechanics remain deferred.
 

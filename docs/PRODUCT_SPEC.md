@@ -6,10 +6,30 @@
 - The first campaign contains 100 deterministic levels in 10 chapters of 10 levels.
 - The playtest-revised, data-informed difficulty curve grows board area and pair density from 4×4/4 pairs to 6×8/22 pairs. Profiles change frequently in the early campaign and more slowly later; chapters are organizational and do not imply one profile each. Solver-path measurements remain calibration proxies rather than claims about human difficulty.
 - Hint is the only player aid planned for v1. Shuffle is not part of v1 because the guaranteed-solvable campaign does not require deadlock recovery; it may be reconsidered only if future human playtesting demonstrates a real need.
-- The planned metagame consists of chapters and a cabinet.
+- The planned metagame consists of chapters and a collectible-artwork Gallery.
 - There is no hard timer, lives, economy, story, or characters.
 
 This is the agreed product nucleus, not a complete game design document.
+
+## Collectible artwork Gallery pilot
+
+Each campaign Level will eventually own one portrait illustration. On the Level's final Stage the
+artwork sits beneath tiles, symbols, routes, and static blockers; clearing tiles progressively
+reveals it. Small glimpses through the intentional 72 px cell / 64 px tile gaps are part of the
+design. Multi-stage Levels never show artwork on earlier Stages. Blockers may obscure it during
+play, but the post-clear presentation shows the clean original without gameplay objects.
+
+The current human-validation pilot covers only Levels 1, 30, and 80. All 100 Levels will receive
+artwork only after that pilot is validated. On a pilot final clear, campaign progress is saved
+**before** the non-timed “Image unlocked” presentation; Continue then opens the unchanged Complete
+overlay. Replays present the reward again. A future Gallery groups items by chapter and offers
+locked/unlocked overview and full view. Level N is unlocked exactly when
+`completedThroughLevel >= N`; there is no separate collection, inventory, reward, or seen-state save.
+
+Full-size artwork must not become startup payload: Main Menu downloads none, gameplay requests only
+the current Level's image, a future Gallery overview uses lightweight thumbnails, and Gallery full
+view loads only its selected image. Thumbnails are not part of this pilot. The pilot SVGs
+are placeholders and their sizes are not a realistic estimate for 100 production illustrations.
 
 ## Hint player aid
 

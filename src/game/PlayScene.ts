@@ -10,6 +10,7 @@ import {
   configureLogicalCamera, LOGICAL_GAME_HEIGHT, LOGICAL_GAME_WIDTH, setHiDpiTextResolution,
 } from "./Display.js";
 import { getHintMove } from "./Hint.js";
+import { computeCoverPlacement, getLevelArtwork, isArtworkRevealStage } from "./LevelArtwork.js";
 
 interface TileVisual {
   readonly card: Phaser.GameObjects.Rectangle;
@@ -44,6 +45,8 @@ export class PlayScene extends Phaser.Scene {
   private remainingText!: Phaser.GameObjects.Text;
   private seedText!: Phaser.GameObjects.Text;
   private completeOverlay: Phaser.GameObjects.Container | null = null;
+  private artworkPresentation: Phaser.GameObjects.Container | null = null;
+  private currentArtworkVisual: Phaser.GameObjects.Image | null = null;
   private pauseOverlay: Phaser.GameObjects.Container | null = null;
   private pauseButton!: Phaser.GameObjects.Rectangle;
   private pauseText!: Phaser.GameObjects.Text;
@@ -71,6 +74,10 @@ export class PlayScene extends Phaser.Scene {
 
   preload(): void {
     preloadTileSymbols(this);
+    const artwork = getLevelArtwork(this.currentLevelNumber);
+    if (artwork !== undefined && !this.textures.exists(artwork.assetKey)) {
+      this.load.image(artwork.assetKey, artwork.path);
+    }
   }
 
   create(): void {
@@ -104,24 +111,46 @@ export class PlayScene extends Phaser.Scene {
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.clearHintFeedback(false);
       this.hidePause();
+      this.artworkPresentation?.destroy(true);
     });
     this.loadStage();
   }
 
   private startLevel(): void {
     this.currentStageIndex = 0;
-    this.loadStage();
+    this.loadCurrentArtwork(() => this.loadStage());
+  }
+
+  private loadCurrentArtwork(onReady: () => void): void {
+    const artwork = getLevelArtwork(this.currentLevelNumber);
+    if (artwork === undefined || this.textures.exists(artwork.assetKey)) {
+      onReady();
+      return;
+    }
+    this.load.once(Phaser.Loader.Events.COMPLETE, () => {
+      if (!this.textures.exists(artwork.assetKey)) {
+        console.warn(`Artwork failed to load for Level ${artwork.levelNumber}: ${artwork.path}`);
+      }
+      onReady();
+    });
+    this.load.image(artwork.assetKey, artwork.path);
+    this.load.start();
   }
 
   private loadStage(animateIn = false): void {
     this.hidePause();
     this.completeOverlay?.destroy(true);
     this.completeOverlay = null;
+    this.artworkPresentation?.destroy(true);
+    this.artworkPresentation = null;
     this.destroyBoardVisuals();
     this.pauseButton.setVisible(true).setInteractive({ useHandCursor: true });
     this.pauseText.setVisible(true);
     this.hintButton.setVisible(true).setInteractive({ useHandCursor: true });
     this.hintText.setVisible(true);
+    this.levelText.setVisible(true);
+    this.remainingText.setVisible(true);
+    this.seedText.setVisible(true);
     this.selected = null;
     this.inputLocked = animateIn;
 
@@ -137,6 +166,7 @@ export class PlayScene extends Phaser.Scene {
     });
     this.renderStageStack(stageCount);
     this.currentBoardVisual = this.add.container(0, 0).setDepth(10);
+    this.renderArtwork();
     this.renderBoard();
     this.route = this.add.graphics().setDepth(20);
     this.currentBoardVisual.add(this.route);
@@ -162,9 +192,31 @@ export class PlayScene extends Phaser.Scene {
     this.currentBoardVisual?.destroy(true);
     this.stageStackVisual = null;
     this.currentBoardVisual = null;
+    this.currentArtworkVisual = null;
     this.frontSheet = null;
     this.nextSheet = null;
     this.tiles.clear();
+  }
+
+  private renderArtwork(): void {
+    const artwork = getLevelArtwork(this.currentLevelNumber);
+    if (artwork === undefined
+      || !isArtworkRevealStage(this.currentLevelNumber, this.currentStageIndex)
+      || !this.textures.exists(artwork.assetKey)) return;
+    const source = this.textures.get(artwork.assetKey).getSourceImage() as { width: number; height: number };
+    const width = this.layout.boardRight - this.layout.boardLeft;
+    const height = this.layout.boardBottom - this.layout.boardTop;
+    const placement = computeCoverPlacement(
+      source.width, source.height, this.layout.boardLeft, this.layout.boardTop, width, height,
+    );
+    const clip = this.add.graphics().fillStyle(0xffffff).fillRect(
+      this.layout.boardLeft, this.layout.boardTop, width, height,
+    ).setVisible(false);
+    const mask = clip.createGeometryMask();
+    const image = this.add.image(placement.x, placement.y, artwork.assetKey)
+      .setDisplaySize(placement.width, placement.height).setMask(mask).setDepth(-2);
+    this.currentBoardVisual!.add([clip, image]);
+    this.currentArtworkVisual = image;
   }
 
   private renderStageStack(stageCount: number): void {
@@ -193,7 +245,8 @@ export class PlayScene extends Phaser.Scene {
     for (let row = 0; row < this.board.height; row += 1) for (let col = 0; col < this.board.width; col += 1) {
       const point = { col, row };
       const { x, y } = this.layout.cellCenter(point);
-      const cell = this.add.rectangle(x, y, 64, 64, 0x1a2941, 0.52)
+      const revealActive = this.currentArtworkVisual !== null;
+      const cell = this.add.rectangle(x, y, 64, 64, 0x1a2941, revealActive ? 0.14 : 0.52)
         .setStrokeStyle(1, 0x324663, 0.65);
       this.currentBoardVisual!.add(cell);
       if (this.board.isBlocked(point)) {
@@ -351,7 +404,8 @@ export class PlayScene extends Phaser.Scene {
         this.progress = completion.progress;
         if (completion.shouldSave) this.progressStore.save(completion.progress);
       }
-      this.showComplete();
+      if (this.currentArtworkVisual !== null) this.showArtworkPresentation();
+      else this.showComplete();
       return;
     }
     this.tweens.add({
@@ -364,6 +418,42 @@ export class PlayScene extends Phaser.Scene {
     if (this.nextSheet !== null) {
       this.tweens.add({ targets: this.nextSheet, x: "-=7", y: "-=7", duration: 220, ease: "Quad.InOut" });
     }
+  }
+
+  private showArtworkPresentation(): void {
+    const artwork = getLevelArtwork(this.currentLevelNumber);
+    if (artwork === undefined || !this.textures.exists(artwork.assetKey)) {
+      this.showComplete();
+      return;
+    }
+    this.hidePause();
+    this.clearHintFeedback(false);
+    this.destroyBoardVisuals();
+    this.pauseButton.disableInteractive().setVisible(false);
+    this.pauseText.setVisible(false);
+    this.hintButton.disableInteractive().setVisible(false);
+    this.hintText.setVisible(false);
+    this.levelText.setVisible(false);
+    this.remainingText.setVisible(false);
+    this.seedText.setVisible(false);
+    const backdrop = this.add.rectangle(240, 400, 480, 800, 0x07101d, 1).setInteractive();
+    const source = this.textures.get(artwork.assetKey).getSourceImage() as { width: number; height: number };
+    const scale = Math.min(400 / source.width, 540 / source.height);
+    const image = this.add.image(240, 382, artwork.assetKey)
+      .setDisplaySize(source.width * scale, source.height * scale);
+    const title = setHiDpiTextResolution(this.add.text(240, 690, "Image unlocked", {
+      color: "#ffffff", fontFamily: "Arial, sans-serif", fontSize: "30px", fontStyle: "bold",
+    }).setOrigin(0.5), this.renderScale);
+    const button = this.add.rectangle(240, 746, 190, 48, 0x3976b9).setStrokeStyle(2, 0xd6eaff)
+      .setInteractive({ useHandCursor: true }).on("pointerdown", () => {
+        this.artworkPresentation?.destroy(true);
+        this.artworkPresentation = null;
+        this.showComplete();
+      });
+    const buttonText = setHiDpiTextResolution(this.add.text(240, 746, "Continue", {
+      color: "#ffffff", fontFamily: "Arial, sans-serif", fontSize: "20px", fontStyle: "bold",
+    }).setOrigin(0.5), this.renderScale);
+    this.artworkPresentation = this.add.container(0, 0, [backdrop, image, title, button, buttonText]).setDepth(40);
   }
 
   private showComplete(): void {
@@ -402,7 +492,8 @@ export class PlayScene extends Phaser.Scene {
   }
 
   private showPause(): void {
-    if (this.inputLocked || this.hintActive || this.completeOverlay !== null || this.pauseOverlay !== null) return;
+    if (this.inputLocked || this.hintActive || this.completeOverlay !== null
+      || this.artworkPresentation !== null || this.pauseOverlay !== null) return;
     this.showPauseMenu();
   }
 

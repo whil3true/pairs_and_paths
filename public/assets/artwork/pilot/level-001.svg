@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 1280" role="img" aria-label="Sunrise over green hills">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#174f78"/>
+      <stop offset="1" stop-color="#f2ad70"/>
+    </linearGradient>
+    <radialGradient id="sun">
+      <stop offset="0" stop-color="#fff7b8"/>
+      <stop offset="1" stop-color="#ffe08a" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="960" height="1280" fill="url(#sky)"/>
+  <circle cx="720" cy="290" r="145" fill="url(#sun)"/>
+  <path d="M0 760 Q150 930 320 745 T670 720 T960 770 V1280 H0Z" fill="#21685e"/>
+  <path d="M0 970 Q180 1120 390 910 T760 940 T960 920 V1280 H0Z" fill="#0b3940"/>
+</svg>

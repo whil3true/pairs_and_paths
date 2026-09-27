@@ -14,6 +14,63 @@ import {
   MULTI_STAGE_LEVELS, createLevelStage, getLevelStageConfigs, getStageClearOutcome, getStageCount, preStageSeed,
 } from "../.test-dist/game/LevelSequence.js";
 import { getTileSymbol, TILE_ACCENT_COLORS, TILE_SYMBOLS } from "../.test-dist/game/TileSymbols.js";
+import {
+  computeCoverPlacement, getLevelArtwork, isArtworkRevealStage, isArtworkUnlocked, LEVEL_ARTWORK,
+} from "../.test-dist/game/LevelArtwork.js";
+
+test("pilot artwork catalog and final-stage reveal eligibility are explicit", () => {
+  assert.deepEqual(LEVEL_ARTWORK.map(({ levelNumber }) => levelNumber), [1, 30, 80]);
+  for (const level of [1, 30, 80]) assert.equal(getLevelArtwork(level)?.levelNumber, level);
+  assert.equal(getLevelArtwork(2), undefined);
+  assert.equal(isArtworkRevealStage(1, 0), true);
+  assert.equal(isArtworkRevealStage(30, 0), false);
+  assert.equal(isArtworkRevealStage(30, 1), false);
+  assert.equal(isArtworkRevealStage(30, 2), true);
+});
+
+test("pilot artwork assets are self-contained 960x1280 SVG files", async () => {
+  const artworkDir = new URL("../public/assets/artwork/pilot/", import.meta.url);
+  assert.deepEqual((await readdir(artworkDir)).sort(),
+    ["level-001.svg", "level-030.svg", "level-080.svg"]);
+  assert.deepEqual(LEVEL_ARTWORK.map(({ path }) => path), [
+    "assets/artwork/pilot/level-001.svg",
+    "assets/artwork/pilot/level-030.svg",
+    "assets/artwork/pilot/level-080.svg",
+  ]);
+  for (const artwork of LEVEL_ARTWORK) {
+    const svg = await readFile(new URL(`../public/${artwork.path}`, import.meta.url), "utf8");
+    assert.match(svg, /^<svg\b/);
+    assert.match(svg, /viewBox="0 0 960 1280"/);
+    assert.doesNotMatch(svg, /<(?:script|image)\b/i);
+    assert.doesNotMatch(svg, /\bhref\s*=/i);
+    assert.doesNotMatch(svg, /data:/i);
+  }
+});
+
+test("artwork unlock is derived only from completed campaign progress", () => {
+  assert.equal(isArtworkUnlocked({ version: 1, completedThroughLevel: 0 }, 1), false);
+  assert.equal(isArtworkUnlocked({ version: 1, completedThroughLevel: 1 }, 1), true);
+  assert.equal(isArtworkUnlocked({ version: 1, completedThroughLevel: 1 }, 2), false);
+  assert.equal(isArtworkUnlocked({ version: 1, completedThroughLevel: 30 }, 30), true);
+  assert.equal(isArtworkUnlocked({ version: 1, completedThroughLevel: 30 }, 31), false);
+});
+
+test("cover placement preserves aspect ratio, covers, and centers square and 6x8 boards", () => {
+  for (const destination of [{ x: 96, y: 276, width: 288, height: 288 },
+    { x: 24, y: 132, width: 432, height: 576 }]) {
+    const result = computeCoverPlacement(960, 1280,
+      destination.x, destination.y, destination.width, destination.height);
+    assert.equal(result.width / result.height, 960 / 1280);
+    assert.ok(result.width >= destination.width);
+    assert.ok(result.height >= destination.height);
+    assert.equal(result.x, destination.x + destination.width / 2);
+    assert.equal(result.y, destination.y + destination.height / 2);
+    assert.equal(result.width, 960 * result.scale);
+    assert.equal(result.height, 1280 * result.scale);
+  }
+  assert.deepEqual(computeCoverPlacement(960, 1280, 0, 0, 432, 576),
+    { x: 216, y: 288, width: 432, height: 576, scale: 0.45 });
+});
 
 test("tile symbol catalog covers the campaign with stable unique assets and valid reusable accents", () => {
   const maxCampaignTileId = Math.max(...Array.from({ length: TOTAL_LEVELS }, (_, index) => index + 1)
