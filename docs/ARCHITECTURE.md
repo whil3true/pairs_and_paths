@@ -28,9 +28,9 @@ only the current Level texture (initial preload or dynamic load before Next), re
 for Replay, and never bulk-prefetches. A missing/failed texture simply preserves ordinary gameplay
 and the Complete overlay. Main Menu loads no artwork.
 
-The pure `computeCoverCrop` derives a centered source crop and exact destination rectangle from the
-active final-stage `BoardLayout` bounds. `PlayScene` applies that crop directly to the Phaser image,
-preserving aspect ratio and physically limiting rectangular-board rendering without a geometry mask.
+The pure `computeContainedSquarePlacement` derives the largest centered square inside the active
+final-stage `BoardLayout` bounds. `PlayScene` displays the full square source at that uniform size,
+without cropping or stretching it; portrait boards retain ordinary board space above and below it.
 Artwork is a separately referenced image beneath cell, tile, route, and blocker visuals, with reduced
 cell-backing opacity only on an eligible final Stage. Final-stage completion retains the strict order:
 derive completion, save when persistence is enabled, then show the clean full-square artwork

@@ -15,7 +15,7 @@ import {
 } from "../.test-dist/game/LevelSequence.js";
 import { getTileSymbol, TILE_ACCENT_COLORS, TILE_SYMBOLS } from "../.test-dist/game/TileSymbols.js";
 import {
-  computeCoverCrop, getLevelArtwork, isArtworkRevealStage, isArtworkUnlocked, LEVEL_ARTWORK,
+  computeContainedSquarePlacement, getLevelArtwork, isArtworkRevealStage, isArtworkUnlocked, LEVEL_ARTWORK,
 } from "../.test-dist/game/LevelArtwork.js";
 
 test("pilot artwork catalog and final-stage reveal eligibility are explicit", () => {
@@ -55,40 +55,39 @@ test("artwork unlock is derived only from completed campaign progress", () => {
   assert.equal(isArtworkUnlocked({ version: 1, completedThroughLevel: 30 }, 31), false);
 });
 
-test("square artwork cover crops are centered and exactly match final board bounds", () => {
+test("square artwork placement is centered within final board bounds", () => {
   const cases = [
-    { columns: 4, rows: 4 },
-    { columns: 6, rows: 7 },
-    { columns: 6, rows: 8 },
+    { columns: 4, rows: 4, width: 288, height: 288, size: 288, verticalMargin: 0 },
+    { columns: 6, rows: 7, width: 432, height: 504, size: 432, verticalMargin: 72 },
+    { columns: 6, rows: 8, width: 432, height: 576, size: 432, verticalMargin: 144 },
   ];
-  for (const { columns, rows } of cases) {
+  for (const { columns, rows, width, height, size, verticalMargin } of cases) {
     const board = new BoardLayout({
       sceneWidth: 480, sceneHeight: 800, boardWidth: columns, boardHeight: rows,
     });
-    const width = board.boardRight - board.boardLeft;
-    const height = board.boardBottom - board.boardTop;
-    const crop = computeCoverCrop(960, 960, board.boardLeft, board.boardTop, width, height);
-    assert.equal(crop.destinationX, board.boardLeft);
-    assert.equal(crop.destinationY, board.boardTop);
-    assert.equal(crop.destinationX + crop.destinationWidth, board.boardRight);
-    assert.equal(crop.destinationY + crop.destinationHeight, board.boardBottom);
-    assert.equal(crop.sourceWidth / crop.sourceHeight, width / height);
-    assert.equal(crop.sourceX, (960 - crop.sourceWidth) / 2);
-    assert.equal(crop.sourceY, (960 - crop.sourceHeight) / 2);
-    assert.equal(crop.sourceWidth * crop.scale, width);
-    assert.equal(crop.sourceHeight * crop.scale, height);
-    assert.deepEqual(computeCoverCrop(960, 960, board.boardLeft, board.boardTop, width, height), crop);
+    assert.equal(board.boardRight - board.boardLeft, width);
+    assert.equal(board.boardBottom - board.boardTop, height);
+    const placement = computeContainedSquarePlacement(
+      board.boardLeft, board.boardTop, width, height,
+    );
+    assert.deepEqual(placement, {
+      x: board.boardLeft + (width - size) / 2,
+      y: board.boardTop + (height - size) / 2,
+      size,
+    });
+    assert.equal(placement.x + size / 2, (board.boardLeft + board.boardRight) / 2);
+    assert.equal(placement.y + size / 2, (board.boardTop + board.boardBottom) / 2);
+    assert.equal((placement.y - board.boardTop) * 2, verticalMargin);
+    assert.deepEqual(computeContainedSquarePlacement(
+      board.boardLeft, board.boardTop, width, height,
+    ), placement);
+    assert.deepEqual(Object.keys(placement).sort(), ["size", "x", "y"]);
   }
 
-  const square = computeCoverCrop(960, 960, 96, 276, 288, 288);
-  assert.deepEqual({
-    sourceX: square.sourceX, sourceY: square.sourceY,
-    sourceWidth: square.sourceWidth, sourceHeight: square.sourceHeight,
-  }, { sourceX: 0, sourceY: 0, sourceWidth: 960, sourceHeight: 960 });
   for (const dimensions of [
-    [0, 960, 0, 0, 100, 100], [960, -1, 0, 0, 100, 100],
-    [960, 960, 0, 0, 0, 100], [960, 960, 0, 0, 100, Number.NaN],
-  ]) assert.throws(() => computeCoverCrop(...dimensions), RangeError);
+    [0, 0, 0, 100], [0, 0, 100, -1],
+    [Number.NaN, 0, 100, 100], [0, Number.POSITIVE_INFINITY, 100, 100],
+  ]) assert.throws(() => computeContainedSquarePlacement(...dimensions), RangeError);
 });
 
 test("tile symbol catalog covers the campaign with stable unique assets and valid reusable accents", () => {
