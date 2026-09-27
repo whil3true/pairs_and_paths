@@ -13,7 +13,7 @@
 current-stage move as two cyan tile outlines for 900 ms. A separate `hintActive` guard blocks tile
 and repeated Hint input without changing transition locking. Board-visual disposal cancels the
 timer before stage replacement, Replay, Next, restart, or shutdown, and completion hides and
-disables the Hint control. Hint has no persistence or economy; Shuffle remains deferred.
+disables the Hint control. Hint has no persistence or economy; Shuffle is not part of v1.
 
 `src/progress` owns the versioned `{ version: 1, completedThroughLevel: 0..100 }` schema, strict untrusted-data parsing, monotonic completion, and derived resume/unlock/completion rules. `ProgressStore` is the narrow `load`/`save`/`clear` boundary. `WebProgressStore` currently backs it with the single `localStorage` key `pairs-and-paths:campaign-progress`; every storage operation is contained so unavailable or throwing browser storage degrades to a non-persistent session. Malformed and unknown-version payloads fall back to initial progress; explicit migrations can be added later. A Yandex or cloud implementation can replace this backend without changing campaign rules or adding persistence to `PlatformService`.
 
@@ -49,3 +49,9 @@ Pre-stage seeds use a documented uint32 namespace: `imul(level, 0x85ebca6b) ^ im
 ## Player navigation scenes
 
 `BootScene` applies the pure startup route through ordinary Phaser scene transitions. Normal startup enters `MainMenuScene`; gated level jumps and the symbol gallery bypass it. `MainMenuScene` and `LevelSelectScene` load `ProgressStore` on every entry so completed gameplay is immediately reflected. Pure `CampaignNavigation` functions own menu actions, level states, and chapter ranges. `PlayScene` is registered once with stable platform/store/render dependencies and receives level, stage, and persistence mode through Phaser start data. Menu exits do not write board state. All player scenes retain the logical `480×800` camera and HiDPI text helpers; no router or navigation manager exists.
+
+## Gameplay pause ownership
+
+Pause is presentation state owned directly by `PlayScene`, not a separate `PauseScene`, generic modal manager, or gameplay-state framework. The overlay and its restart/exit confirmation views guard board, Hint, and Pause input while leaving the current board, stage, removed tiles, blockers, and selection intact. Resume only destroys the overlay. Confirmed Restart uses the normal deterministic level reload, resetting the current level to Stage 1; confirmed Exit starts `MainMenuScene` without writing unfinished state. The final-stage Complete overlay disables Pause and keeps its direct Menu action, because campaign completion has already been persisted.
+
+Future user-driven pause and resume boundaries may call platform `GameplayAPI.stop()` and `GameplayAPI.start()` respectively. Platform-driven and advertisement-driven lifecycle handling are separate future concerns; no SDK hook exists yet. Future Music and SFX volumes likewise belong to a separate persistent settings concern, never the `CampaignProgress` schema.

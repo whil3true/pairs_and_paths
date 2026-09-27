@@ -83,4 +83,12 @@ After deployment, reset with `?debug=1&resetProgress=1`, then use the normal URL
 
 ## Navigation verification
 
-Pure tests cover fresh/in-progress/completed primary actions, all three level states, selection eligibility, chapter ranges/defaults, strict `setProgress` parsing, reset precedence, and normal/gallery/debug-play startup routes. Manual QA should verify the 5×2 chapter grid and non-wrapping arrows, current frontier defaults, fresh progress after returning from gameplay, old-level replay without regression, and Menu exits restarting unfinished levels at Stage 1. Complete overlays retain Next/Restart and Replay and add Menu. Debug jumps remain persistence-disabled.
+Pure tests cover fresh/in-progress/completed primary actions, all three level states, selection eligibility, chapter ranges/defaults, strict `setProgress` parsing, reset precedence, and normal/gallery/debug-play startup routes. Manual QA should verify the 5×2 chapter grid and non-wrapping arrows, current frontier defaults, fresh progress after a confirmed pause-menu exit, and old-level replay without regression. Complete overlays retain Next/Restart and Replay and add a direct Menu exit. Debug jumps remain persistence-disabled.
+
+## Pause flow verification
+
+Phaser overlay pixels are intentionally not unit-tested. At `?debug=1&level=1`, select a tile, open Pause, and verify the selection remains visible while board and Hint input do nothing; Resume must restore interaction with the same board and selection. After removing pairs, check that both Restart level and Exit to menu show confirmation, and that each Cancel returns to Pause without resuming. Confirm Restart produces the original deterministic Level 1 Stage 1 board.
+
+At `?debug=1&level=30&stage=2`, Resume must retain Stage 2 while confirmed Restart must return to fresh Stage 1. A confirmed Exit must enter Main Menu, and re-entry must start fresh at Stage 1. With `?debug=1&setProgress=20`, partially play Level 21 normally, confirm Exit, and verify Main Menu still reports 20/100 and Continue Level 21. A separate `?debug=1&level=80` Exit must leave real stored progress unchanged.
+
+Press Pause during Hint's 900 ms feedback and during pair-removal, blocked-pair, and stage-transition locks; it must be ignored until each transient lock ends. While any pause or confirmation view is open, only its current controls may respond and Pause must not stack another overlay. Complete a level and verify Pause is hidden/disabled, Complete Menu exits directly without confirmation, and Replay/Next restore normal gameplay with Pause available. Also verify overlay objects and interactions do not survive Resume, Restart, Exit, shutdown, completion, Replay, or Next.
