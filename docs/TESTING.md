@@ -84,13 +84,15 @@ After deployment, reset with `?debug=1&resetProgress=1`, then use the normal URL
 ## Collectible artwork pilot QA
 
 - Level 1 (`?debug=1&level=1`): confirm small gap glimpses, readable cards/symbols, progressive
-  reveal, exact board-bound containment, centered undistorted crop, clean full-square “Image
-  unlocked” presentation, and Continue opening the ordinary Complete overlay. Partially reveal,
+  reveal, full square artwork exactly filling the square board without cropping or stretching, clean
+  full-square “Image unlocked” presentation, and Continue opening the ordinary Complete overlay. Partially reveal,
   Pause, and Resume; board and artwork must be unchanged.
-- Level 30 (`?debug=1&level=30&stage=2`): Stage 2 has no art; Stage 3 gains it. Direct Stage 3 does
-  too, while Restart returns to art-free Stage 1.
-- Level 80 (`?debug=1&level=80`): advance to the final Stage and confirm tiles and opaque blockers
-  cover the art; the clean presentation contains neither.
+- Level 30 (`?debug=1&level=30&stage=2`): Stage 2 has no art; Stage 3 gains the full square centered
+  in its 6×7 board, leaving ordinary board background above and below it. Direct Stage 3 does too,
+  while Restart returns to art-free Stage 1.
+- Level 80 (`?debug=1&level=80`): advance to the final Stage and confirm the full square is centered
+  in its 6×8 board without cropping or stretching, with ordinary board background above and below it.
+  Tiles and opaque blockers cover the art; the clean presentation contains neither.
 - Level 2 (`?debug=1&level=2`): no request, placeholder, or reward presentation; completion goes
   directly to Complete. Temporarily remove a pilot file in a local build and confirm the same
   graceful fallback without blocked gameplay.
@@ -101,7 +103,7 @@ After deployment, reset with `?debug=1&resetProgress=1`, then use the normal URL
   unlocked. During reward presentation Pause and Hint are hidden and no Pause overlay may coexist.
 
 Pure tests cover catalog presence/absence, final-stage eligibility, derived unlock state, and centered
-source-crop geometry for 4×4, 6×7, and 6×8 final-board destinations. Phaser pixels remain manual QA.
+square placement for 4×4, 6×7, and 6×8 final-board destinations. Phaser pixels remain manual QA.
 After build, run `npm run check:package-size`; pilot SVG sizes do not forecast a 100-image art package.
 
 ## Navigation verification

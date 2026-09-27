@@ -10,7 +10,7 @@ import {
   configureLogicalCamera, LOGICAL_GAME_HEIGHT, LOGICAL_GAME_WIDTH, setHiDpiTextResolution,
 } from "./Display.js";
 import { getHintMove } from "./Hint.js";
-import { computeCoverCrop, getLevelArtwork, isArtworkRevealStage } from "./LevelArtwork.js";
+import { computeContainedSquarePlacement, getLevelArtwork, isArtworkRevealStage } from "./LevelArtwork.js";
 
 interface TileVisual {
   readonly card: Phaser.GameObjects.Rectangle;
@@ -203,18 +203,16 @@ export class PlayScene extends Phaser.Scene {
     if (artwork === undefined
       || !isArtworkRevealStage(this.currentLevelNumber, this.currentStageIndex)
       || !this.textures.exists(artwork.assetKey)) return;
-    const source = this.textures.get(artwork.assetKey).getSourceImage() as { width: number; height: number };
     const width = this.layout.boardRight - this.layout.boardLeft;
     const height = this.layout.boardBottom - this.layout.boardTop;
-    const crop = computeCoverCrop(
-      source.width, source.height, this.layout.boardLeft, this.layout.boardTop, width, height,
+    const placement = computeContainedSquarePlacement(
+      this.layout.boardLeft, this.layout.boardTop, width, height,
     );
     const image = this.add.image(
-      crop.destinationX + crop.destinationWidth / 2,
-      crop.destinationY + crop.destinationHeight / 2,
+      placement.x + placement.size / 2,
+      placement.y + placement.size / 2,
       artwork.assetKey,
-    ).setCrop(crop.sourceX, crop.sourceY, crop.sourceWidth, crop.sourceHeight)
-      .setScale(crop.scale).setDepth(-2);
+    ).setDisplaySize(placement.size, placement.size).setDepth(-2);
     this.currentBoardVisual!.add(image);
     this.currentArtworkVisual = image;
   }

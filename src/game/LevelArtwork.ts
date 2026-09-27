@@ -24,47 +24,30 @@ export const isArtworkRevealStage = (levelNumber: number, stageIndex: number): b
 export const isArtworkUnlocked = (progress: CampaignProgress, levelNumber: number): boolean =>
   progress.completedThroughLevel >= levelNumber;
 
-export interface CoverCrop {
-  readonly destinationX: number;
-  readonly destinationY: number;
-  readonly destinationWidth: number;
-  readonly destinationHeight: number;
-  readonly sourceX: number;
-  readonly sourceY: number;
-  readonly sourceWidth: number;
-  readonly sourceHeight: number;
-  readonly scale: number;
+export interface ContainedSquarePlacement {
+  readonly x: number;
+  readonly y: number;
+  readonly size: number;
 }
 
-/** Returns the centered source crop that covers exactly the requested destination rectangle. */
-export const computeCoverCrop = (
-  sourceWidth: number,
-  sourceHeight: number,
+/** Returns the largest centered square contained by the requested destination rectangle. */
+export const computeContainedSquarePlacement = (
   destinationX: number,
   destinationY: number,
   destinationWidth: number,
   destinationHeight: number,
-): CoverCrop => {
-  if ([sourceWidth, sourceHeight, destinationX, destinationY, destinationWidth, destinationHeight]
+): ContainedSquarePlacement => {
+  if ([destinationX, destinationY, destinationWidth, destinationHeight]
     .some((value) => !Number.isFinite(value))) {
-    throw new RangeError("Artwork and destination values must be finite numbers");
+    throw new RangeError("Artwork destination values must be finite numbers");
   }
-  if ([sourceWidth, sourceHeight, destinationWidth, destinationHeight]
-    .some((value) => value <= 0)) {
-    throw new RangeError("Artwork and destination dimensions must be positive finite numbers");
+  if (destinationWidth <= 0 || destinationHeight <= 0) {
+    throw new RangeError("Artwork destination dimensions must be positive finite numbers");
   }
-  const scale = Math.max(destinationWidth / sourceWidth, destinationHeight / sourceHeight);
-  const croppedSourceWidth = destinationWidth / scale;
-  const croppedSourceHeight = destinationHeight / scale;
+  const size = Math.min(destinationWidth, destinationHeight);
   return {
-    destinationX,
-    destinationY,
-    destinationWidth,
-    destinationHeight,
-    sourceX: (sourceWidth - croppedSourceWidth) / 2,
-    sourceY: (sourceHeight - croppedSourceHeight) / 2,
-    sourceWidth: croppedSourceWidth,
-    sourceHeight: croppedSourceHeight,
-    scale,
+    x: destinationX + (destinationWidth - size) / 2,
+    y: destinationY + (destinationHeight - size) / 2,
+    size,
   };
 };
