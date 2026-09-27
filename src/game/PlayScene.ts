@@ -9,6 +9,7 @@ import { getTileSymbol, preloadTileSymbols } from "./TileSymbols.js";
 import {
   configureLogicalCamera, LOGICAL_GAME_HEIGHT, LOGICAL_GAME_WIDTH, setHiDpiTextResolution,
 } from "./Display.js";
+import { getHintMove } from "./Hint.js";
 
 interface TileVisual {
   readonly card: Phaser.GameObjects.Rectangle;
@@ -25,6 +26,8 @@ export class PlayScene extends Phaser.Scene {
   private layout!: BoardLayout;
   private selected: GridPoint | null = null;
   private inputLocked = false;
+  private hintActive = false;
+  private hintTimer: Phaser.Time.TimerEvent | null = null;
   private readonly tiles = new Map<string, TileVisual>();
   private route!: Phaser.GameObjects.Graphics;
   private stageStackVisual: Phaser.GameObjects.Container | null = null;
@@ -35,6 +38,8 @@ export class PlayScene extends Phaser.Scene {
   private remainingText!: Phaser.GameObjects.Text;
   private seedText!: Phaser.GameObjects.Text;
   private completeOverlay: Phaser.GameObjects.Container | null = null;
+  private hintButton!: Phaser.GameObjects.Rectangle;
+  private hintText!: Phaser.GameObjects.Text;
   private currentLevelNumber = 1;
   private currentStageIndex = 0;
   private persistenceEnabled = true;
@@ -80,6 +85,14 @@ export class PlayScene extends Phaser.Scene {
     }).setOrigin(0.5), this.renderScale);
     menuButton.setDepth(30);
     menuText.setDepth(31);
+    this.hintButton = this.add.rectangle(426, 34, 84, 38, 0x243c5c).setStrokeStyle(1, 0x91acce)
+      .setInteractive({ useHandCursor: true }).on("pointerdown", () => this.showHint());
+    this.hintText = setHiDpiTextResolution(this.add.text(426, 34, "Hint", {
+      color: "#dceaff", fontFamily: "Arial, sans-serif", fontSize: "16px",
+    }).setOrigin(0.5), this.renderScale);
+    this.hintButton.setDepth(30);
+    this.hintText.setDepth(31);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.clearHintFeedback(false));
     this.loadStage();
   }
 
@@ -92,6 +105,8 @@ export class PlayScene extends Phaser.Scene {
     this.completeOverlay?.destroy(true);
     this.completeOverlay = null;
     this.destroyBoardVisuals();
+    this.hintButton.setVisible(true).setInteractive({ useHandCursor: true });
+    this.hintText.setVisible(true);
     this.selected = null;
     this.inputLocked = animateIn;
 
@@ -123,6 +138,7 @@ export class PlayScene extends Phaser.Scene {
   }
 
   private destroyBoardVisuals(): void {
+    this.clearHintFeedback(false);
     if (this.frontSheet !== null) this.tweens.killTweensOf(this.frontSheet);
     if (this.nextSheet !== null) this.tweens.killTweensOf(this.nextSheet);
     if (this.stageStackVisual !== null) this.tweens.killTweensOf(this.stageStackVisual);
@@ -193,7 +209,7 @@ export class PlayScene extends Phaser.Scene {
   }
 
   private onCellTapped(point: GridPoint): void {
-    if (this.inputLocked || this.board.isBlocked(point)) return;
+    if (this.inputLocked || this.hintActive || this.board.isBlocked(point)) return;
     if (this.board.isEmpty(point)) {
       this.setSelected(null);
       return;
@@ -241,6 +257,33 @@ export class PlayScene extends Phaser.Scene {
     visual.card.setScale(selected ? 1.06 : 1);
     visual.symbol.setDisplaySize(visual.symbolSize * (selected ? 1.06 : 1),
       visual.symbolSize * (selected ? 1.06 : 1));
+  }
+
+  private showHint(): void {
+    if (this.inputLocked || this.hintActive || this.completeOverlay !== null) return;
+    this.setSelected(null);
+    const move = getHintMove(this.board);
+    if (move === null) {
+      if (this.board.hasTiles()) console.warn("Hint requested, but the current board has no legal moves");
+      return;
+    }
+    this.hintActive = true;
+    for (const point of [move.start, move.end]) {
+      this.tiles.get(keyOf(point))?.card.setStrokeStyle(5, 0x45d8d0);
+    }
+    this.hintTimer = this.time.delayedCall(900, () => this.clearHintFeedback(true));
+  }
+
+  private clearHintFeedback(restoreStyle: boolean): void {
+    this.hintTimer?.remove(false);
+    this.hintTimer = null;
+    if (restoreStyle && this.hintActive) {
+      for (const visual of this.tiles.values()) {
+        visual.card.setStrokeStyle(3, 0xe8f3ff).setScale(1);
+        visual.symbol.setDisplaySize(visual.symbolSize, visual.symbolSize);
+      }
+    }
+    this.hintActive = false;
   }
 
   private completeMove(move: LegalMove): void {
@@ -307,6 +350,9 @@ export class PlayScene extends Phaser.Scene {
   }
 
   private showComplete(): void {
+    this.clearHintFeedback(false);
+    this.hintButton.disableInteractive().setVisible(false);
+    this.hintText.setVisible(false);
     const shade = this.add.rectangle(240, 420, 440, 330, 0x0b1220, 0.96).setStrokeStyle(2, 0x7fa8d8);
     const campaignComplete = !hasNextLevel(this.currentLevelNumber);
     const title = setHiDpiTextResolution(this.add.text(240, 315, campaignComplete ? "Campaign complete" : "Complete", {
