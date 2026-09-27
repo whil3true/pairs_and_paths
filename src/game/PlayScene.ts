@@ -17,6 +17,11 @@ interface TileVisual {
   readonly symbolSize: number;
 }
 
+const TILE_STROKE_DEFAULT = 0xb9cce2;
+const TILE_STROKE_SELECTED = 0xffd34e;
+const TILE_STROKE_HINT = 0x45d8d0;
+const TILE_STROKE_BLOCKED = 0xff4d5e;
+
 const keyOf = ({ col, row }: GridPoint): string => `${col},${row}`;
 const samePoint = (left: GridPoint, right: GridPoint): boolean =>
   left.col === right.col && left.row === right.row;
@@ -201,7 +206,7 @@ export class PlayScene extends Phaser.Scene {
     const { x, y } = this.layout.cellCenter(point);
     const definition = getTileSymbol(tileId);
     const card = this.add.rectangle(x, y, this.layout.tileSize, this.layout.tileSize, 0x253b57)
-      .setStrokeStyle(3, 0xb9cce2).setDepth(5).setName("board-cell");
+      .setStrokeStyle(3, TILE_STROKE_DEFAULT).setDepth(5).setName("board-cell");
     const symbolSize = Math.round(this.layout.tileSize * 0.66);
     const symbol = this.add.image(x, y, definition.assetKey).setDisplaySize(symbolSize, symbolSize)
       .setDepth(6);
@@ -237,7 +242,9 @@ export class PlayScene extends Phaser.Scene {
 
   private showBlockedPair(first: GridPoint, second: GridPoint): void {
     this.inputLocked = true;
-    for (const point of [first, second]) this.tiles.get(keyOf(point))?.card.setStrokeStyle(5, 0xff4d5e);
+    for (const point of [first, second]) {
+      this.tiles.get(keyOf(point))?.card.setStrokeStyle(5, TILE_STROKE_BLOCKED);
+    }
     this.time.delayedCall(180, () => {
       this.inputLocked = false;
       this.setSelected(null);
@@ -254,7 +261,8 @@ export class PlayScene extends Phaser.Scene {
   private styleTile(point: GridPoint, selected: boolean): void {
     const visual = this.tiles.get(keyOf(point));
     if (visual === undefined) return;
-    visual.card.setStrokeStyle(selected ? 5 : 3, selected ? 0xffd34e : 0xe8f3ff);
+    visual.card.setStrokeStyle(selected ? 5 : 3,
+      selected ? TILE_STROKE_SELECTED : TILE_STROKE_DEFAULT);
     visual.card.setScale(selected ? 1.06 : 1);
     visual.symbol.setDisplaySize(visual.symbolSize * (selected ? 1.06 : 1),
       visual.symbolSize * (selected ? 1.06 : 1));
@@ -271,7 +279,7 @@ export class PlayScene extends Phaser.Scene {
     this.hintActive = true;
     this.hintedPoints = [move.start, move.end];
     for (const point of this.hintedPoints) {
-      this.tiles.get(keyOf(point))?.card.setStrokeStyle(5, 0x45d8d0);
+      this.tiles.get(keyOf(point))?.card.setStrokeStyle(5, TILE_STROKE_HINT);
     }
     this.hintTimer = this.time.delayedCall(900, () => this.clearHintFeedback(true));
   }
