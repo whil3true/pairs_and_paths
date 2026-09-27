@@ -28,3 +28,7 @@ Stages are not spatial stacks: only one ordinary board exists at a time, with no
 ## Campaign progress
 
 The web build persists only the highest fully completed campaign level. Clearing a final stage writes progress before the Complete overlay is shown; clearing an intermediate stage does not. An unfinished level therefore resumes from its deterministic Stage 1 board after a refresh. Board contents, removed tiles, selection, routes, blockers, animations, and stage position are intentionally not saved. Completing Level 100 remains recorded even when “Restart from Level 1” is used; a later normal launch also starts the completed campaign at Level 1.
+
+## Player campaign navigation
+
+Normal startup opens a portrait Main Menu showing completed levels, a Play/Continue/Play again action, and Levels. Continue always targets Stage 1 of the first uncompleted level; after all 100 levels it becomes Play again at Level 1 without clearing completion. Levels presents one ten-level chapter at a time in a 5×2 grid and defaults to the highest unlocked level's chapter. Completed levels and the single current frontier are selectable; later levels are locked. Replaying an older level advances sequentially and cannot reduce the monotonic save. Leaving gameplay through Menu intentionally discards the unfinished board and stage state.

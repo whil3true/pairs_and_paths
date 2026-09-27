@@ -20,9 +20,9 @@ also begins at Stage 1. Refreshing the browser re-applies the initial position f
 The entire debug-jump session is persistence-disabled, so completing or advancing from the jumped
 level cannot alter real progress. Rendering debug flags without `level=N` keep normal persistence.
 
-Use `?debug=1&resetProgress=1` to clear web progress and start normal play at Level 1; without
+Use `?debug=1&resetProgress=1` to clear web progress and open the fresh Main Menu; without
 `debug=1` the reset parameter is ignored. Reset is processed before scene selection, so adding
-`&symbols=1` clears once and then opens the non-writing gallery.
+`&symbols=1` clears once and then opens the non-writing gallery. For developer QA only, `?debug=1&setProgress=N` writes an exact 0..100 completion fixture before routing; invalid, fractional, empty, or non-debug values are ignored, and reset wins over setProgress. It may be combined with gallery or an isolated debug level jump.
 
 `npm test` compiles to a temporary directory and uses `node:test`. The independent exhaustive path oracle is a brute-force simple-path DFS with no outside cells and no turn limit. Exhaustive boards compare existence, minimum turns, and minimum length; every returned production path is independently checked for bounds, occupancy, orthogonality, compactness, and deterministic repetition. Focused regressions cover 0, 1, 2, 3, and 5 turns, blocking, edge confinement, route ranking, and removal monotonicity.
 
@@ -70,3 +70,8 @@ On a wide and a narrow desktop browser, confirm the portrait game stays centered
 Pure tests cover the v1 schema and derived values, monotonic completion, strict malformed-data fallback, storage CRUD and thrown-operation containment, startup/debug isolation, and final-stage-only persistence boundaries for Levels 21, 30, and 100. No jsdom or Phaser scene is required.
 
 After deployment, reset with `?debug=1&resetProgress=1`, then use the normal URL and confirm Level 1. Complete Level 1 and refresh on its Complete overlay before pressing Next: normal play must open Level 2 Stage 1. Remove tiles from Level 2 and refresh before completion: Level 2 must restart with its fresh Stage 1 board. On a multi-stage level, verify intermediate clearance does not update the stored payload. With real progress through Level 1, complete `?debug=1&level=80`, then return to the normal URL and confirm it still opens Level 2. Finally, reset again and confirm normal play returns to Level 1.
+
+
+## Navigation verification
+
+Pure tests cover fresh/in-progress/completed primary actions, all three level states, selection eligibility, chapter ranges/defaults, strict `setProgress` parsing, reset precedence, and normal/gallery/debug-play startup routes. Manual QA should verify the 5×2 chapter grid and non-wrapping arrows, current frontier defaults, fresh progress after returning from gameplay, old-level replay without regression, and Menu exits restarting unfinished levels at Stage 1. Complete overlays retain Next/Restart and Replay and add Menu. Debug jumps remain persistence-disabled.

@@ -3,7 +3,7 @@ import type { PlatformService } from "../platform/PlatformService.js";
 import { recordStageCompletion, type CampaignProgress } from "../progress/CampaignProgress.js";
 import type { ProgressStore } from "../progress/ProgressStore.js";
 import { BoardLayout, getVisibleBackingCount } from "./BoardLayout.js";
-import type { DebugStartPosition } from "./DebugStart.js";
+import type { PlayStartData } from "./SceneStart.js";
 import { createLevelStage, getStageClearOutcome, getStageCount, hasNextLevel } from "./LevelSequence.js";
 import { getTileSymbol, preloadTileSymbols } from "./TileSymbols.js";
 import {
@@ -37,16 +37,22 @@ export class PlayScene extends Phaser.Scene {
   private completeOverlay: Phaser.GameObjects.Container | null = null;
   private currentLevelNumber = 1;
   private currentStageIndex = 0;
-  private readonly initialPosition: DebugStartPosition;
+  private persistenceEnabled = true;
+  private progress!: CampaignProgress;
 
   constructor(
     private readonly platform: PlatformService,
-    initialPosition: DebugStartPosition,
+    private readonly progressStore: ProgressStore,
     private readonly renderScale = 1,
-    private readonly persistence: { readonly store: ProgressStore; progress: CampaignProgress } | null = null,
   ) {
     super({ key: "PlayScene" });
-    this.initialPosition = initialPosition;
+  }
+
+  init(data: PlayStartData): void {
+    this.currentLevelNumber = data.levelNumber;
+    this.currentStageIndex = data.stageIndex;
+    this.persistenceEnabled = data.persistenceEnabled;
+    this.progress = this.progressStore.load();
   }
 
   preload(): void {
@@ -67,8 +73,13 @@ export class PlayScene extends Phaser.Scene {
     this.seedText = setHiDpiTextResolution(this.add.text(240, 766, "", {
       color: "#6f86a5", fontFamily: "Arial, sans-serif", fontSize: "13px",
     }).setOrigin(0.5), this.renderScale);
-    this.currentLevelNumber = this.initialPosition.levelNumber;
-    this.currentStageIndex = this.initialPosition.stageIndex;
+    const menuButton = this.add.rectangle(54, 34, 84, 38, 0x243c5c).setStrokeStyle(1, 0x91acce)
+      .setInteractive({ useHandCursor: true }).on("pointerdown", () => this.scene.start("MainMenuScene"));
+    const menuText = setHiDpiTextResolution(this.add.text(54, 34, "Menu", {
+      color: "#dceaff", fontFamily: "Arial, sans-serif", fontSize: "16px",
+    }).setOrigin(0.5), this.renderScale);
+    menuButton.setDepth(30);
+    menuText.setDepth(31);
     this.loadStage();
   }
 
@@ -272,13 +283,13 @@ export class PlayScene extends Phaser.Scene {
   private finishStage(): void {
     const outcome = getStageClearOutcome(this.currentLevelNumber, this.currentStageIndex);
     if (outcome.kind === "level-complete") {
-      if (this.persistence !== null) {
+      if (this.persistenceEnabled) {
         const completion = recordStageCompletion(
-          this.persistence.progress, this.currentLevelNumber, this.currentStageIndex,
+          this.progress, this.currentLevelNumber, this.currentStageIndex,
           getStageCount(this.currentLevelNumber),
         );
-        this.persistence.progress = completion.progress;
-        if (completion.shouldSave) this.persistence.store.save(completion.progress);
+        this.progress = completion.progress;
+        if (completion.shouldSave) this.progressStore.save(completion.progress);
       }
       this.showComplete();
       return;
@@ -296,9 +307,9 @@ export class PlayScene extends Phaser.Scene {
   }
 
   private showComplete(): void {
-    const shade = this.add.rectangle(240, 420, 440, 260, 0x0b1220, 0.96).setStrokeStyle(2, 0x7fa8d8);
+    const shade = this.add.rectangle(240, 420, 440, 330, 0x0b1220, 0.96).setStrokeStyle(2, 0x7fa8d8);
     const campaignComplete = !hasNextLevel(this.currentLevelNumber);
-    const title = setHiDpiTextResolution(this.add.text(240, 342, campaignComplete ? "Campaign complete" : "Complete", {
+    const title = setHiDpiTextResolution(this.add.text(240, 315, campaignComplete ? "Campaign complete" : "Complete", {
       color: "#ffffff", fontFamily: "Arial, sans-serif", fontSize: "36px", fontStyle: "bold",
     }).setOrigin(0.5), this.renderScale);
     const nextButton = this.add.rectangle(240, 418, 210, 58, 0x3976b9).setStrokeStyle(2, 0xd6eaff)
@@ -314,8 +325,13 @@ export class PlayScene extends Phaser.Scene {
     const replayText = setHiDpiTextResolution(this.add.text(240, 489, "Replay level", {
       color: "#dceaff", fontFamily: "Arial, sans-serif", fontSize: "18px",
     }).setOrigin(0.5), this.renderScale);
+    const menuButton = this.add.rectangle(240, 550, 180, 46, 0x243c5c).setStrokeStyle(1, 0x91acce)
+      .setInteractive({ useHandCursor: true }).on("pointerdown", () => this.scene.start("MainMenuScene"));
+    const menuText = setHiDpiTextResolution(this.add.text(240, 550, "Menu", {
+      color: "#dceaff", fontFamily: "Arial, sans-serif", fontSize: "18px",
+    }).setOrigin(0.5), this.renderScale);
     this.completeOverlay = this.add.container(
-      0, 0, [shade, title, nextButton, nextText, replayButton, replayText],
+      0, 0, [shade, title, nextButton, nextText, replayButton, replayText, menuButton, menuText],
     ).setDepth(40);
   }
 }

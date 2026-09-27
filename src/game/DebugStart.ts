@@ -39,3 +39,13 @@ export const isProgressResetRequested = (search: string): boolean => {
   const params = new URLSearchParams(search);
   return params.get("debug") === "1" && params.get("resetProgress") === "1";
 };
+
+/** Parses a developer-only progress fixture. Invalid or non-debug values are ignored. */
+export const parseDebugSetProgress = (search: string): number | null => {
+  const params = new URLSearchParams(search);
+  if (params.get("debug") !== "1") return null;
+  const value = params.get("setProgress");
+  if (value === null || value === "") return null;
+  const parsed = parseInteger(value);
+  return parsed !== null && parsed >= 0 && parsed <= TOTAL_LEVELS ? parsed : null;
+};

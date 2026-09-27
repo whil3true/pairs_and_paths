@@ -14,8 +14,7 @@ Developer QA can jump directly into the campaign with `?debug=1&level=N` (and op
 one-based `&stage=N`). Tile symbols are current visual-difficulty prototype assets rather than
 final production art.
 
-Normal launches resume at the first uncompleted level. Developer QA can clear that progress with
-`?debug=1&resetProgress=1`; campaign jumps are isolated and never update the saved campaign.
+Normal launches open the Main Menu. Continue enters Stage 1 of the first uncompleted level, while Levels offers chapter-paged access to completed and currently available levels. Developer QA can clear progress with `?debug=1&resetProgress=1` or set an exact fixture with `?debug=1&setProgress=N` (`N` from 0 through 100); reset wins when both are present. Campaign jumps remain isolated and never update saved progress.
 
 ## Commands
 
