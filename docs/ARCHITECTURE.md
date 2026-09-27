@@ -8,6 +8,13 @@
 
 `PlayScene` owns the current session level number. Next increments it before regeneration; Replay regenerates without changing it. Level 100 instead reports campaign completion and can restart the session at Level 1, never requesting Level 101. `BoardLayout` maps only real cells; route graphics consume arbitrary-length compact polylines. A blocked matching pair receives a brief red stroke before the second tile becomes selection. `src/platform` remains the existing small platform boundary. The project retains plain `tsc`, no bundler, and Phaser 4.2.1.
 
+`getHintMove(board)` is a pure game-layer policy seam that returns `findLegalMoves(board)[0]` or
+`null`; it neither caches a generator witness nor duplicates pathfinding. `PlayScene` projects that
+current-stage move as two cyan tile outlines for 900 ms. A separate `hintActive` guard blocks tile
+and repeated Hint input without changing transition locking. Board-visual disposal cancels the
+timer before stage replacement, Replay, Next, restart, or shutdown, and completion hides and
+disables the Hint control. Hint has no persistence or economy; Shuffle remains deferred.
+
 `src/progress` owns the versioned `{ version: 1, completedThroughLevel: 0..100 }` schema, strict untrusted-data parsing, monotonic completion, and derived resume/unlock/completion rules. `ProgressStore` is the narrow `load`/`save`/`clear` boundary. `WebProgressStore` currently backs it with the single `localStorage` key `pairs-and-paths:campaign-progress`; every storage operation is contained so unavailable or throwing browser storage degrades to a non-persistent session. Malformed and unknown-version payloads fall back to initial progress; explicit migrations can be added later. A Yandex or cloud implementation can replace this backend without changing campaign rules or adding persistence to `PlatformService`.
 
 Startup resolves normal play to Stage 1 of the first uncompleted level (or Level 1 after recorded campaign completion). A valid developer campaign jump bypasses stored position and disables writes for the entire resulting session. Other debug features retain normal persistence. The gated `?debug=1&resetProgress=1` clear runs before scene choice, so combining it with `symbols=1` clears once and then opens the gallery; the gallery itself never writes progress.

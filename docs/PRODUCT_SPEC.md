@@ -5,11 +5,22 @@
 - Boards are at most 6×8; levels are short and guaranteed solvable.
 - The first campaign contains 100 deterministic levels in 10 chapters of 10 levels.
 - The playtest-revised, data-informed difficulty curve grows board area and pair density from 4×4/4 pairs to 6×8/22 pairs. Profiles change frequently in the early campaign and more slowly later; chapters are organizational and do not imply one profile each. Solver-path measurements remain calibration proxies rather than claims about human difficulty.
-- Hint and Shuffle are the planned player aids.
+- Hint is the first implemented player aid; Shuffle remains planned and deferred.
 - The planned metagame consists of chapters and a cabinet.
 - There is no hard timer, lives, economy, story, or characters.
 
 This is the agreed product nucleus, not a complete game design document.
+
+## Hint player aid
+
+During active play, the top-right Hint button highlights both tiles of the first move returned by
+`findLegalMoves` for the current board, using a brief cyan outline. The deterministic hint is
+informational: it does not draw the route, remove tiles, alter the generated stage or campaign
+progress, or persist usage. Any manual selection is cleared first, and board input plus repeated
+Hint presses are ignored during the 900 ms feedback. Prototype usage is unlimited, with no
+currency, cooldown, ads, or save-data field. A board with remaining tiles but no legal move is an
+invariant failure and only produces a warning; it is not shuffled, regenerated, or treated as a
+loss. Hint is unavailable on the Complete overlay. Shuffle remains deferred.
 
 Tile recognition is symbol-first: simple silhouettes carry identity and a small reused accent palette is secondary. Numeric IDs are not visible during normal play. The current 30 prototype symbols keep local SVG masters under `art/source/symbols` and ship as 256×256 transparent PNG runtime textures under `public/assets/symbols`; final themed art may replace them without changing `TileId` or campaign content.
 

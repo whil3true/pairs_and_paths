@@ -26,6 +26,15 @@ Use `?debug=1&resetProgress=1` to clear web progress and open the fresh Main Men
 
 `npm test` compiles to a temporary directory and uses `node:test`. The independent exhaustive path oracle is a brute-force simple-path DFS with no outside cells and no turn limit. Exhaustive boards compare existence, minimum turns, and minimum length; every returned production path is independently checked for bounds, occupancy, orthogonality, compactness, and deterministic repetition. Focused regressions cover 0, 1, 2, 3, and 5 turns, blocking, edge confinement, route ranking, and removal monotonicity.
 
+Pure Hint tests verify first-legal-move selection and deterministic repetition, recomputation after
+a move, blocker exclusion, and `null` for empty and artificial no-pair boards. A campaign sweep
+repeatedly applies the current hint through every stage of all 100 levels and requires every
+non-empty board to expose a move. Phaser pixels are intentionally not unit-tested. Manual QA uses
+Levels 1, 30, and 80 to check cyan dual-tile feedback, selection clearing, current-board updates,
+spam protection, blocker and stage isolation, cleanup on Menu/Replay/Next, and disabled Hint on
+the Complete overlay. Hint does not auto-remove or show a route and remains unlimited; Shuffle is
+not part of this test scope.
+
 Generator tests check exact pair multiplicity, deterministic regeneration, non-adjacent product pairs, witness replay, solver replay, metrics, and product density. Campaign tests freeze the 100/10/10 constants, chapter boundaries, progression-band coverage, and important early band transitions; reject out-of-range levels; check next-level boundaries; and check all 100 levels for validity, solver replay, non-adjacency, deterministic replay, distinct consecutive snapshots, at least two initial moves in Levels 1..5, and at least one initial move throughout. `npm run simulate -- --count 10000` retains the established deterministic 6×8/20-pair generator quality gate.
 
 `npm run analyze:progression -- --samples 300` is the heavier manual calibration command. It compiles and invokes production generation, validation, solving, and solution measurement without Phaser or a browser. It prints candidate-profile failure counts and objective solver-path metrics plus exact ten-level chapter aggregates for the campaign. `npm run analyze:progression -- --campaign-only` skips the heavy candidate sweep and reports exact campaign validation, milestones, range/chapter aggregates, cumulative removals, and the longest forced-start run. See `PROGRESSION_REPORT.md` for the recorded calibration run.
