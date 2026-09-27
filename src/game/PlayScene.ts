@@ -1,5 +1,7 @@
 import { applyMove, findPath, type Board, type GridPoint, type LegalMove } from "../domain/index.js";
 import type { PlatformService } from "../platform/PlatformService.js";
+import { recordStageCompletion, type CampaignProgress } from "../progress/CampaignProgress.js";
+import type { ProgressStore } from "../progress/ProgressStore.js";
 import { BoardLayout, getVisibleBackingCount } from "./BoardLayout.js";
 import type { DebugStartPosition } from "./DebugStart.js";
 import { createLevelStage, getStageClearOutcome, getStageCount, hasNextLevel } from "./LevelSequence.js";
@@ -35,12 +37,13 @@ export class PlayScene extends Phaser.Scene {
   private completeOverlay: Phaser.GameObjects.Container | null = null;
   private currentLevelNumber = 1;
   private currentStageIndex = 0;
-  private initialPosition: DebugStartPosition | null;
+  private readonly initialPosition: DebugStartPosition;
 
   constructor(
     private readonly platform: PlatformService,
-    initialPosition: DebugStartPosition | null = null,
+    initialPosition: DebugStartPosition,
     private readonly renderScale = 1,
+    private readonly persistence: { readonly store: ProgressStore; progress: CampaignProgress } | null = null,
   ) {
     super({ key: "PlayScene" });
     this.initialPosition = initialPosition;
@@ -64,14 +67,9 @@ export class PlayScene extends Phaser.Scene {
     this.seedText = setHiDpiTextResolution(this.add.text(240, 766, "", {
       color: "#6f86a5", fontFamily: "Arial, sans-serif", fontSize: "13px",
     }).setOrigin(0.5), this.renderScale);
-    if (this.initialPosition === null) {
-      this.startLevel();
-    } else {
-      this.currentLevelNumber = this.initialPosition.levelNumber;
-      this.currentStageIndex = this.initialPosition.stageIndex;
-      this.initialPosition = null;
-      this.loadStage();
-    }
+    this.currentLevelNumber = this.initialPosition.levelNumber;
+    this.currentStageIndex = this.initialPosition.stageIndex;
+    this.loadStage();
   }
 
   private startLevel(): void {
@@ -274,6 +272,14 @@ export class PlayScene extends Phaser.Scene {
   private finishStage(): void {
     const outcome = getStageClearOutcome(this.currentLevelNumber, this.currentStageIndex);
     if (outcome.kind === "level-complete") {
+      if (this.persistence !== null) {
+        const completion = recordStageCompletion(
+          this.persistence.progress, this.currentLevelNumber, this.currentStageIndex,
+          getStageCount(this.currentLevelNumber),
+        );
+        this.persistence.progress = completion.progress;
+        if (completion.shouldSave) this.persistence.store.save(completion.progress);
+      }
       this.showComplete();
       return;
     }
