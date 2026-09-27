@@ -13,11 +13,14 @@ This is the agreed product nucleus, not a complete game design document.
 
 ## Collectible artwork Gallery pilot
 
-Each campaign Level will eventually own one portrait illustration. On the Level's final Stage the
-artwork sits beneath tiles, symbols, routes, and static blockers; clearing tiles progressively
-reveals it. Small glimpses through the intentional 72 px cell / 64 px tile gaps are part of the
-design. Multi-stage Levels never show artwork on earlier Stages. Blockers may obscure it during
-play, but the post-clear presentation shows the clean original without gameplay objects.
+Each campaign Level will eventually own one square illustration. On the Level's final Stage the
+artwork is cover-scaled and center-cropped to exactly the real final-stage board bounds, then sits
+beneath tiles, symbols, routes, and static blockers; clearing tiles progressively reveals it. Small
+glimpses through the intentional 72 px cell / 64 px tile gaps are part of the design. Multi-stage
+Levels never show artwork on earlier Stages. Blockers may obscure it during
+play, but the post-clear presentation shows the full square original at a consistent size without
+gameplay objects. Production compositions should keep important visual content in a central safe area
+so rectangular boards can crop the sides without losing it.
 
 The current human-validation pilot covers only Levels 1, 30, and 80. All 100 Levels will receive
 artwork only after that pilot is validated. On a pilot final clear, campaign progress is saved

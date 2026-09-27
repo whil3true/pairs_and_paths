@@ -84,8 +84,9 @@ After deployment, reset with `?debug=1&resetProgress=1`, then use the normal URL
 ## Collectible artwork pilot QA
 
 - Level 1 (`?debug=1&level=1`): confirm small gap glimpses, readable cards/symbols, progressive
-  reveal, centered undistorted crop, clean “Image unlocked” presentation, and Continue opening the
-  ordinary Complete overlay. Partially reveal, Pause, and Resume; board and artwork must be unchanged.
+  reveal, exact board-bound containment, centered undistorted crop, clean full-square “Image
+  unlocked” presentation, and Continue opening the ordinary Complete overlay. Partially reveal,
+  Pause, and Resume; board and artwork must be unchanged.
 - Level 30 (`?debug=1&level=30&stage=2`): Stage 2 has no art; Stage 3 gains it. Direct Stage 3 does
   too, while Restart returns to art-free Stage 1.
 - Level 80 (`?debug=1&level=80`): advance to the final Stage and confirm tiles and opaque blockers
@@ -100,8 +101,8 @@ After deployment, reset with `?debug=1&resetProgress=1`, then use the normal URL
   unlocked. During reward presentation Pause and Hint are hidden and no Pause overlay may coexist.
 
 Pure tests cover catalog presence/absence, final-stage eligibility, derived unlock state, and centered
-cover geometry for square and 6×8-style destinations. Phaser pixels remain manual QA. After build,
-run `npm run check:package-size`; pilot SVG sizes do not forecast a 100-image art package.
+source-crop geometry for 4×4, 6×7, and 6×8 final-board destinations. Phaser pixels remain manual QA.
+After build, run `npm run check:package-size`; pilot SVG sizes do not forecast a 100-image art package.
 
 ## Navigation verification
 

@@ -1,17 +1,11 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 1280" role="img" aria-label="Orange canyon and blue river">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 960" role="img" aria-label="Orange canyon and blue river">
   <defs>
-    <linearGradient id="canyon-sky" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#244f72"/>
-      <stop offset="1" stop-color="#d49a6a"/>
-    </linearGradient>
-    <linearGradient id="river" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#3b91a8"/>
-      <stop offset="1" stop-color="#123c60"/>
-    </linearGradient>
+    <linearGradient id="canyon-sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#244f72"/><stop offset="1" stop-color="#d49a6a"/></linearGradient>
+    <linearGradient id="river" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3b91a8"/><stop offset="1" stop-color="#123c60"/></linearGradient>
   </defs>
-  <rect width="960" height="1280" fill="url(#canyon-sky)"/>
-  <path d="M0 0 H320 Q520 210 450 520 Q390 770 610 930 Q760 1040 690 1280 H0Z" fill="#83392d"/>
-  <path d="M960 0 H700 Q770 260 620 470 Q500 650 610 900 Q700 1080 690 1280 H960Z" fill="#d15d2c"/>
-  <path d="M470 1280 Q520 1030 610 900 Q700 1090 690 1280Z" fill="url(#river)"/>
-  <path d="M0 820 Q170 740 355 830 L300 1280 H0Z" fill="#5b2929" opacity=".75"/>
+  <rect width="960" height="960" fill="url(#canyon-sky)"/>
+  <path d="M0 0 H320 Q520 160 450 390 Q390 580 610 700 Q730 790 690 960 H0Z" fill="#83392d"/>
+  <path d="M960 0 H700 Q770 195 620 350 Q500 490 610 675 Q700 810 690 960 H960Z" fill="#d15d2c"/>
+  <path d="M470 960 Q520 775 610 675 Q700 815 690 960Z" fill="url(#river)"/>
+  <path d="M0 615 Q170 555 355 625 L300 960 H0Z" fill="#5b2929" opacity=".75"/>
 </svg>
