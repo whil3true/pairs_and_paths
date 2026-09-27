@@ -17,6 +17,12 @@ player-facing progression or a level-select feature. Examples:
 The optional `stage` is one-based and defaults to Stage 1. Without `debug=1`, all `level` and
 `stage` parameters are ignored. Replay always returns to Stage 1 of the current level; Next Level
 also begins at Stage 1. Refreshing the browser re-applies the initial position from the URL.
+The entire debug-jump session is persistence-disabled, so completing or advancing from the jumped
+level cannot alter real progress. Rendering debug flags without `level=N` keep normal persistence.
+
+Use `?debug=1&resetProgress=1` to clear web progress and start normal play at Level 1; without
+`debug=1` the reset parameter is ignored. Reset is processed before scene selection, so adding
+`&symbols=1` clears once and then opens the non-writing gallery.
 
 `npm test` compiles to a temporary directory and uses `node:test`. The independent exhaustive path oracle is a brute-force simple-path DFS with no outside cells and no turn limit. Exhaustive boards compare existence, minimum turns, and minimum length; every returned production path is independently checked for bounds, occupancy, orthogonality, compactness, and deterministic repetition. Focused regressions cover 0, 1, 2, 3, and 5 turns, blocking, edge confinement, route ranking, and removal monotonicity.
 
@@ -58,3 +64,9 @@ The gallery at `?debug=1&symbols=1` uses automatic production HiDPI and shows vi
 On a wide and a narrow desktop browser, confirm the portrait game stays centered without cropping or stretching, side gutters retain the shell background, and resizing never produces a horizontal gameplay layout. On portrait Android, compare `?debug=1&level=80` with `?debug=1&level=80&renderScale=1`. The normal production mode must be the sharper version. Compare curved/diagonal PNG edges, card borders, text, and route lines. Tap tiles across the board and verify selection, blocked-pair feedback, routes, stage transitions, Replay, and Next all target the same logical cells in both modes. Landscape rotation must still show a centered portrait frame; it does not trigger an orientation lock or alternate layout.
 
 `npm run analyze:stages` prints exact per-stage dimensions, pairs, blockers, seeds, opening moves, solver/replay status, turn/path metrics, campaign workload, distribution and spacing, campaign stage count, and final-board preservation. It is a diagnostic report, not a synthetic difficulty score. Manual playtesting should sample early, mid, and late placements, including automatic transition clarity, two-stage pacing, occasional three-stage length, blocker-bearing finals, and terminal Level 100 completion.
+
+## Persistent progress verification
+
+Pure tests cover the v1 schema and derived values, monotonic completion, strict malformed-data fallback, storage CRUD and thrown-operation containment, startup/debug isolation, and final-stage-only persistence boundaries for Levels 21, 30, and 100. No jsdom or Phaser scene is required.
+
+After deployment, reset with `?debug=1&resetProgress=1`, then use the normal URL and confirm Level 1. Complete Level 1 and refresh on its Complete overlay before pressing Next: normal play must open Level 2 Stage 1. Remove tiles from Level 2 and refresh before completion: Level 2 must restart with its fresh Stage 1 board. On a multi-stage level, verify intermediate clearance does not update the stored payload. With real progress through Level 1, complete `?debug=1&level=80`, then return to the normal URL and confirm it still opens Level 2. Finally, reset again and confirm normal play returns to Level 1.

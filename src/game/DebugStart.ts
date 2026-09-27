@@ -33,3 +33,9 @@ export const isSymbolGalleryRequested = (search: string): boolean => {
   const params = new URLSearchParams(search);
   return params.get("debug") === "1" && params.get("symbols") === "1";
 };
+
+/** Progress reset is deliberately available only behind the developer gate. */
+export const isProgressResetRequested = (search: string): boolean => {
+  const params = new URLSearchParams(search);
+  return params.get("debug") === "1" && params.get("resetProgress") === "1";
+};

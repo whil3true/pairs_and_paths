@@ -1,20 +1,29 @@
 import { PlayScene } from "./game/PlayScene.js";
-import { isSymbolGalleryRequested, parseDebugStart } from "./game/DebugStart.js";
+import { isProgressResetRequested, isSymbolGalleryRequested, parseDebugStart } from "./game/DebugStart.js";
+import { resolveCampaignStartup } from "./game/CampaignStartup.js";
 import { SymbolGalleryScene } from "./game/SymbolGalleryScene.js";
 import {
   computeRenderScale, isLegacyRenderScaleDebugRequested, LOGICAL_GAME_HEIGHT, LOGICAL_GAME_WIDTH,
 } from "./game/Display.js";
 import { WebPlatform } from "./platform/WebPlatform.js";
+import { WebProgressStore } from "./platform/WebProgressStore.js";
+import { initialCampaignProgress } from "./progress/CampaignProgress.js";
 
 const platform = new WebPlatform();
+const progressStore = new WebProgressStore();
+const resetProgress = isProgressResetRequested(window.location.search);
+if (resetProgress) progressStore.clear();
 const debugStart = parseDebugStart(window.location.search);
+const progress = resetProgress ? initialCampaignProgress() : progressStore.load();
+const startup = resolveCampaignStartup(progress, debugStart);
 const automaticRenderScale = computeRenderScale(window.devicePixelRatio || 1);
 const renderScale = isLegacyRenderScaleDebugRequested(window.location.search)
   ? 1
   : automaticRenderScale;
 const scene = isSymbolGalleryRequested(window.location.search)
   ? new SymbolGalleryScene(renderScale)
-  : new PlayScene(platform, debugStart, renderScale);
+  : new PlayScene(platform, startup.position, renderScale,
+    startup.persistenceEnabled ? { store: progressStore, progress } : null);
 
 new Phaser.Game({
   type: Phaser.AUTO,
