@@ -54,22 +54,20 @@ test("pilot artwork catalog and final-stage reveal eligibility are explicit", ()
   assert.equal(isArtworkRevealStage(30, 2), true);
 });
 
-test("pilot artwork assets are self-contained 960x960 SVG files", async () => {
-  const artworkDir = new URL("../public/assets/artwork/pilot/", import.meta.url);
-  assert.deepEqual((await readdir(artworkDir)).sort(),
-    ["level-001.svg", "level-030.svg", "level-080.svg"]);
-  assert.deepEqual(LEVEL_ARTWORK.map(({ path }) => path), [
-    "assets/artwork/pilot/level-001.svg",
-    "assets/artwork/pilot/level-030.svg",
-    "assets/artwork/pilot/level-080.svg",
-  ]);
+test("pilot artwork catalog references distinct full and thumbnail WebP fixtures", async () => {
+  const allKeys = LEVEL_ARTWORK.flatMap(({ fullAssetKey, thumbnailAssetKey }) =>
+    [fullAssetKey, thumbnailAssetKey]);
+  assert.equal(new Set(allKeys).size, allKeys.length);
   for (const artwork of LEVEL_ARTWORK) {
-    const svg = await readFile(new URL(`../public/${artwork.path}`, import.meta.url), "utf8");
-    assert.match(svg, /^<svg\b/);
-    assert.match(svg, /viewBox="0 0 960 960"/);
-    assert.doesNotMatch(svg, /<(?:script|image)\b/i);
-    assert.doesNotMatch(svg, /\bhref\s*=/i);
-    assert.doesNotMatch(svg, /data:/i);
+    assert.notEqual(artwork.fullAssetKey, artwork.thumbnailAssetKey);
+    assert.notEqual(artwork.fullPath, artwork.thumbnailPath);
+    assert.match(artwork.fullPath, /\.webp$/);
+    assert.match(artwork.thumbnailPath, /\.webp$/);
+    for (const path of [artwork.fullPath, artwork.thumbnailPath]) {
+      const webp = await readFile(new URL(`../public/${path}`, import.meta.url));
+      assert.equal(webp.subarray(0, 4).toString("ascii"), "RIFF");
+      assert.equal(webp.subarray(8, 12).toString("ascii"), "WEBP");
+    }
   }
 });
 

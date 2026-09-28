@@ -28,11 +28,19 @@ const named = files.map((file) => ({ ...file, name: relative(distPath, file.path
 const artwork = named.filter(({ name }) => name.startsWith("assets/artwork/"));
 const total = named.reduce((sum, file) => sum + file.bytes, 0);
 const artworkTotal = artwork.reduce((sum, file) => sum + file.bytes, 0);
+const fullArtworkTotal = artwork.filter(({ name }) => name.includes("/full/"))
+  .reduce((sum, file) => sum + file.bytes, 0);
+const thumbnailArtworkTotal = artwork.filter(({ name }) => name.includes("/thumbs/"))
+  .reduce((sum, file) => sum + file.bytes, 0);
 
 console.log(`Total dist: ${format(total)}`);
 console.log(`Total artwork: ${format(artworkTotal)}`);
+console.log(`Full artwork: ${format(fullArtworkTotal)}`);
+console.log(`Thumbnail artwork: ${format(thumbnailArtworkTotal)}`);
 console.log("Artwork files:");
 for (const file of artwork.sort((a, b) => a.name.localeCompare(b.name))) console.log(`  ${file.name}: ${format(file.bytes)}`);
+console.log("Largest artwork files:");
+for (const file of [...artwork].sort((a, b) => b.bytes - a.bytes).slice(0, 10)) console.log(`  ${file.name}: ${format(file.bytes)}`);
 console.log("Largest files:");
 for (const file of named.sort((a, b) => b.bytes - a.bytes).slice(0, 10)) console.log(`  ${file.name}: ${format(file.bytes)}`);
 

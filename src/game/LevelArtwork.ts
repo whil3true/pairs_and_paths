@@ -3,14 +3,34 @@ import { getStageCount } from "./LevelSequence.js";
 
 export interface LevelArtworkDefinition {
   readonly levelNumber: number;
-  readonly assetKey: string;
-  readonly path: string;
+  readonly fullAssetKey: string;
+  readonly fullPath: string;
+  readonly thumbnailAssetKey: string;
+  readonly thumbnailPath: string;
 }
 
 export const LEVEL_ARTWORK: readonly LevelArtworkDefinition[] = Object.freeze([
-  Object.freeze({ levelNumber: 1, assetKey: "level-artwork-001", path: "assets/artwork/pilot/level-001.svg" }),
-  Object.freeze({ levelNumber: 30, assetKey: "level-artwork-030", path: "assets/artwork/pilot/level-030.svg" }),
-  Object.freeze({ levelNumber: 80, assetKey: "level-artwork-080", path: "assets/artwork/pilot/level-080.svg" }),
+  Object.freeze({
+    levelNumber: 1,
+    fullAssetKey: "level-artwork-001-full",
+    fullPath: "assets/artwork/pipeline/full/level-001.webp",
+    thumbnailAssetKey: "level-artwork-001-thumb",
+    thumbnailPath: "assets/artwork/pipeline/thumbs/level-001.webp",
+  }),
+  Object.freeze({
+    levelNumber: 30,
+    fullAssetKey: "level-artwork-030-full",
+    fullPath: "assets/artwork/pipeline/full/level-030.webp",
+    thumbnailAssetKey: "level-artwork-030-thumb",
+    thumbnailPath: "assets/artwork/pipeline/thumbs/level-030.webp",
+  }),
+  Object.freeze({
+    levelNumber: 80,
+    fullAssetKey: "level-artwork-080-full",
+    fullPath: "assets/artwork/pipeline/full/level-080.webp",
+    thumbnailAssetKey: "level-artwork-080-thumb",
+    thumbnailPath: "assets/artwork/pipeline/thumbs/level-080.webp",
+  }),
 ]);
 
 export const getLevelArtwork = (levelNumber: number): LevelArtworkDefinition | undefined =>

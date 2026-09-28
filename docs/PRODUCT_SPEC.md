@@ -33,10 +33,15 @@ by chapter. Pilot artwork slots are locked or unlocked; Levels without productio
 explicitly unavailable (`Soon`), not locked. An unlocked slot opens a dedicated full view. Level N is unlocked exactly when
 `completedThroughLevel >= N`; there is no separate collection, inventory, reward, or seen-state save.
 
-Full-size artwork must not become startup payload: Main Menu downloads none, gameplay requests only
-the current Level's image, the Gallery overview downloads no artwork, and Gallery full view loads
-only its selected image. Lightweight thumbnails remain deferred. The pilot SVGs
-are placeholders and their sizes are not a realistic estimate for 100 production illustrations.
+Artwork must not become startup payload: Main Menu downloads none, gameplay requests only the
+current Level's full image, and Gallery full view loads only its selected full image. The Gallery
+overview requests only unlocked thumbnails in its active chapter; locked and unavailable slots
+request nothing. Phaser's texture cache is reused on revisits. The pilot runtime fixtures are WebP:
+1024×1024 full images and separate 256×256 thumbnails. They are temporary engineering assets and
+make no commitment to a future theme or art direction; the old SVG placeholders have been removed.
+Do **not** multiply their average byte size by 100 as a final shipping-size forecast. That estimate
+requires representative production-quality artwork after later market/theme research and redesign;
+this pilot validates the loading architecture and measurement method only.
 
 ## Hint player aid
 
