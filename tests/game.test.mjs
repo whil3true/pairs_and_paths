@@ -17,6 +17,32 @@ import { getTileSymbol, TILE_ACCENT_COLORS, TILE_SYMBOLS } from "../.test-dist/g
 import {
   computeContainedSquarePlacement, getLevelArtwork, isArtworkRevealStage, isArtworkUnlocked, LEVEL_ARTWORK,
 } from "../.test-dist/game/LevelArtwork.js";
+import {
+  getArtworkGallerySlotState, getDefaultArtworkGalleryChapter, getUnlockedArtworkCount,
+} from "../.test-dist/game/ArtworkGallery.js";
+
+const progressAt = (completedThroughLevel) => ({ version: 1, completedThroughLevel });
+
+test("artwork Gallery derives unavailable, locked, and unlocked slot states", () => {
+  assert.equal(getArtworkGallerySlotState(progressAt(0), 1), "locked");
+  assert.equal(getArtworkGallerySlotState(progressAt(0), 2), "unavailable");
+  assert.equal(getArtworkGallerySlotState(progressAt(0), 30), "locked");
+  assert.equal(getArtworkGallerySlotState(progressAt(0), 80), "locked");
+  assert.equal(getArtworkGallerySlotState(progressAt(1), 1), "unlocked");
+  assert.equal(getArtworkGallerySlotState(progressAt(29), 30), "locked");
+  assert.equal(getArtworkGallerySlotState(progressAt(30), 30), "unlocked");
+  assert.equal(getArtworkGallerySlotState(progressAt(79), 80), "locked");
+  assert.equal(getArtworkGallerySlotState(progressAt(80), 80), "unlocked");
+  for (const level of [1, 30, 80]) assert.equal(getArtworkGallerySlotState(progressAt(100), level), "unlocked");
+});
+
+test("artwork Gallery count and default chapter derive from catalog and progress", () => {
+  const expectations = [[0, 0, 1], [1, 1, 1], [29, 1, 1], [30, 2, 3], [79, 2, 3], [80, 3, 8], [100, 3, 8]];
+  for (const [completed, count, chapter] of expectations) {
+    assert.equal(getUnlockedArtworkCount(progressAt(completed)), count);
+    assert.equal(getDefaultArtworkGalleryChapter(progressAt(completed)), chapter);
+  }
+});
 
 test("pilot artwork catalog and final-stage reveal eligibility are explicit", () => {
   assert.deepEqual(LEVEL_ARTWORK.map(({ levelNumber }) => levelNumber), [1, 30, 80]);

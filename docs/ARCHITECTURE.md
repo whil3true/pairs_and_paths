@@ -40,13 +40,15 @@ without cropping or stretching it. Because every final board is square, artwork 
 Artwork is a separately referenced image beneath cell, tile, route, and blocker visuals, with reduced
 cell-backing opacity only on an eligible final Stage. Final-stage completion retains the strict order:
 derive completion, save when persistence is enabled, then show the clean full-square artwork
-presentation, then the existing Complete flow. Debug jumps remain non-persistent. Gallery unlock state is derived solely from
-`completedThroughLevel`, without changing `CampaignProgressV1`.
+presentation, then the existing Complete flow. Debug jumps remain non-persistent. Pure `ArtworkGallery`
+policy derives each slot as unavailable, locked, or unlocked, its catalog-derived count, and the
+default chapter solely from `LEVEL_ARTWORK` and `completedThroughLevel`, without changing
+`CampaignProgressV1` or adding Gallery persistence.
 
 `npm run check:package-size` recursively reports total `dist`, artwork totals/files, and largest
-files after a build. It warns above 80,000,000 bytes and fails above 100,000,000. Future Gallery
-overview thumbnails and selected-image full-view loading prevent 100 full images becoming startup
-downloads; thumbnail production is intentionally deferred.
+files after a build. It warns above 80,000,000 bytes and fails above 100,000,000. `ArtworkGalleryScene`
+renders UI-only overview cards and preloads no artwork. `ArtworkFullViewScene` validates current
+progress and requests only the selected catalog asset. Thumbnail production is intentionally deferred.
 
 
 Task 5.1 revises only the progression data after human playtesting; it does not alter domain generation, solving, path rules, or introduce new mechanics. Later difficulty mechanics remain deferred.
@@ -75,7 +77,7 @@ Pre-stage seeds use a documented uint32 namespace: `imul(level, 0x85ebca6b) ^ im
 
 ## Player navigation scenes
 
-`BootScene` applies the pure startup route through ordinary Phaser scene transitions. Normal startup enters `MainMenuScene`; gated level jumps and the symbol gallery bypass it. `MainMenuScene` and `LevelSelectScene` load `ProgressStore` on every entry so completed gameplay is immediately reflected. Pure `CampaignNavigation` functions own menu actions, level states, and chapter ranges. `PlayScene` is registered once with stable platform/store/render dependencies and receives level, stage, and persistence mode through Phaser start data. Menu exits do not write board state. All player scenes retain the logical `480×800` camera and HiDPI text helpers; no router or navigation manager exists.
+`BootScene` applies the pure startup route through ordinary Phaser scene transitions. Normal startup enters `MainMenuScene`; gated level jumps and the developer-only `SymbolGalleryScene` bypass it. `MainMenuScene`, `LevelSelectScene`, and player-facing `ArtworkGalleryScene` load `ProgressStore` on entry so completed gameplay is immediately reflected. Pure `CampaignNavigation` functions own menu actions, level states, and chapter ranges; pure `ArtworkGallery` functions own collection policy. `ArtworkFullViewScene` receives only a Level and return chapter and returns to that chapter. `PlayScene` is registered once with stable platform/store/render dependencies and receives level, stage, and persistence mode through Phaser start data. Menu and Gallery navigation do not write progress. All player scenes retain the logical `480×800` camera and HiDPI text helpers; no router or navigation manager exists. The existing `?debug=1&symbols=1` route remains exclusively the tile-symbol contact sheet and is separate from the player Gallery.
 
 ## Gameplay pause ownership
 

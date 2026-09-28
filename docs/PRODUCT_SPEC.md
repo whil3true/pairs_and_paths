@@ -28,13 +28,14 @@ are always square; authored pre-stages may remain rectangular.
 The current human-validation pilot covers only Levels 1, 30, and 80. All 100 Levels will receive
 artwork only after that pilot is validated. On a pilot final clear, campaign progress is saved
 **before** the non-timed “Image unlocked” presentation; Continue then opens the unchanged Complete
-overlay. Replays present the reward again. A future Gallery groups items by chapter and offers
-locked/unlocked overview and full view. Level N is unlocked exactly when
+overlay. Replays present the reward again. The player Gallery groups all 100 structural Level slots
+by chapter. Pilot artwork slots are locked or unlocked; Levels without production artwork are
+explicitly unavailable (`Soon`), not locked. An unlocked slot opens a dedicated full view. Level N is unlocked exactly when
 `completedThroughLevel >= N`; there is no separate collection, inventory, reward, or seen-state save.
 
 Full-size artwork must not become startup payload: Main Menu downloads none, gameplay requests only
-the current Level's image, a future Gallery overview uses lightweight thumbnails, and Gallery full
-view loads only its selected image. Thumbnails are not part of this pilot. The pilot SVGs
+the current Level's image, the Gallery overview downloads no artwork, and Gallery full view loads
+only its selected image. Lightweight thumbnails remain deferred. The pilot SVGs
 are placeholders and their sizes are not a realistic estimate for 100 production illustrations.
 
 ## Hint player aid
@@ -70,7 +71,7 @@ The web build persists only the highest fully completed campaign level. Clearing
 
 ## Player campaign navigation
 
-Normal startup opens a portrait Main Menu showing completed levels, a Play/Continue/Play again action, and Levels. Continue always targets Stage 1 of the first uncompleted level; after all 100 levels it becomes Play again at Level 1 without clearing completion. Levels presents one ten-level chapter at a time in a 5×2 grid and defaults to the highest unlocked level's chapter. Completed levels and the single current frontier are selectable; later levels are locked. Replaying an older level advances sequentially and cannot reduce the monotonic save.
+Normal startup opens a portrait Main Menu showing completed levels and Play/Continue/Play again, Levels, and Gallery actions. Continue always targets Stage 1 of the first uncompleted level; after all 100 levels it becomes Play again at Level 1 without clearing completion. Levels presents one ten-level chapter at a time in a 5×2 grid and defaults to the highest unlocked level's chapter. Completed levels and the single current frontier are selectable; later levels are locked. Gallery uses the same chapter structure, defaults to the chapter containing the highest unlocked catalog artwork (or Chapter 1), and never starts gameplay or writes progress. Replaying an older level advances sequentially and cannot reduce the monotonic save.
 
 Active gameplay has a Pause control rather than a direct Menu exit. Its in-scene overlay offers Resume, Restart level, and Exit to menu. Restart and Exit each require confirmation; Cancel returns to the Pause menu rather than resuming. Resume preserves the exact board, stage, blockers, removed tiles, and selection. Confirmed Restart deterministically reloads the whole current campaign level from Stage 1 without changing campaign progress. Confirmed Exit discards the unfinished board and stage without persistence. Once the final stage is complete, Pause is unavailable and the Complete-overlay Menu continues to exit directly because completion has already been persisted.
 
