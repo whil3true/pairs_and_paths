@@ -83,16 +83,22 @@ After deployment, reset with `?debug=1&resetProgress=1`, then use the normal URL
 
 ## Collectible artwork pilot QA
 
-- Level 1 (`?debug=1&level=1`): confirm small gap glimpses, readable cards/symbols, progressive
+For all checks below, confirm the board uses the global 64 px pitch / 56 px tile scale with visible
+8 px gaps; changing board or stage dimensions must never zoom tiles.
+
+- Level 1 (`?debug=1&level=1`): confirm the 4×4 board is centered, cards/symbols remain readable
+  and tappable, gaps remain visible, and Pause and Hint are unaffected. Confirm progressive
   reveal, full square artwork exactly filling the square board without cropping or stretching, clean
   full-square “Image unlocked” presentation, and Continue opening the ordinary Complete overlay. Partially reveal,
   Pause, and Resume; board and artwork must be unchanged.
-- Level 30 (`?debug=1&level=30&stage=2`): Stage 2 has no art; Stage 3 gains the full square centered
-  in its 6×7 board, leaving ordinary board background above and below it. Direct Stage 3 does too,
-  while Restart returns to art-free Stage 1.
-- Level 80 (`?debug=1&level=80`): advance to the final Stage and confirm the full square is centered
-  in its 6×8 board without cropping or stretching, with ordinary board background above and below it.
-  Tiles and opaque blockers cover the art; the clean presentation contains neither.
+- Level 30 (`?debug=1&level=30&stage=3`): confirm the 6×7 board is centered and uses exactly the
+  Level 1 tile size; the full square artwork is centered with 32 px of board remainder above and
+  below, and the stage stack/border remains correct. Also inspect an earlier stage and confirm its
+  tiles do not change size. Restart still returns to art-free Stage 1.
+- Level 80 (`?debug=1&level=80&stage=2`): confirm the 6×8 board fits without frame or UI overlap and
+  uses exactly the Level 1/30 tile size. Symbols remain readable, blockers scale correctly, and the
+  full square artwork is centered with 64 px of board remainder above and below. Separately exercise
+  Stage 1 → Stage 2 and confirm the transition does not visually zoom tiles.
 - Level 2 (`?debug=1&level=2`): no request, placeholder, or reward presentation; completion goes
   directly to Complete. Temporarily remove a pilot file in a local build and confirm the same
   graceful fallback without blocked gameplay.

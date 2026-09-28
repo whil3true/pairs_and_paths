@@ -57,9 +57,9 @@ test("artwork unlock is derived only from completed campaign progress", () => {
 
 test("square artwork placement is centered within final board bounds", () => {
   const cases = [
-    { columns: 4, rows: 4, width: 288, height: 288, size: 288, verticalMargin: 0 },
-    { columns: 6, rows: 7, width: 432, height: 504, size: 432, verticalMargin: 72 },
-    { columns: 6, rows: 8, width: 432, height: 576, size: 432, verticalMargin: 144 },
+    { columns: 4, rows: 4, width: 256, height: 256, size: 256, verticalMargin: 0 },
+    { columns: 6, rows: 7, width: 384, height: 448, size: 384, verticalMargin: 64 },
+    { columns: 6, rows: 8, width: 384, height: 512, size: 384, verticalMargin: 128 },
   ];
   for (const { columns, rows, width, height, size, verticalMargin } of cases) {
     const board = new BoardLayout({
@@ -462,14 +462,19 @@ test("every legal move encountered in campaign blocker solver replay preserves s
 
 test("real cell centers and the full board fit the portrait play area", () => {
   const full = layout(6, 8);
-  assert.deepEqual(full.cellCenter({ col: 0, row: 0 }), { x: 60, y: 168 });
-  assert.deepEqual(full.cellCenter({ col: 5, row: 7 }), { x: 420, y: 672 });
+  assert.deepEqual(full.cellCenter({ col: 0, row: 0 }), { x: 80, y: 196 });
+  assert.deepEqual(full.cellCenter({ col: 5, row: 7 }), { x: 400, y: 644 });
   assert.deepEqual(
     [full.boardLeft, full.boardTop, full.boardRight, full.boardBottom],
-    [24, 132, 456, 708],
+    [48, 164, 432, 676],
   );
-  assert.equal(full.pitch, 72);
-  assert.equal(full.tileSize, 64);
+  assert.equal(BoardLayout.CELL_PITCH, 64);
+  assert.equal(BoardLayout.TILE_SIZE, 56);
+  assert.equal(full.pitch, BoardLayout.CELL_PITCH);
+  assert.equal(full.tileSize, BoardLayout.TILE_SIZE);
+  assert.equal(BoardLayout.CELL_PITCH - BoardLayout.TILE_SIZE, 8);
+  assert.ok(7 * BoardLayout.CELL_PITCH < 480,
+    "the global pitch reserves viewport width for a possible future 7-wide board");
 });
 
 test("stage stack backing count communicates remaining stages", () => {
@@ -483,8 +488,8 @@ test("stage stack backing count communicates remaining stages", () => {
 test("smaller boards remain centered in the same safe play area", () => {
   const square = layout(4, 4);
   const short = layout(4, 2);
-  assert.deepEqual([square.boardLeft, square.boardRight, square.boardTop, square.boardBottom], [96, 384, 276, 564]);
-  assert.deepEqual([short.boardLeft, short.boardRight, short.boardTop, short.boardBottom], [96, 384, 348, 492]);
+  assert.deepEqual([square.boardLeft, square.boardRight, square.boardTop, square.boardBottom], [112, 368, 292, 548]);
+  assert.deepEqual([short.boardLeft, short.boardRight, short.boardTop, short.boardBottom], [112, 368, 356, 484]);
   assert.equal((square.boardLeft + square.boardRight) / 2, 240);
   assert.equal((short.boardTop + short.boardBottom) / 2, 420);
 });
