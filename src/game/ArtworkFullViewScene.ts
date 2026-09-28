@@ -12,6 +12,7 @@ export class ArtworkFullViewScene extends Phaser.Scene {
   private levelNumber = 0;
   private returnChapter = 1;
   private allowed = false;
+  private loadingPresentation: Phaser.GameObjects.Container | null = null;
 
   constructor(private readonly progressStore: ProgressStore, private readonly renderScale = 1) {
     super({ key: "ArtworkFullViewScene" });
@@ -26,11 +27,19 @@ export class ArtworkFullViewScene extends Phaser.Scene {
 
   preload(): void {
     if (this.allowed && this.artwork !== undefined && !this.textures.exists(this.artwork.assetKey)) {
+      configureLogicalCamera(this, this.renderScale);
+      this.loadingPresentation = this.add.container(0, 0, [
+        this.text(240, 72, `Level ${this.levelNumber}`, 32, "#f7fbff", true),
+        this.add.rectangle(240, 370, 400, 400, 0x171f2d).setStrokeStyle(2, 0x3b4656),
+        this.text(240, 370, "Loading artwork…", 20, "#bcd1ec", true),
+      ]);
       this.load.image(this.artwork.assetKey, this.artwork.path);
     }
   }
 
   create(): void {
+    this.loadingPresentation?.destroy(true);
+    this.loadingPresentation = null;
     configureLogicalCamera(this, this.renderScale);
     this.text(240, 72, this.allowed ? `Level ${this.levelNumber}` : "Gallery artwork", 32, "#f7fbff", true);
     if (this.allowed && this.artwork !== undefined && this.textures.exists(this.artwork.assetKey)) {

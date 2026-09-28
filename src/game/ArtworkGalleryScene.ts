@@ -59,10 +59,10 @@ export class ArtworkGalleryScene extends Phaser.Scene {
       const state = getArtworkGallerySlotState(this.progress, level);
       const fill = state === "unlocked" ? 0x285b50 : state === "locked" ? 0x242b3a : 0x171f2d;
       const stroke = state === "unlocked" ? 0x83cfb8 : state === "locked" ? 0x8b719e : 0x3b4656;
-      const card = this.add.rectangle(x, y, 72, 88, fill).setStrokeStyle(state === "unlocked" ? 3 : 2, stroke);
+      const card = this.add.rectangle(x, y, 72, 72, fill).setStrokeStyle(state === "unlocked" ? 3 : 2, stroke);
       objects.push(card);
-      addText(x, y - 19, String(level), 20, state === "unavailable" ? "#657184" : "#ffffff", true);
-      addText(x, y + 19, state === "unlocked" ? "Unlocked" : state === "locked" ? "Locked" : "Soon", 11,
+      addText(x, y - 15, String(level), 20, state === "unavailable" ? "#657184" : "#ffffff", true);
+      addText(x, y + 16, state === "unlocked" ? "Unlocked" : state === "locked" ? "Locked" : "Soon", 11,
         state === "unlocked" ? "#d8fff2" : state === "locked" ? "#d4bde2" : "#657184", state !== "unavailable");
       if (state === "unlocked") card.setInteractive({ useHandCursor: true }).on("pointerdown", () => {
         this.scene.start("ArtworkFullViewScene", { levelNumber: level, returnChapter: this.chapter });

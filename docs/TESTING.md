@@ -143,6 +143,23 @@ an uncached full view may request only that selected Level asset. Failed artwork
 `Artwork unavailable` while Back remains functional. Phaser layout, input, network behavior, and
 device rendering remain manual QA rather than headless test coverage.
 
+### Square Gallery slots
+
+Use `?debug=1&setProgress=100`, then enter Gallery through the normal Main Menu. Check several
+chapters, not only Chapter 1. Verify every card is square, the 5×2 layout retains clear spacing, and
+the Level number plus Unlocked, Locked, or Soon state remains readable without clipping. Chapter
+arrows and Menu must be unchanged.
+
+### First uncached artwork load
+
+Use a fresh browser session or cache where practical, then open an unlocked artwork that is not
+already cached. Verify `Loading artwork…` appears immediately, the network panel requests only the
+selected artwork, and the resulting artwork is an uncropped, unstretched 400×400 square. Back must
+return to the originating chapter. Open the same artwork again and verify it appears immediately
+from Phaser's texture cache without an unnecessary loading state or network reload.
+
+As a regression check, verify `?debug=1&symbols=1` still opens the developer Tile Symbol Gallery.
+
 ## Pause flow verification
 
 Phaser overlay pixels are intentionally not unit-tested. At `?debug=1&level=1`, select a tile, open Pause, and verify the selection remains visible while board and Hint input do nothing; Resume must restore interaction with the same board and selection. After removing pairs, check that both Restart level and Exit to menu show confirmation, and that each Cancel returns to Pause without resuming. Confirm Restart produces the original deterministic Level 1 Stage 1 board.
