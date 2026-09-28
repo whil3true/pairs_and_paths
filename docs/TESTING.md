@@ -121,7 +121,9 @@ Pure tests cover fresh/in-progress/completed primary actions, all three level st
 
 Pure tests cover the three Gallery slot states for pilot Levels 1, 30, and 80, unavailable Level 2,
 catalog-derived unlocked counts, and the highest-unlocked-artwork default chapter. Binary tests check
-the `RIFF`/`WEBP` signatures for separate 1024×1024 full and 256×256 thumbnail fixtures. The overview
+the `RIFF`/`WEBP` signatures, complete RIFF length and chunk boundaries, VP8 frame signature, and
+expected dimensions for separate 1024×1024 full and 256×256 thumbnail fixtures. This catches
+truncated or corrupted WebP files that may still retain valid `RIFF`/`WEBP` magic bytes. The overview
 requests only unlocked thumbnails in the active chapter; locked entries, unavailable positions, and
 unopened chapters request nothing. Full view requests only its validated selected full image. Cached
 textures are reused and no Gallery action writes progress.
