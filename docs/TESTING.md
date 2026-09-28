@@ -109,7 +109,9 @@ For artwork Levels 1, 30, and 80, also confirm progressive reveal, no crop or st
 reward remains final-stage-only. Pause/Resume must preserve partial reveal; Restart returns to
 art-free Stage 1; debug sessions must not modify real progress. Level 2 must have no artwork request
 or reward. Pure tests cover catalog presence/absence, eligibility, unlock derivation, and placement.
-After build, run `npm run check:package-size`; pilot SVG sizes do not forecast a 100-image package.
+After build, run `npm run check:package-size`; its full/thumbnail split measures this pilot only. The
+temporary WebP average must not be multiplied by 100 as a shipping forecast. That estimate waits for
+the later art direction and representative production artwork.
 
 ## Navigation verification
 
@@ -118,17 +120,20 @@ Pure tests cover fresh/in-progress/completed primary actions, all three level st
 ## Player artwork Gallery QA
 
 Pure tests cover the three Gallery slot states for pilot Levels 1, 30, and 80, unavailable Level 2,
-catalog-derived unlocked counts, and the highest-unlocked-artwork default chapter. The overview has
-all 100 Level positions but no image previews or artwork loads; the full view requests only its
-validated selected catalog image. No Gallery action writes progress.
+catalog-derived unlocked counts, and the highest-unlocked-artwork default chapter. Binary tests check
+the `RIFF`/`WEBP` signatures for separate 1024×1024 full and 256×256 thumbnail fixtures. The overview
+requests only unlocked thumbnails in the active chapter; locked entries, unavailable positions, and
+unopened chapters request nothing. Full view requests only its validated selected full image. Cached
+textures are reused and no Gallery action writes progress.
 
 `setProgress` and `resetProgress` intentionally mutate the local campaign save. Run these fixtures,
 then return to the normal URL unless stated otherwise:
 
 - `?debug=1&resetProgress=1`: Main Menu shows Play, Levels, and Gallery. Gallery defaults to Chapter 1;
-  Level 1 is Locked, Level 2 says Soon rather than Locked, and no full artwork appears in overview.
-- `?debug=1&setProgress=1`: Gallery says `Unlocked 1 / 3`; Level 1 opens as an unstretched square;
-  Back returns to Chapter 1 and Menu returns to Main Menu.
+  Level 1 is Locked, Level 2 says Soon rather than Locked, and no thumbnail request occurs.
+- `?debug=1&setProgress=1`: Gallery says `Unlocked 1 / 3`; only the Level 1 thumbnail may load and it
+  appears in its square card. Opening it then loads the separate unstretched full image; Back returns
+  to Chapter 1 and Menu returns to Main Menu.
 - `?debug=1&setProgress=29`, then `?debug=1&setProgress=30`: Level 30 changes from locked to unlocked;
   progress 30 defaults to Chapter 3, reports `Unlocked 2 / 3`, and Full View Back retains Chapter 3.
 - `?debug=1&setProgress=79`, then `?debug=1&setProgress=80`: Level 80 changes from locked to unlocked;
@@ -138,14 +143,17 @@ then return to the normal URL unless stated otherwise:
 - `?debug=1&symbols=1`: verify the unchanged developer Tile Symbol Gallery opens, never the player
   artwork Gallery.
 
-Also inspect the network panel: Main Menu and Gallery overview must request no pilot artwork; opening
-an uncached full view may request only that selected Level asset. Failed artwork loads must show
+Also inspect the network panel: Main Menu must request zero artwork. Gallery may request only eligible
+active-chapter `/thumbs/` files and never `/full/`; locked thumbnails must never be received. Opening
+an uncached full view may request only that selected `/full/` asset. Failed artwork loads must show
 `Artwork unavailable` while Back remains functional. Phaser layout, input, network behavior, and
 device rendering remain manual QA rather than headless test coverage.
 
 ### Square Gallery slots
 
-Use `?debug=1&setProgress=100`, then enter Gallery through the normal Main Menu. Check several
+Use `?debug=1&setProgress=80`, then enter Gallery through the normal Main Menu. Chapter 8 shows the
+Level 80 thumbnail; switching chapters must not refetch cached thumbnails and must not request artwork
+for unavailable slots. Check several
 chapters, not only Chapter 1. Verify every card is square, the 5×2 layout retains clear spacing, and
 the Level number plus Unlocked, Locked, or Soon state remains readable without clipping. Chapter
 arrows and Menu must be unchanged.
@@ -159,6 +167,14 @@ return to the originating chapter. Open the same artwork again and verify it app
 from Phaser's texture cache without an unnecessary loading state or network reload.
 
 As a regression check, verify `?debug=1&symbols=1` still opens the developer Tile Symbol Gallery.
+
+For gameplay WebP QA, use `?debug=1&level=1`, `?debug=1&level=30&stage=3`, and
+`?debug=1&level=80&stage=2`. On Android and a browser, verify the real WebP appears beneath cleared
+tiles, routes, and blockers; the square fills each final board without crop/stretch; and the 400×400
+post-clear reward uses the same full image. Earlier stages remain artwork-free. This device rendering
+and DevTools network inspection are manual because headless tests do not exercise Phaser pixels or
+browser request logs. The fixtures are technical visuals only; full market/theme research and visual
+redesign remain deferred.
 
 ## Pause flow verification
 

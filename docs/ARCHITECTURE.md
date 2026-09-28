@@ -28,9 +28,9 @@ Startup resolves normal play to Stage 1 of the first uncompleted level (or Level
 `TileSymbols` is the presentation-only mapping from domain `TileId` to 30 ordered PNG runtime texture keys and six reusable accents. The runtime assets live under `public/assets/symbols/*.png`; `PlayScene` preloads them through `scene.load.image(...)`, asks the catalog for each tile definition, and owns Phaser card/image creation and feedback. Editable prototype SVG masters remain under `art/source/symbols/*.svg`, outside `public`, so they are not shipped in the production build.
 
 `LevelArtwork` is similarly campaign/presentation metadata; the domain, generator, solver, moves,
-and pathfinder remain unaware of it. Its pilot catalog maps Levels 1/30/80 to opaque texture keys and
-real asset paths, so a later SVG-to-WebP/AVIF switch does not affect game logic. `PlayScene` requests
-only the current Level texture (initial preload or dynamic load before Next), reuses cached textures
+and pathfinder remain unaware of it. Its pilot catalog maps Levels 1/30/80 to separate opaque full
+and thumbnail texture keys and WebP paths. Full fixtures are 1024×1024 and thumbnails are 256×256.
+`PlayScene` requests only the current Level's full texture (initial preload or dynamic load before Next), reuses cached textures
 for Replay, and never bulk-prefetches. A missing/failed texture simply preserves ordinary gameplay
 and the Complete overlay. Main Menu loads no artwork.
 
@@ -45,10 +45,16 @@ policy derives each slot as unavailable, locked, or unlocked, its catalog-derive
 default chapter solely from `LEVEL_ARTWORK` and `completedThroughLevel`, without changing
 `CampaignProgressV1` or adding Gallery persistence.
 
-`npm run check:package-size` recursively reports total `dist`, artwork totals/files, and largest
-files after a build. It warns above 80,000,000 bytes and fails above 100,000,000. `ArtworkGalleryScene`
-renders UI-only overview cards and preloads no artwork. `ArtworkFullViewScene` validates current
-progress and requests only the selected catalog asset. Thumbnail production is intentionally deferred.
+`npm run check:package-size` recursively reports total `dist`, artwork totals split between full and
+thumbnail files, and largest artwork/package files after a build. It warns above 80,000,000 bytes and
+fails above 100,000,000. `ArtworkGalleryScene` requests only missing thumbnails for unlocked catalog
+entries in the active chapter. It never requests full images, locked thumbnails, unavailable slots,
+or entries in unopened chapters; chapter revisits reuse Phaser's texture cache. `ArtworkFullViewScene`
+validates current progress and requests only the selected full asset. Main Menu requests no artwork.
+The WebPs are temporary engineering fixtures, not a theme or art-direction commitment, and the old
+runtime SVG placeholders were removed. Their varied compression validates architecture and measurement:
+do not extrapolate the pilot average across 100 artworks. Shipping estimates wait for later market/theme
+research, redesign, and representative production-quality artwork.
 
 
 Task 5.1 revises only the progression data after human playtesting; it does not alter domain generation, solving, path rules, or introduce new mechanics. Later difficulty mechanics remain deferred.

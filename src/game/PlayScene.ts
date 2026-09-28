@@ -75,8 +75,8 @@ export class PlayScene extends Phaser.Scene {
   preload(): void {
     preloadTileSymbols(this);
     const artwork = getLevelArtwork(this.currentLevelNumber);
-    if (artwork !== undefined && !this.textures.exists(artwork.assetKey)) {
-      this.load.image(artwork.assetKey, artwork.path);
+    if (artwork !== undefined && !this.textures.exists(artwork.fullAssetKey)) {
+      this.load.image(artwork.fullAssetKey, artwork.fullPath);
     }
   }
 
@@ -123,17 +123,17 @@ export class PlayScene extends Phaser.Scene {
 
   private loadCurrentArtwork(onReady: () => void): void {
     const artwork = getLevelArtwork(this.currentLevelNumber);
-    if (artwork === undefined || this.textures.exists(artwork.assetKey)) {
+    if (artwork === undefined || this.textures.exists(artwork.fullAssetKey)) {
       onReady();
       return;
     }
     this.load.once(Phaser.Loader.Events.COMPLETE, () => {
-      if (!this.textures.exists(artwork.assetKey)) {
-        console.warn(`Artwork failed to load for Level ${artwork.levelNumber}: ${artwork.path}`);
+      if (!this.textures.exists(artwork.fullAssetKey)) {
+        console.warn(`Artwork failed to load for Level ${artwork.levelNumber}: ${artwork.fullPath}`);
       }
       onReady();
     });
-    this.load.image(artwork.assetKey, artwork.path);
+    this.load.image(artwork.fullAssetKey, artwork.fullPath);
     this.load.start();
   }
 
@@ -202,7 +202,7 @@ export class PlayScene extends Phaser.Scene {
     const artwork = getLevelArtwork(this.currentLevelNumber);
     if (artwork === undefined
       || !isArtworkRevealStage(this.currentLevelNumber, this.currentStageIndex)
-      || !this.textures.exists(artwork.assetKey)) return;
+      || !this.textures.exists(artwork.fullAssetKey)) return;
     const width = this.layout.boardRight - this.layout.boardLeft;
     const height = this.layout.boardBottom - this.layout.boardTop;
     const placement = computeContainedSquarePlacement(
@@ -211,7 +211,7 @@ export class PlayScene extends Phaser.Scene {
     const image = this.add.image(
       placement.x + placement.size / 2,
       placement.y + placement.size / 2,
-      artwork.assetKey,
+      artwork.fullAssetKey,
     ).setDisplaySize(placement.size, placement.size).setDepth(-2);
     this.currentBoardVisual!.add(image);
     this.currentArtworkVisual = image;
@@ -423,7 +423,7 @@ export class PlayScene extends Phaser.Scene {
 
   private showArtworkPresentation(): void {
     const artwork = getLevelArtwork(this.currentLevelNumber);
-    if (artwork === undefined || !this.textures.exists(artwork.assetKey)) {
+    if (artwork === undefined || !this.textures.exists(artwork.fullAssetKey)) {
       this.showComplete();
       return;
     }
@@ -438,7 +438,7 @@ export class PlayScene extends Phaser.Scene {
     this.remainingText.setVisible(false);
     this.seedText.setVisible(false);
     const backdrop = this.add.rectangle(240, 400, 480, 800, 0x07101d, 1).setInteractive();
-    const image = this.add.image(240, 382, artwork.assetKey)
+    const image = this.add.image(240, 382, artwork.fullAssetKey)
       .setDisplaySize(400, 400);
     const title = setHiDpiTextResolution(this.add.text(240, 690, "Image unlocked", {
       color: "#ffffff", fontFamily: "Arial, sans-serif", fontSize: "30px", fontStyle: "bold",

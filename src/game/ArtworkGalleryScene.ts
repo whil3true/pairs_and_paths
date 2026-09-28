@@ -6,7 +6,7 @@ import {
 import { getChapterLevelRange } from "./CampaignNavigation.js";
 import { configureLogicalCamera, setHiDpiTextResolution } from "./Display.js";
 import { CHAPTER_COUNT } from "./LevelSequence.js";
-import { LEVEL_ARTWORK } from "./LevelArtwork.js";
+import { getLevelArtwork, LEVEL_ARTWORK, type LevelArtworkDefinition } from "./LevelArtwork.js";
 
 export interface ArtworkGalleryStartData {
   readonly chapter?: number;
@@ -16,6 +16,8 @@ export class ArtworkGalleryScene extends Phaser.Scene {
   private progress!: CampaignProgress;
   private chapter = 1;
   private content: Phaser.GameObjects.Container | null = null;
+  private readonly pendingThumbnails = new Set<string>();
+  private readonly failedThumbnails = new Set<string>();
 
   constructor(private readonly progressStore: ProgressStore, private readonly renderScale = 1) {
     super({ key: "ArtworkGalleryScene" });
@@ -23,6 +25,7 @@ export class ArtworkGalleryScene extends Phaser.Scene {
 
   create(data: ArtworkGalleryStartData = {}): void {
     configureLogicalCamera(this, this.renderScale);
+    this.pendingThumbnails.clear();
     this.progress = this.progressStore.load();
     this.chapter = Number.isSafeInteger(data.chapter) && data.chapter! >= 1 && data.chapter! <= CHAPTER_COUNT
       ? data.chapter! : getDefaultArtworkGalleryChapter(this.progress);
@@ -61,14 +64,50 @@ export class ArtworkGalleryScene extends Phaser.Scene {
       const stroke = state === "unlocked" ? 0x83cfb8 : state === "locked" ? 0x8b719e : 0x3b4656;
       const card = this.add.rectangle(x, y, 72, 72, fill).setStrokeStyle(state === "unlocked" ? 3 : 2, stroke);
       objects.push(card);
-      addText(x, y - 15, String(level), 20, state === "unavailable" ? "#657184" : "#ffffff", true);
-      addText(x, y + 16, state === "unlocked" ? "Unlocked" : state === "locked" ? "Locked" : "Soon", 11,
-        state === "unlocked" ? "#d8fff2" : state === "locked" ? "#d4bde2" : "#657184", state !== "unavailable");
+      const artwork = state === "unlocked" ? getLevelArtwork(level) : undefined;
+      if (artwork !== undefined && this.textures.exists(artwork.thumbnailAssetKey)) {
+        objects.push(this.add.image(x, y, artwork.thumbnailAssetKey).setDisplaySize(64, 64));
+        objects.push(this.add.rectangle(x, y + 23, 64, 18, 0x07101d, 0.8));
+        addText(x, y + 23, `Level ${level}`, 11, "#ffffff", true);
+      } else {
+        addText(x, y - 15, String(level), 20, state === "unavailable" ? "#657184" : "#ffffff", true);
+        const unlockedLabel = artwork !== undefined && this.failedThumbnails.has(artwork.thumbnailAssetKey)
+          ? "Unavailable" : "Loading…";
+        addText(x, y + 16, state === "unlocked" ? unlockedLabel : state === "locked" ? "Locked" : "Soon", 11,
+          state === "unlocked" ? "#d8fff2" : state === "locked" ? "#d4bde2" : "#657184", state !== "unavailable");
+      }
       if (state === "unlocked") card.setInteractive({ useHandCursor: true }).on("pointerdown", () => {
         this.scene.start("ArtworkFullViewScene", { levelNumber: level, returnChapter: this.chapter });
       });
     }
     this.content = this.add.container(0, 0, objects);
+    this.loadUnlockedChapterThumbnails();
+  }
+
+  private loadUnlockedChapterThumbnails(): void {
+    const [first, last] = getChapterLevelRange(this.chapter);
+    const missing = LEVEL_ARTWORK.filter((artwork) => artwork.levelNumber >= first && artwork.levelNumber <= last
+      && getArtworkGallerySlotState(this.progress, artwork.levelNumber) === "unlocked"
+      && !this.textures.exists(artwork.thumbnailAssetKey)
+      && !this.pendingThumbnails.has(artwork.thumbnailAssetKey)
+      && !this.failedThumbnails.has(artwork.thumbnailAssetKey));
+    for (const artwork of missing) this.loadThumbnail(artwork);
+    if (missing.length > 0 && !this.load.isLoading()) this.load.start();
+  }
+
+  private loadThumbnail(artwork: LevelArtworkDefinition): void {
+    this.pendingThumbnails.add(artwork.thumbnailAssetKey);
+    this.load.once(`filecomplete-image-${artwork.thumbnailAssetKey}`, () => {
+      this.pendingThumbnails.delete(artwork.thumbnailAssetKey);
+      if (this.scene.isActive()) this.renderChapter();
+    });
+    this.load.once(Phaser.Loader.Events.FILE_LOAD_ERROR, (file: Phaser.Loader.File) => {
+      if (file.key !== artwork.thumbnailAssetKey) return;
+      this.pendingThumbnails.delete(artwork.thumbnailAssetKey);
+      this.failedThumbnails.add(artwork.thumbnailAssetKey);
+      if (this.scene.isActive()) this.renderChapter();
+    });
+    this.load.image(artwork.thumbnailAssetKey, artwork.thumbnailPath);
   }
 
   private text(x: number, y: number, value: string, size: number, color: string, bold = false): Phaser.GameObjects.Text {
