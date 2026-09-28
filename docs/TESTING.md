@@ -35,7 +35,7 @@ spam protection, blocker and stage isolation, cleanup on Menu/Replay/Next, and d
 the Complete overlay. Hint does not auto-remove or show a route and remains unlimited; Shuffle is
 not part of this test scope.
 
-Generator tests check exact pair multiplicity, deterministic regeneration, non-adjacent product pairs, witness replay, solver replay, metrics, and product density. Campaign tests freeze the 100/10/10 constants, chapter boundaries, progression-band coverage, and important early band transitions; reject out-of-range levels; check next-level boundaries; and check all 100 levels for validity, solver replay, non-adjacency, deterministic replay, distinct consecutive snapshots, at least two initial moves in Levels 1..5, and at least one initial move throughout. `npm run simulate -- --count 10000` retains the deterministic 7×7/20-pair generator quality gate.
+Generator tests check exact pair multiplicity, deterministic regeneration, non-adjacent product pairs, witness replay, solver replay, metrics, and product density. Campaign tests freeze the 100/10/10 constants, chapter boundaries, progression-band coverage, and important early band transitions; reject out-of-range levels; check next-level boundaries; and check all 100 levels for validity, solver replay, non-adjacency, deterministic replay, and distinct consecutive snapshots. Levels 1–4 have at least two initial legal moves; Level 5 has exactly one because its frozen seed and pair count now use the approved 4×4 final geometry; every campaign Level has at least one initial legal move. This Level 5 result is a known deterministic geometry-migration consequence, not a generator failure. `npm run simulate -- --count 10000` retains the deterministic 7×7/20-pair generator quality gate.
 
 `npm run analyze:progression -- --samples 300` is the heavier manual calibration command. It compiles and invokes production generation, validation, solving, and solution measurement without Phaser or a browser. It prints candidate-profile failure counts and objective solver-path metrics plus exact ten-level chapter aggregates for the campaign. `npm run analyze:progression -- --campaign-only` skips the heavy candidate sweep and reports exact campaign validation, milestones, range/chapter aggregates, cumulative removals, and the longest forced-start run. See `PROGRESSION_REPORT.md` for the recorded calibration run.
 
@@ -93,6 +93,7 @@ Board-layout tests cover 256, 320, 384, and 448 px square footprints at the fixe
 Manual targets:
 
 - Level 1 (`?debug=1&level=1`): verify 4×4, normal gameplay, and square artwork filling the board.
+- Level 5 (`?debug=1&level=5`): observe whether the forced opening still feels acceptable in human play despite having exactly one initial legal move; this is observation only, not a rebalance requirement.
 - Level 16 (`?debug=1&level=16`): verify a centered 5×5 final and authored blockers.
 - Level 21 (`?debug=1&level=21&stage=1`, then Stage 2): verify unchanged 5×5 pre-stage,
   6×6 final, and identical tile size.
