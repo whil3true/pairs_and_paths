@@ -26,6 +26,7 @@ export class ArtworkGalleryScene extends Phaser.Scene {
   create(data: ArtworkGalleryStartData = {}): void {
     configureLogicalCamera(this, this.renderScale);
     this.pendingThumbnails.clear();
+    this.failedThumbnails.clear();
     this.progress = this.progressStore.load();
     this.chapter = Number.isSafeInteger(data.chapter) && data.chapter! >= 1 && data.chapter! <= CHAPTER_COUNT
       ? data.chapter! : getDefaultArtworkGalleryChapter(this.progress);
@@ -96,18 +97,25 @@ export class ArtworkGalleryScene extends Phaser.Scene {
   }
 
   private loadThumbnail(artwork: LevelArtworkDefinition): void {
-    this.pendingThumbnails.add(artwork.thumbnailAssetKey);
-    this.load.once(`filecomplete-image-${artwork.thumbnailAssetKey}`, () => {
-      this.pendingThumbnails.delete(artwork.thumbnailAssetKey);
+    const { thumbnailAssetKey } = artwork;
+    const completeEvent = `filecomplete-image-${thumbnailAssetKey}`;
+    const onComplete = () => {
+      this.load.off(Phaser.Loader.Events.FILE_LOAD_ERROR, onError);
+      this.pendingThumbnails.delete(thumbnailAssetKey);
       if (this.scene.isActive()) this.renderChapter();
-    });
-    this.load.once(Phaser.Loader.Events.FILE_LOAD_ERROR, (file: Phaser.Loader.File) => {
-      if (file.key !== artwork.thumbnailAssetKey) return;
-      this.pendingThumbnails.delete(artwork.thumbnailAssetKey);
-      this.failedThumbnails.add(artwork.thumbnailAssetKey);
+    };
+    const onError = (file: Phaser.Loader.File) => {
+      if (file.key !== thumbnailAssetKey) return;
+      this.load.off(completeEvent, onComplete);
+      this.load.off(Phaser.Loader.Events.FILE_LOAD_ERROR, onError);
+      this.pendingThumbnails.delete(thumbnailAssetKey);
+      this.failedThumbnails.add(thumbnailAssetKey);
       if (this.scene.isActive()) this.renderChapter();
-    });
-    this.load.image(artwork.thumbnailAssetKey, artwork.thumbnailPath);
+    };
+    this.pendingThumbnails.add(thumbnailAssetKey);
+    this.load.once(completeEvent, onComplete);
+    this.load.on(Phaser.Loader.Events.FILE_LOAD_ERROR, onError);
+    this.load.image(thumbnailAssetKey, artwork.thumbnailPath);
   }
 
   private text(x: number, y: number, value: string, size: number, color: string, bold = false): Phaser.GameObjects.Text {
