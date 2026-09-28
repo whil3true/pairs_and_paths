@@ -20,6 +20,8 @@ export class MainMenuScene extends Phaser.Scene {
       () => this.scene.start("PlayScene", playStartData(primary.levelNumber)));
     this.button(240, 490, 240, 62, 0x243c5c, "Levels",
       () => this.scene.start("LevelSelectScene"));
+    this.button(240, 575, 240, 62, 0x243c5c, "Gallery",
+      () => this.scene.start("ArtworkGalleryScene"));
   }
 
   private text(x: number, y: number, value: string, size: number, color: string, bold = false): Phaser.GameObjects.Text {

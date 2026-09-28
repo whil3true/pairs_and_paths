@@ -5,6 +5,8 @@ import { MainMenuScene } from "./game/MainMenuScene.js";
 import { LevelSelectScene } from "./game/LevelSelectScene.js";
 import { PlayScene } from "./game/PlayScene.js";
 import { SymbolGalleryScene } from "./game/SymbolGalleryScene.js";
+import { ArtworkGalleryScene } from "./game/ArtworkGalleryScene.js";
+import { ArtworkFullViewScene } from "./game/ArtworkFullViewScene.js";
 import {
   computeRenderScale, isLegacyRenderScaleDebugRequested, LOGICAL_GAME_HEIGHT, LOGICAL_GAME_WIDTH,
 } from "./game/Display.js";
@@ -32,6 +34,8 @@ new Phaser.Game({
     new BootScene(route),
     new MainMenuScene(progressStore, renderScale),
     new LevelSelectScene(progressStore, renderScale),
+    new ArtworkGalleryScene(progressStore, renderScale),
+    new ArtworkFullViewScene(progressStore, renderScale),
     new PlayScene(platform, progressStore, renderScale),
     new SymbolGalleryScene(renderScale),
   ],

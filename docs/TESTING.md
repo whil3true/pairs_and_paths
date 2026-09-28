@@ -115,6 +115,34 @@ After build, run `npm run check:package-size`; pilot SVG sizes do not forecast a
 
 Pure tests cover fresh/in-progress/completed primary actions, all three level states, selection eligibility, chapter ranges/defaults, strict `setProgress` parsing, reset precedence, and normal/gallery/debug-play startup routes. Manual QA should verify the 5×2 chapter grid and non-wrapping arrows, current frontier defaults, fresh progress after a confirmed pause-menu exit, and old-level replay without regression. Complete overlays retain Next/Restart and Replay and add a direct Menu exit. Debug jumps remain persistence-disabled.
 
+## Player artwork Gallery QA
+
+Pure tests cover the three Gallery slot states for pilot Levels 1, 30, and 80, unavailable Level 2,
+catalog-derived unlocked counts, and the highest-unlocked-artwork default chapter. The overview has
+all 100 Level positions but no image previews or artwork loads; the full view requests only its
+validated selected catalog image. No Gallery action writes progress.
+
+`setProgress` and `resetProgress` intentionally mutate the local campaign save. Run these fixtures,
+then return to the normal URL unless stated otherwise:
+
+- `?debug=1&resetProgress=1`: Main Menu shows Play, Levels, and Gallery. Gallery defaults to Chapter 1;
+  Level 1 is Locked, Level 2 says Soon rather than Locked, and no full artwork appears in overview.
+- `?debug=1&setProgress=1`: Gallery says `Unlocked 1 / 3`; Level 1 opens as an unstretched square;
+  Back returns to Chapter 1 and Menu returns to Main Menu.
+- `?debug=1&setProgress=29`, then `?debug=1&setProgress=30`: Level 30 changes from locked to unlocked;
+  progress 30 defaults to Chapter 3, reports `Unlocked 2 / 3`, and Full View Back retains Chapter 3.
+- `?debug=1&setProgress=79`, then `?debug=1&setProgress=80`: Level 80 changes from locked to unlocked;
+  progress 80 defaults to Chapter 8, reports `Unlocked 3 / 3`, and its full view returns to Chapter 8.
+- `?debug=1&setProgress=100`: all three remain unlocked and the default stays Chapter 8 because Level 80
+  is the highest catalog entry.
+- `?debug=1&symbols=1`: verify the unchanged developer Tile Symbol Gallery opens, never the player
+  artwork Gallery.
+
+Also inspect the network panel: Main Menu and Gallery overview must request no pilot artwork; opening
+an uncached full view may request only that selected Level asset. Failed artwork loads must show
+`Artwork unavailable` while Back remains functional. Phaser layout, input, network behavior, and
+device rendering remain manual QA rather than headless test coverage.
+
 ## Pause flow verification
 
 Phaser overlay pixels are intentionally not unit-tested. At `?debug=1&level=1`, select a tile, open Pause, and verify the selection remains visible while board and Hint input do nothing; Resume must restore interaction with the same board and selection. After removing pairs, check that both Restart level and Exit to menu show confirmation, and that each Cancel returns to Pause without resuming. Confirm Restart produces the original deterministic Level 1 Stage 1 board.
