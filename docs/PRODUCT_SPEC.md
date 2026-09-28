@@ -17,10 +17,15 @@ Each campaign Level will eventually own one square illustration. On the Level's 
 full square artwork is uniformly scaled to the smaller board dimension and centered inside the real
 final-stage board bounds; it is never cropped to the board aspect ratio or stretched. It sits beneath
 tiles, symbols, routes, and static blockers, so clearing tiles progressively reveals it. Small glimpses
-through the intentional 72 px cell / 64 px tile gaps are part of the design, while portrait boards may
+through the intentional 64 px cell / 56 px tile gaps are part of the design, while portrait boards may
 extend beyond the artwork vertically and show ordinary board background there. Multi-stage Levels
 never show artwork on earlier Stages. Blockers may obscure it during play, but the post-clear
 presentation shows the same full square image at a consistent size without gameplay objects.
+
+Gameplay uses one global compact scale for every current board and stage: `CELL_PITCH = 64` and
+`TILE_SIZE = 56`, preserving the intentional 8 logical px gap. The scale leaves physical width for
+a possible future 7×7 square board (`7 × 64 = 448 < 480`), but 7×7 is not enabled. Campaign
+geometry, progression, and the current 6×8 domain maximum remain unchanged.
 
 The current human-validation pilot covers only Levels 1, 30, and 80. All 100 Levels will receive
 artwork only after that pilot is validated. On a pilot final clear, campaign progress is saved

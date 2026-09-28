@@ -8,6 +8,12 @@
 
 `PlayScene` owns the current session level number. Next increments it before regeneration; Replay regenerates without changing it. Level 100 instead reports campaign completion and can restart the session at Level 1, never requesting Level 101. `BoardLayout` maps only real cells; route graphics consume arbitrary-length compact polylines. A blocked matching pair receives a brief red stroke before the second tile becomes selection. `src/platform` remains the existing small platform boundary. The project retains plain `tsc`, no bundler, and Phaser 4.2.1.
 
+`BoardLayout` also owns the single campaign-wide presentation scale: a 64 logical px cell pitch and
+56 logical px tile, leaving an 8 px gap. Every existing board and every stage uses these constants;
+dimensions never trigger per-level zoom. This compact scale reserves room for a possible future
+7-wide square board in the 480 px logical viewport, but does not expand the current 6×8 domain or
+change campaign geometry.
+
 `getHintMove(board)` is a pure game-layer policy seam that returns `findLegalMoves(board)[0]` or
 `null`; it neither caches a generator witness nor duplicates pathfinding. `PlayScene` projects that
 current-stage move as two cyan tile outlines for 900 ms. A separate `hintActive` guard blocks tile

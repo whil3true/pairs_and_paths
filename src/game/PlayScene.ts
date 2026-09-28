@@ -244,11 +244,14 @@ export class PlayScene extends Phaser.Scene {
       const point = { col, row };
       const { x, y } = this.layout.cellCenter(point);
       const revealActive = this.currentArtworkVisual !== null;
-      const cell = this.add.rectangle(x, y, 64, 64, 0x1a2941, revealActive ? 0.14 : 0.52)
+      const cell = this.add.rectangle(
+        x, y, this.layout.tileSize, this.layout.tileSize, 0x1a2941, revealActive ? 0.14 : 0.52,
+      )
         .setStrokeStyle(1, 0x324663, 0.65);
       this.currentBoardVisual!.add(cell);
       if (this.board.isBlocked(point)) {
-        const blocker = this.add.rectangle(x, y, 58, 58, 0x26303d, 1)
+        const blockerSize = this.layout.tileSize - 6;
+        const blocker = this.add.rectangle(x, y, blockerSize, blockerSize, 0x26303d, 1)
           .setStrokeStyle(3, 0x59687a, 1);
         this.currentBoardVisual!.add(blocker);
         continue;

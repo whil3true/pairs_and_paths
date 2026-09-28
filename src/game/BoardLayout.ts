@@ -18,8 +18,8 @@ export const getVisibleBackingCount = (stageIndex: number, stageCount: number): 
 
 /** Pure coordinate mapping for real board cells. */
 export class BoardLayout {
-  static readonly CELL_PITCH = 72;
-  static readonly TILE_SIZE = 64;
+  static readonly CELL_PITCH = 64;
+  static readonly TILE_SIZE = 56;
   static readonly BOARD_AREA_CENTER_Y = 420;
 
   readonly pitch = BoardLayout.CELL_PITCH;
