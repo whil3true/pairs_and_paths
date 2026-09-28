@@ -8,7 +8,7 @@ const { applyMove, generateLevel, solveBoard, validateGeneratedLevel } = await i
 const patterns = [
   { width: 5, height: 5, pairCount: 8, blockedCells: [{ col: 2, row: 2 }] },
   { width: 5, height: 6, pairCount: 9, blockedCells: [{ col: 2, row: 2 }, { col: 2, row: 3 }] },
-  { width: 6, height: 8, pairCount: 18, blockedCells: [{ col: 1, row: 2 }, { col: 3, row: 3 }, { col: 4, row: 5 }, { col: 2, row: 6 }] },
+  { width: 7, height: 7, pairCount: 22, blockedCells: [{ col: 1, row: 2 }, { col: 1, row: 3 }, { col: 4, row: 5 }] },
 ];
 const report = { generationSuccesses: 0, generationFailures: 0, solverSuccesses: 0, solverFailures: 0, replayFailures: 0, pathsCrossingBlockers: 0, tilesOnBlockers: 0 };
 const blockerCrossings = (board, path) => {

@@ -52,7 +52,7 @@ The analyzer verifies every stage as valid and solved, replays each solution to 
 
 Rejected placements included 42/52/62/72/92 as a blanket pattern because it would reinforce the existing even-level blocker cadence; recurring five-level marks such as 40/45/50/55 were rejected because they read as a second schedule; and Levels 81/83 around the selected 82 were rejected to preserve breathing space. Level 100 was retained as a non-periodic campaign-end variation, while nearby 98 was rejected to avoid crowding two blocker-final multi-stage levels.
 
-Profiles were evaluated with the authored stage seed rather than seed overrides. A 6×6/11 second prelude for Level 68 was rejected because its exact deterministic board had only one initial legal move; 5×6/10 has two and also gives a cleaner area progression. Full-size 6×8 preludes and pair counts close to the final were rejected throughout because they inflated duration and made stages visually repetitive. Reusing one 6×6 profile everywhere was rejected in favor of several compact and medium families.
+Profiles were evaluated with the authored stage seed rather than seed overrides. A 6×6/11 second prelude for Level 68 was rejected because its exact deterministic board had only one initial legal move; 5×6/10 has two and also gives a cleaner area progression. Full-size 7×7 preludes and pair counts close to the final were rejected throughout because they inflated duration and made stages visually repetitive. Reusing one 6×6 profile everywhere was rejected in favor of several compact and medium families.
 
 ## Known limitations
 

@@ -30,7 +30,7 @@ const run = (pairs, samples) => {
     initialTotal: 0, initialMin: Infinity, initialMax: 0, forcedStarts: 0, turnsTotal: 0,
     maxTurns: 0, threePlus: 0, paths: 0, length: 0, adjacentMatchingPairs: 0 };
   for (let seed = 0; seed < samples; seed += 1) try {
-    const config = { width: 6, height: 8, pairCount: pairs, seed, avoidAdjacentMatchingPairs: true };
+    const config = { width: 7, height: 7, pairCount: pairs, seed, avoidAdjacentMatchingPairs: true };
     const level = generateLevel(config), again = generateLevel(config);
     if (JSON.stringify(level.board.toRows()) !== JSON.stringify(again.board.toRows())) throw new Error("nondeterministic");
     const valid = validateGeneratedLevel(level); if (!valid.valid) throw new Error(valid.errors.join("; "));

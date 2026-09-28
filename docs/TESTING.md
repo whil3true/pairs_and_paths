@@ -35,7 +35,7 @@ spam protection, blocker and stage isolation, cleanup on Menu/Replay/Next, and d
 the Complete overlay. Hint does not auto-remove or show a route and remains unlimited; Shuffle is
 not part of this test scope.
 
-Generator tests check exact pair multiplicity, deterministic regeneration, non-adjacent product pairs, witness replay, solver replay, metrics, and product density. Campaign tests freeze the 100/10/10 constants, chapter boundaries, progression-band coverage, and important early band transitions; reject out-of-range levels; check next-level boundaries; and check all 100 levels for validity, solver replay, non-adjacency, deterministic replay, distinct consecutive snapshots, at least two initial moves in Levels 1..5, and at least one initial move throughout. `npm run simulate -- --count 10000` retains the established deterministic 6×8/20-pair generator quality gate.
+Generator tests check exact pair multiplicity, deterministic regeneration, non-adjacent product pairs, witness replay, solver replay, metrics, and product density. Campaign tests freeze the 100/10/10 constants, chapter boundaries, progression-band coverage, and important early band transitions; reject out-of-range levels; check next-level boundaries; and check all 100 levels for validity, solver replay, non-adjacency, deterministic replay, and distinct consecutive snapshots. Levels 1–4 have at least two initial legal moves; Level 5 has exactly one because its frozen seed and pair count now use the approved 4×4 final geometry; every campaign Level has at least one initial legal move. This Level 5 result is a known deterministic geometry-migration consequence, not a generator failure. `npm run simulate -- --count 10000` retains the deterministic 7×7/20-pair generator quality gate.
 
 `npm run analyze:progression -- --samples 300` is the heavier manual calibration command. It compiles and invokes production generation, validation, solving, and solution measurement without Phaser or a browser. It prints candidate-profile failure counts and objective solver-path metrics plus exact ten-level chapter aggregates for the campaign. `npm run analyze:progression -- --campaign-only` skips the heavy candidate sweep and reports exact campaign validation, milestones, range/chapter aggregates, cumulative removals, and the longest forced-start run. See `PROGRESSION_REPORT.md` for the recorded calibration run.
 
@@ -46,7 +46,7 @@ The Task 5.1 checks cover pacing data only. Core mechanics are unchanged, and te
 
 ## Blocker verification
 
-Blocker coverage checks separate terrain representation, invalid coordinates and capacity, path exclusion and alternate canonical routes, move/mask persistence, solver success and genuine obstruction, deterministic generation, and an independent backtracking monotonicity sweep over small blocker masks. `npm run simulate:blockers` is a lightweight 150-board diagnostic over 5×5, 5×6, and 6×8 patterns. It reports generation, solver, and replay failures plus any path crossings or tiles placed on blockers; all failure counters must remain zero.
+Blocker coverage checks separate terrain representation, invalid coordinates and capacity, path exclusion and alternate canonical routes, move/mask persistence, solver success and genuine obstruction, deterministic generation, and an independent backtracking monotonicity sweep over small blocker masks. `npm run simulate:blockers` is a lightweight 150-board diagnostic over 5×5, 5×6, and dense 7×7 patterns. It reports generation, solver, and replay failures plus any path crossings or tiles placed on blockers; all failure counters must remain zero.
 
 Campaign blocker tests freeze the introduction and selected level rhythm; validate content-table uniqueness, bounds, and capacity; and include terrain in all-100 validation, solve, replay, adjacency, and deterministic Replay checks. At every state of each blocker level's solver replay, every currently legal alternative is solved after application to guard removal monotonicity.
 
@@ -81,36 +81,35 @@ Pure tests cover the v1 schema and derived values, monotonic completion, strict 
 After deployment, reset with `?debug=1&resetProgress=1`, then use the normal URL and confirm Level 1. Complete Level 1 and refresh on its Complete overlay before pressing Next: normal play must open Level 2 Stage 1. Remove tiles from Level 2 and refresh before completion: Level 2 must restart with its fresh Stage 1 board. On a multi-stage level, verify intermediate clearance does not update the stored payload. With real progress through Level 1, complete `?debug=1&level=80`, then return to the normal URL and confirm it still opens Level 2. Finally, reset again and confirm normal play returns to Level 1.
 
 
-## Collectible artwork pilot QA
+## Square campaign geometry and collectible artwork QA
 
-For all checks below, confirm the board uses the global 64 px pitch / 56 px tile scale with visible
-8 px gaps; changing board or stage dimensions must never zoom tiles.
+Automated campaign checks require all 100 final configs and every last stage config to be square,
+with sides exactly 4, 5, 6, or 7. The fixed ranges are Levels 1–7 at 4×4, 8–16 at 5×5,
+17–26 at 6×6, and 27–100 at 7×7. They also require at least two empty non-blocked final cells.
+Pair counts, blocker content, seed functions, and the 19-level pre-stage table remain frozen.
+Board-layout tests cover 256, 320, 384, and 448 px square footprints at the fixed 64 px pitch /
+56 px tile scale. The 7×7 bounds are `[16, 196, 464, 644]`; no stage may zoom its tiles.
 
-- Level 1 (`?debug=1&level=1`): confirm the 4×4 board is centered, cards/symbols remain readable
-  and tappable, gaps remain visible, and Pause and Hint are unaffected. Confirm progressive
-  reveal, full square artwork exactly filling the square board without cropping or stretching, clean
-  full-square “Image unlocked” presentation, and Continue opening the ordinary Complete overlay. Partially reveal,
-  Pause, and Resume; board and artwork must be unchanged.
-- Level 30 (`?debug=1&level=30&stage=3`): confirm the 6×7 board is centered and uses exactly the
-  Level 1 tile size; the full square artwork is centered with 32 px of board remainder above and
-  below, and the stage stack/border remains correct. Also inspect an earlier stage and confirm its
-  tiles do not change size. Restart still returns to art-free Stage 1.
-- Level 80 (`?debug=1&level=80&stage=2`): confirm the 6×8 board fits without frame or UI overlap and
-  uses exactly the Level 1/30 tile size. Symbols remain readable, blockers scale correctly, and the
-  full square artwork is centered with 64 px of board remainder above and below. Separately exercise
-  Stage 1 → Stage 2 and confirm the transition does not visually zoom tiles.
-- Level 2 (`?debug=1&level=2`): no request, placeholder, or reward presentation; completion goes
-  directly to Complete. Temporarily remove a pilot file in a local build and confirm the same
-  graceful fallback without blocked gameplay.
-- Persistence order: reset with `?debug=1&resetProgress=1`, return to the normal URL, clear Level 1,
-  refresh while “Image unlocked” is waiting, and confirm Main Menu offers Continue Level 2. Debug
-  artwork sessions themselves must never change real progress.
-- Replay starts deterministic Stage 1 and presents artwork again on the final Stage even when already
-  unlocked. During reward presentation Pause and Hint are hidden and no Pause overlay may coexist.
+Manual targets:
 
-Pure tests cover catalog presence/absence, final-stage eligibility, derived unlock state, and centered
-square placement for 4×4, 6×7, and 6×8 final-board destinations. Phaser pixels remain manual QA.
-After build, run `npm run check:package-size`; pilot SVG sizes do not forecast a 100-image art package.
+- Level 1 (`?debug=1&level=1`): verify 4×4, normal gameplay, and square artwork filling the board.
+- Level 5 (`?debug=1&level=5`): observe whether the forced opening still feels acceptable in human play despite having exactly one initial legal move; this is observation only, not a rebalance requirement.
+- Level 16 (`?debug=1&level=16`): verify a centered 5×5 final and authored blockers.
+- Level 21 (`?debug=1&level=21&stage=1`, then Stage 2): verify unchanged 5×5 pre-stage,
+  6×6 final, and identical tile size.
+- Level 30 (`?debug=1&level=30&stage=1`, `stage=2`, and `stage=3`): verify
+  4×5 → 5×6 → 7×7, unchanged final blockers, no zoom, and artwork filling the final board.
+- Level 80 (`?debug=1&level=80&stage=1`, then `stage=2`): verify 6×6 → 7×7,
+  four final blockers, full-board artwork, and no viewport clipping.
+- Level 94: check all stages at 5×6 → 6×7 → 7×7.
+- Level 100: check both stages at 6×7 → 7×7 and verify the maximum board has no UI overlap.
+
+For artwork Levels 1, 30, and 80, also confirm progressive reveal, no crop or stretch, the clean
+400×400 “Image unlocked” presentation, and Continue opening the ordinary Complete overlay. The
+reward remains final-stage-only. Pause/Resume must preserve partial reveal; Restart returns to
+art-free Stage 1; debug sessions must not modify real progress. Level 2 must have no artwork request
+or reward. Pure tests cover catalog presence/absence, eligibility, unlock derivation, and placement.
+After build, run `npm run check:package-size`; pilot SVG sizes do not forecast a 100-image package.
 
 ## Navigation verification
 

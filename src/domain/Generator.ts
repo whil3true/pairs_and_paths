@@ -17,8 +17,12 @@ export interface ValidationResult { readonly valid: boolean; readonly errors: re
 type Pair = readonly [GridPoint, GridPoint];
 
 const validateConfig = ({ width, height, pairCount, seed, blockedCells = [] }: GenerationConfig): void => {
-  if (!Number.isInteger(width) || width < 1 || width > MAX_BOARD_WIDTH) throw new RangeError("width must be 1..6");
-  if (!Number.isInteger(height) || height < 1 || height > MAX_BOARD_HEIGHT) throw new RangeError("height must be 1..8");
+  if (!Number.isInteger(width) || width < 1 || width > MAX_BOARD_WIDTH) {
+    throw new RangeError(`width must be 1..${MAX_BOARD_WIDTH}`);
+  }
+  if (!Number.isInteger(height) || height < 1 || height > MAX_BOARD_HEIGHT) {
+    throw new RangeError(`height must be 1..${MAX_BOARD_HEIGHT}`);
+  }
   const keys = new Set<string>();
   for (const point of blockedCells) {
     if (!Number.isInteger(point.col) || !Number.isInteger(point.row) || point.col < 0 || point.col >= width || point.row < 0 || point.row >= height) throw new RangeError("blockedCells must be within the board");

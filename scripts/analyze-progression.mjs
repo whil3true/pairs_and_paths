@@ -23,8 +23,7 @@ const { CHAPTER_COUNT, LEVELS_PER_CHAPTER, createLevel, getChapterNumber } =
   await import("../.analysis-dist/game/LevelSequence.js");
 
 const ranges = [
-  [4, 4, 4, 6], [4, 5, 5, 8], [5, 5, 7, 10], [5, 6, 9, 12],
-  [5, 7, 11, 14], [6, 6, 12, 15], [6, 7, 14, 18], [6, 8, 18, 22],
+  [4, 4, 4, 6], [5, 5, 7, 9], [6, 6, 11, 13], [7, 7, 15, 22],
 ];
 const profiles = ranges.flatMap(([width, height, first, last]) =>
   Array.from({ length: last - first + 1 }, (_, offset) => ({ width, height, pairCount: first + offset })));

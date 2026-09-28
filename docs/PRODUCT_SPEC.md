@@ -2,9 +2,9 @@
 
 - Working titles: **Pairs & Paths: Connect the Tiles** (EN), **Пары и пути: Соедини плитки** (RU).
 - Portrait-first Onet / Pair Connect puzzle for RU and EN audiences.
-- Boards are at most 6×8; levels are short and guaranteed solvable.
+- Boards are at most 7×7; levels are short and guaranteed solvable.
 - The first campaign contains 100 deterministic levels in 10 chapters of 10 levels.
-- The playtest-revised, data-informed difficulty curve grows board area and pair density from 4×4/4 pairs to 6×8/22 pairs. Profiles change frequently in the early campaign and more slowly later; chapters are organizational and do not imply one profile each. Solver-path measurements remain calibration proxies rather than claims about human difficulty.
+- The playtest-revised, data-informed difficulty curve grows pair density from 4×4/4 pairs to 7×7/22 pairs. Final boards are 4×4 for Levels 1–7, 5×5 for 8–16, 6×6 for 17–26, and 7×7 for 27–100. Pair counts, authored blockers, and deterministic seeds are unchanged; chapters are organizational and do not imply one profile each. Solver-path measurements remain calibration proxies rather than claims about human difficulty.
 - Hint is the only player aid planned for v1. Shuffle is not part of v1 because the guaranteed-solvable campaign does not require deadlock recovery; it may be reconsidered only if future human playtesting demonstrates a real need.
 - The planned metagame consists of chapters and a collectible-artwork Gallery.
 - There is no hard timer, lives, economy, story, or characters.
@@ -14,18 +14,16 @@ This is the agreed product nucleus, not a complete game design document.
 ## Collectible artwork Gallery pilot
 
 Each campaign Level will eventually own one square illustration. On the Level's final Stage the
-full square artwork is uniformly scaled to the smaller board dimension and centered inside the real
-final-stage board bounds; it is never cropped to the board aspect ratio or stretched. It sits beneath
+full square artwork fills the square final-stage board bounds; it is never cropped or stretched. It sits beneath
 tiles, symbols, routes, and static blockers, so clearing tiles progressively reveals it. Small glimpses
-through the intentional 64 px cell / 56 px tile gaps are part of the design, while portrait boards may
-extend beyond the artwork vertically and show ordinary board background there. Multi-stage Levels
+through the intentional 64 px cell / 56 px tile gaps are part of the design. Multi-stage Levels
 never show artwork on earlier Stages. Blockers may obscure it during play, but the post-clear
 presentation shows the same full square image at a consistent size without gameplay objects.
 
 Gameplay uses one global compact scale for every current board and stage: `CELL_PITCH = 64` and
-`TILE_SIZE = 56`, preserving the intentional 8 logical px gap. The scale leaves physical width for
-a possible future 7×7 square board (`7 × 64 = 448 < 480`), but 7×7 is not enabled. Campaign
-geometry, progression, and the current 6×8 domain maximum remain unchanged.
+`TILE_SIZE = 56`, preserving the intentional 8 logical px gap. The 7×7 maximum occupies 448×448
+logical pixels inside the permanent 480×800 viewport without dynamic sizing. Campaign final boards
+are always square; authored pre-stages may remain rectangular.
 
 The current human-validation pilot covers only Levels 1, 30, and 80. All 100 Levels will receive
 artwork only after that pilot is validated. On a pilot final clear, campaign progress is saved

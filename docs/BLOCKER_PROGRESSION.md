@@ -12,7 +12,7 @@ This replay is not a model of all player orders or human difficulty. The monoton
 
 Final blocker levels: **11, 12, 13, 16, 19, 22, 25, 28, 30, then every even level from 32 through 100** (44 total). Frequencies: 1–10 **0/10 (0%)**; 11–20 **5/10 (50%)**; 21–40 **9/20 (45%)**; 41–60 **10/20 (50%)**; 61–80 **10/20 (50%)**; 81–100 **10/20 (50%)**. In the requested broad bands, Levels 14–30 are 6/17 (35.3%), Levels 31–60 are 15/30 (50%), and Levels 61–100 are 20/40 (50%). Every odd level after 31 is a normal breathing level.
 
-Families progress from single, separated, short-wall, and elbow patterns into offset walls, staggered layouts, partial channels, and asymmetric short walls. Counts are capacity-aware: 1–3 early and mostly 3–4 mid/late. The 6×8/22-pair profile has only four non-tile cells, so late selection favors geometry over blocker count. Average count is **3.23**.
+Families progress from single, separated, short-wall, and elbow patterns into offset walls, staggered layouts, partial channels, and asymmetric short walls. Counts are capacity-aware: 1–3 early and mostly 3–4 mid/late. The 7×7/22-pair profile has five non-tile cells, so late selection favors geometry over blocker count. Average count is **3.23**.
 
 ## Exact selected patterns and relevance
 

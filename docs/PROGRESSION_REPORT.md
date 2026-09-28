@@ -1,4 +1,42 @@
-# Provisional progression calibration
+# Campaign progression report
+
+## Current square-final geometry — Task 12.2
+
+Task 12.2 changes final-board geometry only. Pair-count bands, `levelSeed`, and authored blockers
+remain unchanged.
+
+| Levels | Geometry | Pairs | Empty cells before blockers |
+|---|---:|---:|---:|
+| 1 | 4×4 | 4 | 8 |
+| 2 | 4×4 | 5 | 6 |
+| 3 | 4×4 | 6 | 4 |
+| 4–5 | 4×4 | 5 | 6 |
+| 6–7 | 4×4 | 6 | 4 |
+| 8–10 | 5×5 | 7 | 11 |
+| 11–13 | 5×5 | 8 | 9 |
+| 14–16 | 5×5 | 9 | 7 |
+| 17–20 | 6×6 | 11 | 14 |
+| 21–23 | 6×6 | 12 | 12 |
+| 24–26 | 6×6 | 13 | 10 |
+| 27–30 | 7×7 | 15 | 19 |
+| 31–35 | 7×7 | 16 | 17 |
+| 36–40 | 7×7 | 17 | 15 |
+| 41–50 | 7×7 | 18 | 13 |
+| 51–60 | 7×7 | 19 | 11 |
+| 61–70 | 7×7 | 20 | 9 |
+| 71–85 | 7×7 | 21 | 7 |
+| 86–100 | 7×7 | 22 | 5 |
+
+Every current final board is square: Levels 1–7 are 4×4, Levels 8–16 are 5×5, Levels 17–26
+are 6×6, and Levels 27–100 are 7×7. Authored blocker Levels retain at least two empty non-blocked
+cells; the campaign minimum is exactly two. Current generator and solver metrics should be
+regenerated with `npm run analyze:progression`; the historical values below must not be treated as
+current production measurements.
+
+## Historical calibration before Task 12.2
+
+> The measurements, profiles, and campaign aggregates below describe previous campaign geometries. They are preserved as Tasks 5, 5.1, and 5.2 decision history and are not current production metrics.
+
 
 ## Method
 

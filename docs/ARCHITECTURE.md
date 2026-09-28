@@ -10,9 +10,9 @@
 
 `BoardLayout` also owns the single campaign-wide presentation scale: a 64 logical px cell pitch and
 56 logical px tile, leaving an 8 px gap. Every existing board and every stage uses these constants;
-dimensions never trigger per-level zoom. This compact scale reserves room for a possible future
-7-wide square board in the 480 px logical viewport, but does not expand the current 6×8 domain or
-change campaign geometry.
+dimensions never trigger per-level zoom. The domain maximum is 7×7, which occupies 448×448 in the
+480 px logical viewport. Campaign final boards are square (4×4, 5×5, 6×6, or 7×7); authored
+pre-stages may remain rectangular.
 
 `getHintMove(board)` is a pure game-layer policy seam that returns `findLegalMoves(board)[0]` or
 `null`; it neither caches a generator witness nor duplicates pathfinding. `PlayScene` projects that
@@ -36,7 +36,7 @@ and the Complete overlay. Main Menu loads no artwork.
 
 The pure `computeContainedSquarePlacement` derives the largest centered square inside the active
 final-stage `BoardLayout` bounds. `PlayScene` displays the full square source at that uniform size,
-without cropping or stretching it; portrait boards retain ordinary board space above and below it.
+without cropping or stretching it. Because every final board is square, artwork fills those bounds.
 Artwork is a separately referenced image beneath cell, tile, route, and blocker visuals, with reduced
 cell-backing opacity only on an eligible final Stage. Final-stage completion retains the strict order:
 derive completion, save when persistence is enabled, then show the clean full-square artwork
@@ -71,7 +71,7 @@ Phaser 4.2.1 has no supported global `GameConfig.resolution` field. Production t
 
 `LevelSequence` owns the explicit authored campaign `MULTI_STAGE_LEVELS` prelude table and appends `getLevelConfig(levelNumber)` automatically as the final stage. `createLevel` is unchanged and still creates that original board. The pure stage API is `getLevelStageConfigs`, `getStageCount`, `createLevelStage`, and `getStageClearOutcome`; no stage manager exists and the domain remains unaware of campaign composition.
 
-Pre-stage seeds use a documented uint32 namespace: `imul(level, 0x85ebca6b) ^ imul(index + 1, 0xc2b2ae35) ^ 0x27d4eb2d`. Final stages retain the original `levelSeed`, configuration, board rows, witness, and blocker mask. `PlayScene` holds a zero-based stage index and owns two disposable presentation containers: a stage-sheet stack and the current board visuals. The stack uses the current `BoardLayout` bounds with 8 px padding and 7 px per-layer offsets; at most two non-interactive backing sheets communicate remaining stages. On a non-final clear, input stays locked while the front sheet and current grid lift/fade for 220 ms, the nearest backing advances, and the newly generated stage settles in for 140 ms. Different stage dimensions rebuild the metaphor from the new current layout rather than exposing future geometry. Starting, replaying, advancing, and restarting destroy both containers and reset or reload the appropriate stack; completion still appears only after the final stage. On that final-stage boundary, `PlayScene` records and saves the level immediately before showing completion. Intermediate stages, Next, Replay, and Restart do not write or clear progress.
+Pre-stage seeds use a documented uint32 namespace: `imul(level, 0x85ebca6b) ^ imul(index + 1, 0xc2b2ae35) ^ 0x27d4eb2d`. Pre-stage configs and seeds remain authored content, while final-stage dimensions come from the square campaign progression and retain the original `levelSeed`, pair count, and blocker mask. `PlayScene` holds a zero-based stage index and owns two disposable presentation containers: a stage-sheet stack and the current board visuals. The stack uses the current `BoardLayout` bounds with 8 px padding and 7 px per-layer offsets; at most two non-interactive backing sheets communicate remaining stages. On a non-final clear, input stays locked while the front sheet and current grid lift/fade for 220 ms, the nearest backing advances, and the newly generated stage settles in for 140 ms. Different stage dimensions rebuild the metaphor from the new current layout rather than exposing future geometry. Starting, replaying, advancing, and restarting destroy both containers and reset or reload the appropriate stack; completion still appears only after the final stage. On that final-stage boundary, `PlayScene` records and saves the level immediately before showing completion. Intermediate stages, Next, Replay, and Restart do not write or clear progress.
 
 ## Player navigation scenes
 
