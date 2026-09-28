@@ -23,6 +23,39 @@ import {
 
 const progressAt = (completedThroughLevel) => ({ version: 1, completedThroughLevel });
 
+const validatePilotWebp = (webp, path, expectedSize) => {
+  const message = (reason) => `${path}: ${reason}`;
+  assert.ok(webp.length >= 12, message("file is too short for a RIFF/WebP header"));
+  assert.equal(webp.subarray(0, 4).toString("ascii"), "RIFF", message("invalid RIFF signature"));
+  assert.equal(webp.subarray(8, 12).toString("ascii"), "WEBP", message("invalid WEBP signature"));
+  assert.equal(webp.readUInt32LE(4) + 8, webp.length,
+    message("RIFF declared size does not match actual file length"));
+
+  let offset = 12;
+  let vp8Chunks = 0;
+  while (offset < webp.length) {
+    assert.ok(offset + 8 <= webp.length, message("incomplete chunk header"));
+    const chunkType = webp.subarray(offset, offset + 4).toString("ascii");
+    const chunkSize = webp.readUInt32LE(offset + 4);
+    const payloadStart = offset + 8;
+    const chunkEnd = payloadStart + chunkSize + (chunkSize % 2);
+    assert.ok(chunkEnd <= webp.length, message(`${chunkType} chunk extends beyond file`));
+
+    if (chunkType === "VP8 ") {
+      vp8Chunks += 1;
+      assert.ok(chunkSize >= 10, message("VP8 chunk is too short for a frame header"));
+      assert.deepEqual([...webp.subarray(payloadStart + 3, payloadStart + 6)], [0x9d, 0x01, 0x2a],
+        message("invalid VP8 frame signature"));
+      const width = webp.readUInt16LE(payloadStart + 6) & 0x3fff;
+      const height = webp.readUInt16LE(payloadStart + 8) & 0x3fff;
+      assert.deepEqual([width, height], [expectedSize, expectedSize],
+        message(`unexpected image dimensions: ${width}x${height}`));
+    }
+    offset = chunkEnd;
+  }
+  assert.equal(vp8Chunks, 1, message("expected exactly one VP8 image chunk"));
+};
+
 test("artwork Gallery derives unavailable, locked, and unlocked slot states", () => {
   assert.equal(getArtworkGallerySlotState(progressAt(0), 1), "locked");
   assert.equal(getArtworkGallerySlotState(progressAt(0), 2), "unavailable");
@@ -63,12 +96,19 @@ test("pilot artwork catalog references distinct full and thumbnail WebP fixtures
     assert.notEqual(artwork.fullPath, artwork.thumbnailPath);
     assert.match(artwork.fullPath, /\.webp$/);
     assert.match(artwork.thumbnailPath, /\.webp$/);
-    for (const path of [artwork.fullPath, artwork.thumbnailPath]) {
+    for (const [path, expectedSize] of [[artwork.fullPath, 1024], [artwork.thumbnailPath, 256]]) {
       const webp = await readFile(new URL(`../public/${path}`, import.meta.url));
-      assert.equal(webp.subarray(0, 4).toString("ascii"), "RIFF");
-      assert.equal(webp.subarray(8, 12).toString("ascii"), "WEBP");
+      validatePilotWebp(webp, path, expectedSize);
     }
   }
+});
+
+test("pilot WebP validation rejects a truncated file with intact magic bytes", async () => {
+  const path = LEVEL_ARTWORK[0].fullPath;
+  const webp = await readFile(new URL(`../public/${path}`, import.meta.url));
+  const truncatedWebp = webp.subarray(0, webp.length - 34);
+  assert.throws(() => validatePilotWebp(truncatedWebp, path, 1024),
+    /RIFF declared size does not match actual file length/);
 });
 
 test("artwork unlock is derived only from completed campaign progress", () => {
