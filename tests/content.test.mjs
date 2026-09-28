@@ -97,9 +97,9 @@ test("solver distinguishes solved, unsolvable, and unsupported boards", () => {
 test("generator rejects invalid dimensions, counts, and seeds", () => {
   for (const config of [
     { width: 0, height: 2, pairCount: 1, seed: 0 },
-    { width: 7, height: 2, pairCount: 1, seed: 0 },
+    { width: 8, height: 2, pairCount: 1, seed: 0 },
     { width: 2, height: 0, pairCount: 1, seed: 0 },
-    { width: 2, height: 9, pairCount: 1, seed: 0 },
+    { width: 2, height: 8, pairCount: 1, seed: 0 },
     { width: 2, height: 2, pairCount: 0, seed: 0 },
     { width: 2, height: 2, pairCount: 3, seed: 0 },
     { width: 2, height: 2, pairCount: 1, seed: -1 },
@@ -110,8 +110,8 @@ test("generator rejects invalid dimensions, counts, and seeds", () => {
 test("seeded reverse generation preserves pair, witness, solver, and product invariants", () => {
   const configs = [
     { width: 4, height: 4, pairCount: 5, seed: 1, avoidAdjacentMatchingPairs: true },
-    { width: 6, height: 8, pairCount: 18, seed: 2, avoidAdjacentMatchingPairs: true },
-    { width: 6, height: 8, pairCount: 20, seed: 3, avoidAdjacentMatchingPairs: true },
+    { width: 7, height: 7, pairCount: 18, seed: 2, avoidAdjacentMatchingPairs: true },
+    { width: 7, height: 7, pairCount: 20, seed: 3, avoidAdjacentMatchingPairs: true },
     { width: 4, height: 2, pairCount: 4, seed: 4 },
   ];
   for (const config of configs) {
@@ -152,7 +152,7 @@ test("small generated boards agree with independent exhaustive solver", () => {
 });
 
 test("metrics describe unlimited-turn solutions", () => {
-  const level = generateLevel({ width: 6, height: 8, pairCount: 20, seed: 7, avoidAdjacentMatchingPairs: true });
+  const level = generateLevel({ width: 7, height: 7, pairCount: 20, seed: 7, avoidAdjacentMatchingPairs: true });
   assert.equal(Object.values(level.metrics.turnHistogram).reduce((a, b) => a + b, 0), 20);
   assert.equal(level.metrics.threePlusTurnRate, level.metrics.threePlusTurnMoves / 20);
   assert.ok(level.metrics.averageSolutionPathLength > 0);

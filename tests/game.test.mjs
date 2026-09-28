@@ -58,8 +58,9 @@ test("artwork unlock is derived only from completed campaign progress", () => {
 test("square artwork placement is centered within final board bounds", () => {
   const cases = [
     { columns: 4, rows: 4, width: 256, height: 256, size: 256, verticalMargin: 0 },
-    { columns: 6, rows: 7, width: 384, height: 448, size: 384, verticalMargin: 64 },
-    { columns: 6, rows: 8, width: 384, height: 512, size: 384, verticalMargin: 128 },
+    { columns: 5, rows: 5, width: 320, height: 320, size: 320, verticalMargin: 0 },
+    { columns: 6, rows: 6, width: 384, height: 384, size: 384, verticalMargin: 0 },
+    { columns: 7, rows: 7, width: 448, height: 448, size: 448, verticalMargin: 0 },
   ];
   for (const { columns, rows, width, height, size, verticalMargin } of cases) {
     const board = new BoardLayout({
@@ -286,6 +287,23 @@ test("progression bands cover the campaign exactly once without gaps or overlaps
   assert.deepEqual(coverage.slice(1), Array(TOTAL_LEVELS).fill(1));
 });
 
+test("every campaign final board is square, follows the approved size ranges, and retains two empty cells", () => {
+  const expectedSide = (level) => level <= 7 ? 4 : level <= 16 ? 5 : level <= 26 ? 6 : 7;
+  const sides = new Set();
+  for (let level = 1; level <= TOTAL_LEVELS; level += 1) {
+    const config = getLevelConfig(level);
+    const final = getLevelStageConfigs(level).at(-1);
+    const blockerCount = config.blockedCells?.length ?? 0;
+    assert.equal(config.width, config.height, `level ${level} final must be square`);
+    assert.equal(config.width, expectedSide(level), `level ${level} final side`);
+    assert.equal(final.width, final.height, `level ${level} last stage must be square`);
+    assert.ok(config.width * config.height - config.pairCount * 2 - blockerCount >= 2,
+      `level ${level} final must retain at least two empty non-blocked cells`);
+    sides.add(config.width);
+  }
+  assert.deepEqual([...sides].sort(), [4, 5, 6, 7]);
+});
+
 test("early progression transitions have frozen profiles", () => {
   const profile = (level) => {
     const { width, height, pairCount } = getLevelConfig(level);
@@ -293,16 +311,16 @@ test("early progression transitions have frozen profiles", () => {
   };
   assert.deepEqual([3, 4, 5, 6, 7, 8, 10, 11, 13, 14, 16, 17, 20, 21, 23, 24, 26, 27, 30, 31]
     .map((level) => [level, profile(level)]), [
-    [3, { width: 4, height: 4, pairCount: 6 }], [4, { width: 4, height: 5, pairCount: 5 }],
-    [5, { width: 4, height: 5, pairCount: 5 }], [6, { width: 4, height: 5, pairCount: 6 }],
-    [7, { width: 4, height: 5, pairCount: 6 }], [8, { width: 5, height: 5, pairCount: 7 }],
+    [3, { width: 4, height: 4, pairCount: 6 }], [4, { width: 4, height: 4, pairCount: 5 }],
+    [5, { width: 4, height: 4, pairCount: 5 }], [6, { width: 4, height: 4, pairCount: 6 }],
+    [7, { width: 4, height: 4, pairCount: 6 }], [8, { width: 5, height: 5, pairCount: 7 }],
     [10, { width: 5, height: 5, pairCount: 7 }], [11, { width: 5, height: 5, pairCount: 8 }],
-    [13, { width: 5, height: 5, pairCount: 8 }], [14, { width: 5, height: 6, pairCount: 9 }],
-    [16, { width: 5, height: 6, pairCount: 9 }], [17, { width: 5, height: 6, pairCount: 11 }],
-    [20, { width: 5, height: 6, pairCount: 11 }], [21, { width: 5, height: 7, pairCount: 12 }],
-    [23, { width: 5, height: 7, pairCount: 12 }], [24, { width: 6, height: 6, pairCount: 13 }],
-    [26, { width: 6, height: 6, pairCount: 13 }], [27, { width: 6, height: 7, pairCount: 15 }],
-    [30, { width: 6, height: 7, pairCount: 15 }], [31, { width: 6, height: 7, pairCount: 16 }],
+    [13, { width: 5, height: 5, pairCount: 8 }], [14, { width: 5, height: 5, pairCount: 9 }],
+    [16, { width: 5, height: 5, pairCount: 9 }], [17, { width: 6, height: 6, pairCount: 11 }],
+    [20, { width: 6, height: 6, pairCount: 11 }], [21, { width: 6, height: 6, pairCount: 12 }],
+    [23, { width: 6, height: 6, pairCount: 12 }], [24, { width: 6, height: 6, pairCount: 13 }],
+    [26, { width: 6, height: 6, pairCount: 13 }], [27, { width: 7, height: 7, pairCount: 15 }],
+    [30, { width: 7, height: 7, pairCount: 15 }], [31, { width: 7, height: 7, pairCount: 16 }],
   ]);
 });
 
@@ -326,6 +344,8 @@ test("campaign multi-stage distribution and stage split are frozen", () => {
   assert.equal(TOTAL_LEVELS, 100);
   assert.equal(expected.filter((level) => getStageCount(level) === 2).length, 14);
   assert.equal(expected.filter((level) => getStageCount(level) === 3).length, 5);
+  assert.equal(Array.from({ length: TOTAL_LEVELS }, (_, index) => getStageCount(index + 1))
+    .reduce((sum, count) => sum + count, 0), 124);
   for (let level = 1; level <= TOTAL_LEVELS; level += 1) {
     if (!expected.includes(level)) assert.equal(getStageCount(level), 1);
     if (level <= 20) assert.equal(getStageCount(level), 1);
@@ -361,12 +381,12 @@ test("pre-stage seeds and exact pilot configs are stable", () => {
       ({ width, height, pairCount, seed, blockerCount: blockedCells?.length ?? 0 })));
   assert.deepEqual(profiles, [
     [{ width: 5, height: 5, pairCount: 8, seed: 422698975, blockerCount: 0 },
-      { width: 5, height: 7, pairCount: 12, seed: levelSeed(21), blockerCount: 0 }],
+      { width: 6, height: 6, pairCount: 12, seed: levelSeed(21), blockerCount: 0 }],
     [{ width: 5, height: 6, pairCount: 10, seed: 1803337488, blockerCount: 0 },
       { width: 6, height: 6, pairCount: 13, seed: levelSeed(24), blockerCount: 0 }],
     [{ width: 4, height: 5, pairCount: 6, seed: 1422392722, blockerCount: 0 },
       { width: 5, height: 6, pairCount: 9, seed: 319819725, blockerCount: 0 },
-      { width: 6, height: 7, pairCount: 15, seed: levelSeed(30), blockerCount: 3 }],
+      { width: 7, height: 7, pairCount: 15, seed: levelSeed(30), blockerCount: 3 }],
   ]);
   assert.equal(new Set(profiles.flat().map(({ seed }) => seed)).size, 7);
 });
@@ -438,7 +458,9 @@ test("first 100 sequence levels are distinct, valid, non-adjacent, and solvable"
     }
     const repeated = createLevel(levelNumber).board;
     assert.equal(snapshot, JSON.stringify({ rows: repeated.toRows(), blocked: repeated.blockedCells() }), "replay must reproduce the board");
-    if (levelNumber <= 5) assert.ok(level.metrics.initialLegalMoveCount >= 2, `level ${levelNumber} must start with at least two moves`);
+    if (levelNumber <= 4) assert.ok(level.metrics.initialLegalMoveCount >= 2, `level ${levelNumber} must start with at least two moves`);
+    if (levelNumber === 5) assert.equal(level.metrics.initialLegalMoveCount, 1,
+      "level 5's frozen seed on the approved 4x4 geometry has one initial move");
     assert.ok(level.metrics.initialLegalMoveCount >= 1, `level ${levelNumber} must start with a move`);
     previousSnapshot = snapshot;
   }
@@ -461,20 +483,20 @@ test("every legal move encountered in campaign blocker solver replay preserves s
 });
 
 test("real cell centers and the full board fit the portrait play area", () => {
-  const full = layout(6, 8);
-  assert.deepEqual(full.cellCenter({ col: 0, row: 0 }), { x: 80, y: 196 });
-  assert.deepEqual(full.cellCenter({ col: 5, row: 7 }), { x: 400, y: 644 });
+  const full = layout(7, 7);
+  assert.deepEqual(full.cellCenter({ col: 0, row: 0 }), { x: 48, y: 228 });
+  assert.deepEqual(full.cellCenter({ col: 6, row: 6 }), { x: 432, y: 612 });
   assert.deepEqual(
     [full.boardLeft, full.boardTop, full.boardRight, full.boardBottom],
-    [48, 164, 432, 676],
+    [16, 196, 464, 644],
   );
   assert.equal(BoardLayout.CELL_PITCH, 64);
   assert.equal(BoardLayout.TILE_SIZE, 56);
   assert.equal(full.pitch, BoardLayout.CELL_PITCH);
   assert.equal(full.tileSize, BoardLayout.TILE_SIZE);
   assert.equal(BoardLayout.CELL_PITCH - BoardLayout.TILE_SIZE, 8);
-  assert.ok(7 * BoardLayout.CELL_PITCH < 480,
-    "the global pitch reserves viewport width for a possible future 7-wide board");
+  assert.equal(7 * BoardLayout.CELL_PITCH, 448);
+  assert.ok(full.boardLeft >= 0 && full.boardRight <= 480);
 });
 
 test("stage stack backing count communicates remaining stages", () => {
@@ -494,8 +516,17 @@ test("smaller boards remain centered in the same safe play area", () => {
   assert.equal((short.boardTop + short.boardBottom) / 2, 420);
 });
 
+test("square board footprints use the fixed global scale", () => {
+  for (const [side, footprint] of [[4, 256], [5, 320], [6, 384], [7, 448]]) {
+    const board = layout(side, side);
+    assert.equal(board.boardRight - board.boardLeft, footprint);
+    assert.equal(board.boardBottom - board.boardTop, footprint);
+  }
+});
+
 test("layout rejects coordinates outside the real board", () => {
-  const full = layout(6, 8);
+  const full = layout(7, 7);
   assert.throws(() => full.cellCenter({ col: -1, row: 0 }), RangeError);
-  assert.throws(() => full.cellCenter({ col: 6, row: 0 }), RangeError);
+  assert.throws(() => full.cellCenter({ col: 7, row: 0 }), RangeError);
+  assert.throws(() => full.cellCenter({ col: 0, row: 7 }), RangeError);
 });

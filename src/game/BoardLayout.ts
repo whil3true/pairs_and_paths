@@ -1,4 +1,4 @@
-import type { GridPoint } from "../domain/index.js";
+import { MAX_BOARD_HEIGHT, MAX_BOARD_WIDTH, type GridPoint } from "../domain/index.js";
 
 export interface WorldPoint {
   readonly x: number;
@@ -31,8 +31,9 @@ export class BoardLayout {
 
   constructor(readonly options: BoardLayoutOptions) {
     const { sceneWidth, boardWidth, boardHeight } = options;
-    if (boardWidth < 1 || boardWidth > 6 || boardHeight < 1 || boardHeight > 8) {
-      throw new RangeError("BoardLayout supports boards from 1x1 through 6x8");
+    if (boardWidth < 1 || boardWidth > MAX_BOARD_WIDTH
+      || boardHeight < 1 || boardHeight > MAX_BOARD_HEIGHT) {
+      throw new RangeError(`BoardLayout supports boards from 1x1 through ${MAX_BOARD_WIDTH}x${MAX_BOARD_HEIGHT}`);
     }
     this.boardLeft = (sceneWidth - boardWidth * this.pitch) / 2;
     this.boardTop = BoardLayout.BOARD_AREA_CENTER_Y - boardHeight * this.pitch / 2;

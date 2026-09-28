@@ -6,8 +6,8 @@ export interface GridPoint {
 export type TileId = number;
 export type Cell = TileId | null;
 
-export const MAX_BOARD_WIDTH = 6;
-export const MAX_BOARD_HEIGHT = 8;
+export const MAX_BOARD_WIDTH = 7;
+export const MAX_BOARD_HEIGHT = 7;
 
 const isTileId = (value: unknown): value is TileId =>
   typeof value === "number" && Number.isInteger(value) && value > 0;

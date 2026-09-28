@@ -139,8 +139,8 @@ test("Board validates data, exposes cells, and creates immutable revisions", () 
   assert.throws(() => Board.fromRows([]), RangeError);
   assert.throws(() => Board.fromRows([[1], [1, null]]), TypeError);
   assert.throws(() => Board.fromRows([[0]]), TypeError);
-  assert.throws(() => Board.fromRows([[1, 1, 1, 1, 1, 1, 1]]), RangeError);
-  assert.throws(() => Board.fromRows(Array.from({ length: 9 }, () => [1])), RangeError);
+  assert.throws(() => Board.fromRows([[1, 1, 1, 1, 1, 1, 1, 1]]), RangeError);
+  assert.throws(() => Board.fromRows(Array.from({ length: 8 }, () => [1])), RangeError);
   assert.throws(() => board.tileAt(point(-1, 0)), RangeError);
 });
 
@@ -250,15 +250,15 @@ test("exhaustive 2x2, 2x3, 3x2, and 3x3 boards match the independent oracle (5,1
   assert.equal(cases, 5_112);
 });
 
-test("5,000 deterministic random boards through 6x8 match reference search, validate, and repeat", () => {
+test("5,000 deterministic random boards through 7x7 match reference search, validate, and repeat", () => {
   let state = 0x5eed1234;
   const random = () => {
     state = (Math.imul(state, 1664525) + 1013904223) >>> 0;
     return state / 0x1_0000_0000;
   };
   for (let iteration = 0; iteration < 5_000; iteration += 1) {
-    const width = 2 + Math.floor(random() * 5);
-    const height = 2 + Math.floor(random() * 7);
+    const width = 2 + Math.floor(random() * 6);
+    const height = 2 + Math.floor(random() * 6);
     const rows = Array.from({ length: height }, () => Array.from({ length: width }, () => random() < 0.48 ? 2 : null));
     const start = point(Math.floor(random() * width), Math.floor(random() * height));
     let end = point(Math.floor(random() * width), Math.floor(random() * height));
