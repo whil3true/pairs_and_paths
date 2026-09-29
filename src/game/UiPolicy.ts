@@ -20,7 +20,8 @@ export const resolveButtonVisual = (kind: ButtonKind, state: ButtonState): Butto
     : { fill: c.state.lockedFill.phaser, fillAlpha: 1, label: c.text.tertiary.hex, border: c.state.locked.phaser, borderWidth: BORDERS.structural, offsetY: 0, focusRing: false };
 
   if (kind === "primary") return {
-    fill: state === "pressed" ? c.primary.tealPressed.phaser : c.primary.teal.phaser,
+    fill: state === "pressed" ? c.primary.tealPressed.phaser
+      : state === "hover" ? c.primary.tealHover.phaser : c.primary.teal.phaser,
     fillAlpha: 1, label: c.white.hex, border: c.primary.tealPressed.phaser, borderWidth: 0,
     offsetY: state === "pressed" ? 2 : state === "hover" ? -1 : 0, focusRing: state === "focus",
   };

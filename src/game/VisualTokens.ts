@@ -8,7 +8,10 @@ const color = (hex: `#${string}`, alpha = 1) => Object.freeze({
 export const VISUAL_COLORS = Object.freeze({
   bg: Object.freeze({ app: color("#F5EEDF") }),
   surface: Object.freeze({ elevated: color("#FFFDF8"), card: color("#FFFBF3"), board: color("#E7DCC8") }),
-  primary: Object.freeze({ teal: color("#176B69"), tealPressed: color("#105452"), tealDisabled: color("#D3DED9") }),
+  primary: Object.freeze({
+    teal: color("#176B69"), tealHover: color("#20706F"),
+    tealPressed: color("#105452"), tealDisabled: color("#D3DED9"),
+  }),
   text: Object.freeze({ primary: color("#26383A"), secondary: color("#586260"), tertiary: color("#606A67") }),
   accent: Object.freeze({ coral: color("#C96E5B"), gold: color("#D49A35") }),
   state: Object.freeze({

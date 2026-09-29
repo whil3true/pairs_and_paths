@@ -60,7 +60,12 @@ test("button visual policy is deterministic and exposes disabled and focus state
   assert.deepEqual(resolveButtonVisual("primary", "pressed"), primaryPressed);
   assert.equal(primaryPressed.fill, VISUAL_COLORS.primary.tealPressed.phaser);
   assert.equal(primaryPressed.offsetY, 2);
+  const primaryHover = resolveButtonVisual("primary", "hover");
+  assert.equal(primaryHover.fill, VISUAL_COLORS.primary.tealHover.phaser);
+  assert.notEqual(primaryHover.fill, VISUAL_COLORS.primary.teal.phaser);
+  assert.equal(primaryHover.offsetY, -1);
   assert.equal(resolveButtonVisual("primary", "disabled").fill, VISUAL_COLORS.primary.tealDisabled.phaser);
+  assert.equal(resolveButtonVisual("primary", "disabled").offsetY, 0);
   assert.equal(resolveButtonVisual("secondary", "disabled").border, VISUAL_COLORS.state.locked.phaser);
   assert.equal(resolveButtonVisual("secondary", "focus").focusRing, true);
 });

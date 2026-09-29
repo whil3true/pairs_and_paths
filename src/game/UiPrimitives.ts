@@ -62,7 +62,8 @@ const createButton = (
   const graphics = scene.add.graphics();
   const label = createUiText(scene, renderScale, 0, 0, options.label,
     kind === "primary" ? "buttonPrimary" : "buttonSecondary", { align: "center" }).setOrigin(0.5);
-  const container = scene.add.container(options.x, options.y, [graphics, label]);
+  const visualContent = scene.add.container(0, 0, [graphics, label]);
+  const container = scene.add.container(options.x, options.y, [visualContent]);
   let disabled = options.disabled ?? false;
   let focused = false;
   let hovered = false;
@@ -81,7 +82,8 @@ const createButton = (
     graphics.fillStyle(visual.fill, visual.fillAlpha).fillRoundedRect(-width / 2, -height / 2, width, height, radius);
     if (visual.borderWidth > 0) graphics.lineStyle(visual.borderWidth, visual.border, 1)
       .strokeRoundedRect(-width / 2, -height / 2, width, height, radius);
-    label.setColor(visual.label).setY(visual.offsetY);
+    label.setColor(visual.label);
+    visualContent.setY(visual.offsetY);
   };
 
   container.setSize(width, height).setInteractive(
