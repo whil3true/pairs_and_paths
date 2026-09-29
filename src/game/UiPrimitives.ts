@@ -1,0 +1,140 @@
+import { setHiDpiTextResolution } from "./Display.js";
+import { resolveButtonVisual, type ButtonKind, type ButtonState } from "./UiPolicy.js";
+import {
+  BORDERS, COMPONENT_RADII, FONT_FAMILY, SPACING, TYPOGRAPHY, VISUAL_COLORS, type TypographyRole,
+} from "./VisualTokens.js";
+
+export interface TextOptions {
+  readonly color?: string;
+  readonly align?: "left" | "center" | "right" | "justify";
+}
+
+export const createUiText = (
+  scene: Phaser.Scene,
+  renderScale: number,
+  x: number,
+  y: number,
+  value: string,
+  role: TypographyRole,
+  options: TextOptions = {},
+): Phaser.GameObjects.Text => {
+  const token = TYPOGRAPHY[role];
+  const text = scene.add.text(x, y, value, {
+    color: options.color ?? VISUAL_COLORS.text.primary.hex,
+    fontFamily: FONT_FAMILY,
+    fontSize: `${token.size}px`,
+    fontStyle: String(token.weight),
+    lineSpacing: token.lineHeight - token.size,
+    align: options.align ?? token.align,
+  });
+  text.setLetterSpacing(token.tracking);
+  return setHiDpiTextResolution(text, renderScale);
+};
+
+export interface ButtonOptions {
+  readonly x: number;
+  readonly y: number;
+  readonly width: number;
+  readonly height?: number;
+  readonly label: string;
+  readonly onActivate: () => void;
+  readonly disabled?: boolean;
+}
+
+/** Small focus seam: callers may connect setFocused() to a future keyboard-navigation owner. */
+export interface UiButton {
+  readonly container: Phaser.GameObjects.Container;
+  setDisabled(disabled: boolean): void;
+  setFocused(focused: boolean): void;
+}
+
+const createButton = (
+  scene: Phaser.Scene,
+  renderScale: number,
+  kind: ButtonKind,
+  options: ButtonOptions,
+  icon = false,
+): UiButton => {
+  const minimumHeight = SPACING.minimumTouchTarget;
+  const width = Math.max(options.width, SPACING.minimumTouchTarget);
+  const height = Math.max(options.height ?? (kind === "primary" ? SPACING.primaryButtonHeight : 52), minimumHeight);
+  const radius = icon ? COMPONENT_RADII.iconButton : kind === "tertiary" ? COMPONENT_RADII.tile : COMPONENT_RADII.button;
+  const graphics = scene.add.graphics();
+  const label = createUiText(scene, renderScale, 0, 0, options.label,
+    kind === "primary" ? "buttonPrimary" : "buttonSecondary", { align: "center" }).setOrigin(0.5);
+  const container = scene.add.container(options.x, options.y, [graphics, label]);
+  let disabled = options.disabled ?? false;
+  let focused = false;
+  let hovered = false;
+  let armed = false;
+
+  const render = (state?: ButtonState): void => {
+    const resolvedState = disabled ? "disabled" : state ?? (focused ? "focus" : hovered ? "hover" : "default");
+    const visual = resolveButtonVisual(kind, resolvedState);
+    graphics.clear();
+    if (visual.focusRing) {
+      graphics.lineStyle(BORDERS.emphasized, VISUAL_COLORS.route.halo.phaser, 1)
+        .strokeRoundedRect(-width / 2 - 5, -height / 2 - 5, width + 10, height + 10, radius + 5);
+      graphics.lineStyle(BORDERS.structural, VISUAL_COLORS.primary.tealPressed.phaser, 1)
+        .strokeRoundedRect(-width / 2 - 2, -height / 2 - 2, width + 4, height + 4, radius + 2);
+    }
+    graphics.fillStyle(visual.fill, visual.fillAlpha).fillRoundedRect(-width / 2, -height / 2, width, height, radius);
+    if (visual.borderWidth > 0) graphics.lineStyle(visual.borderWidth, visual.border, 1)
+      .strokeRoundedRect(-width / 2, -height / 2, width, height, radius);
+    label.setColor(visual.label).setY(visual.offsetY);
+  };
+
+  container.setSize(width, height).setInteractive(
+    new Phaser.Geom.Rectangle(-width / 2, -height / 2, width, height),
+    Phaser.Geom.Rectangle.Contains,
+  );
+  const syncInput = (): void => {
+    if (disabled) container.disableInteractive();
+    else container.setInteractive(
+      new Phaser.Geom.Rectangle(-width / 2, -height / 2, width, height), Phaser.Geom.Rectangle.Contains,
+    ).input!.cursor = "pointer";
+  };
+  container.on("pointerover", () => { if (!disabled) { hovered = true; render(); } });
+  container.on("pointerout", () => { hovered = false; armed = false; render(); });
+  container.on("pointerdown", () => { if (!disabled) { armed = true; render("pressed"); } });
+  container.on("pointerup", () => {
+    if (disabled || !armed) return;
+    armed = false;
+    render();
+    options.onActivate();
+  });
+  render();
+  syncInput();
+  return {
+    container,
+    setDisabled(value: boolean): void { disabled = value; armed = false; syncInput(); render(); },
+    setFocused(value: boolean): void { focused = value; render(); },
+  };
+};
+
+export const createPrimaryButton = (scene: Phaser.Scene, renderScale: number, options: ButtonOptions): UiButton =>
+  createButton(scene, renderScale, "primary", options);
+export const createSecondaryButton = (scene: Phaser.Scene, renderScale: number, options: ButtonOptions): UiButton =>
+  createButton(scene, renderScale, "secondary", options);
+export const createTertiaryButton = (scene: Phaser.Scene, renderScale: number, options: ButtonOptions): UiButton =>
+  createButton(scene, renderScale, "tertiary", options);
+export const createIconButton = (scene: Phaser.Scene, renderScale: number, options: ButtonOptions): UiButton =>
+  createButton(scene, renderScale, "secondary", { ...options, width: Math.max(options.width, 48), height: Math.max(options.height ?? 48, 48) }, true);
+
+export interface PanelOptions { readonly x: number; readonly y: number; readonly width: number; readonly height: number; }
+
+export const createCard = (scene: Phaser.Scene, options: PanelOptions): Phaser.GameObjects.Graphics =>
+  scene.add.graphics().fillStyle(VISUAL_COLORS.surface.card.phaser)
+    .fillRoundedRect(options.x - options.width / 2, options.y - options.height / 2, options.width, options.height, COMPONENT_RADII.chapterBanner)
+    .lineStyle(BORDERS.structural, VISUAL_COLORS.border.soft.phaser)
+    .strokeRoundedRect(options.x - options.width / 2, options.y - options.height / 2, options.width, options.height, COMPONENT_RADII.chapterBanner);
+
+export const createModalShell = (scene: Phaser.Scene, options: PanelOptions): Phaser.GameObjects.Container => {
+  const backdrop = scene.add.rectangle(240, 400, 480, 800, VISUAL_COLORS.overlay.modal.phaser, VISUAL_COLORS.overlay.modal.alpha)
+    .setInteractive();
+  const panel = scene.add.graphics().fillStyle(VISUAL_COLORS.surface.elevated.phaser)
+    .fillRoundedRect(options.x - options.width / 2, options.y - options.height / 2, options.width, options.height, COMPONENT_RADII.modal)
+    .lineStyle(BORDERS.structural, VISUAL_COLORS.border.strong.phaser)
+    .strokeRoundedRect(options.x - options.width / 2, options.y - options.height / 2, options.width, options.height, COMPONENT_RADII.modal);
+  return scene.add.container(0, 0, [backdrop, panel]);
+};

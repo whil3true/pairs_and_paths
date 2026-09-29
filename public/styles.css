@@ -1,7 +1,11 @@
-:root { color-scheme: dark; font-family: system-ui, sans-serif; background: #10182b; }
+:root {
+  color-scheme: light;
+  font-family: "Manrope", system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+  background: #f5eedf;
+}
 * { box-sizing: border-box; }
 html, body { width: 100%; min-height: 100%; margin: 0; }
-body { min-height: 100dvh; overflow: hidden; background: #10182b; }
+body { min-height: 100dvh; overflow: hidden; background: #f5eedf; }
 /* The body owns the full-viewport background; Phaser fits only inside this safe-area frame. */
 #game {
   position: fixed;
