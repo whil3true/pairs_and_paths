@@ -997,4 +997,390 @@ For every candidate, inspect:
 - accidental faces/eyes/figures in foliage, windows, fabric, or architecture;
 - uniform visual clutter or more than two high-frequency zones;
 - generic AI center composition and “cozy room + plants” default;
-- near-duplicate camera, mass layout, anchor, or lighting of prior art;
+- near-duplicate camera, mass layout, anchor, or lighting of prior art;- chapter mismatch in place, material, season, or palette;
+- broken/overused recurring motif;
+- weak 256 thumbnail identity;
+- weak 7×7 readability and route/HUD conflict;
+- critical detail inside 10% edge safe zone;
+- focal mass outside 25–45% without a deliberate documented reason.
+
+### 27.2 Decision classes
+
+**PASS**
+
+- No structural/anatomical/semantic defect visible at 100% master view.
+- Chapter and subject read immediately at 256.
+- Mass hierarchy survives 7×7; edge heuristic passes or justified manual review passes.
+- It is materially distinct from previous accepted works.
+- Recurring cues feel authored, not pasted.
+- Only minor colour grading/sharpening/export work remains.
+
+**RETOUCH**
+
+- Core composition, geometry, and subject are strong.
+- Defects are local and repairable without regenerating >15% of the image: one malformed handle, duplicated flower cluster, small pseudo-text patch, local shadow, edge clutter, palette correction, motif cleanup.
+- Retouch must be followed by master, 256, and 7×7 re-review.
+
+**REGENERATE**
+
+- Architecture/perspective or rail/furniture geometry is fundamentally broken.
+- Generic composition, wrong chapter, near-duplicate, multiple conflicting light sources, accidental face, uniformly busy background, or focal idea depends on tiny detail.
+- More than 15–20% would need repainting.
+- Retouch would preserve the underlying generic/incorrect concept.
+
+Maintain a rejection log by symptom and seed/brief so the pipeline does not repeatedly generate the same failure.
+
+---
+
+## 28. Asset export
+
+### 28.1 Master workflow
+
+1. Keep a layered or lossless working master at minimum `2048×2048` sRGB when the generator permits; preserve prompt/brief, generation metadata, retouch notes, and approval state.
+2. QA and retouch at master resolution.
+3. Produce the 1024 full asset directly from the master.
+4. Produce the 256 thumbnail independently from the same master, with thumbnail-specific mild sharpening if needed.
+5. Never upscale a thumbnail to full in production.
+
+### 28.2 Full and thumbnail
+
+- Full: `1024×1024 WebP`, opaque, sRGB, no alpha.
+- Thumbnail: `256×256 WebP`, opaque, sRGB, no alpha.
+- Resampling: high-quality Lanczos or equivalent; avoid oversharpen halos.
+- Metadata: strip unnecessary EXIF/XMP/ICC only after confirming colour remains sRGB-consistent; retain provenance outside runtime file.
+- Lossy WebP default: full quality `82–88`; thumb `78–84`.
+- Use lossless only when measured output is smaller or the asset contains flat graphic areas where lossy artefacts are visible. Artwork is expected to use lossy.
+
+### 28.3 Byte measurement
+
+- During six-art pilot, export a quality ladder at `78/82/85/88` full and `74/78/82/85` thumb.
+- Record bytes, decode dimensions, perceptual artefacts at 100%, 256 view, Android renderScale 1/2, and package totals.
+- Choose one default quality plus documented per-image exception range. Do not impose the engineering fixture byte threshold as production budget.
+- Report median, p90, maximum, total full, total thumb, and decoded texture memory separately.
+
+### 28.4 Integrity
+
+- Verify RIFF/WEBP structure and full file length/chunk boundaries.
+- Verify exact dimensions, opaque decode, successful browser/Phaser decode, no crop/stretch, and deterministic file path/key match.
+- Generate and retain SHA-256 in the asset manifest.
+- Compare master/1024/256 colour and orientation.
+
+### 28.5 Naming and keys
+
+Runtime paths:
+
+```text
+public/assets/artwork/production/full/chapter-01/level-001.webp
+public/assets/artwork/production/thumbs/chapter-01/level-001.webp
+```
+
+Asset keys:
+
+```text
+artwork-full-level-001
+artwork-thumb-level-001
+```
+
+Optional source/master filenames may add a slug, but runtime filenames remain Level-stable. Slugs/titles live in metadata, not loader identity. Use zero-padded three-digit Level numbers.
+
+---
+
+## 29. Icon / cover / screenshots
+
+### 29.1 Catalog icon — Concept A
+
+- Square; no text.
+- Background: one simplified Curated Cozy Place with 15–20% less detail than production art.
+- Foreground: exactly two matching ivory tile cards, each occupying roughly 22–26% of icon width.
+- One clear orthogonal teal route with cream halo, entirely inside the icon safe area.
+- Safe area: keep critical cards/route ≥10% from edge; account for platform rounding.
+- Maximum major objects: background focal mass + two tiles + route = four.
+- Matching symbol must remain readable at 64 px icon size.
+- No blocker, Hint, extra tiles, coins, people, or false effects.
+
+### 29.2 Main cover — board-first
+
+- Show real portrait/square board geometry with approximately 40% artwork reveal.
+- 8–14 visible tiles, one valid-looking orthogonal route, at most one blocker if used.
+- Artwork must be from the game or a production-approved representative crop that preserves truthful reveal.
+- Text sits outside the board on an opaque field. Full title may use two lines; short promise `Открывай картинки` is optional.
+- No fake turn limit, power-up, explosion, timer, or unavailable mechanic.
+- Keep copy and mechanic inside central 80% safe area for catalog crops.
+
+### 29.3 Alternate cover — reward-first
+
+- Clean artwork/reward dominates; a small but legible pair + route establishes mechanic.
+- Use only as alternate creative, never the only catalog explanation.
+
+### 29.4 Screenshot set
+
+1. **Gameplay + reveal:** 5×5 or 6×6 with 35–50% reveal, readable matching route, HUD, no debug labels.
+2. **Reward / Gallery:** clean reward or Gallery with several genuinely unlocked works; no fake thumbnails.
+3. **Later challenge:** real 7×7 with blockers and partial reveal; route shown only if valid for that exact board state.
+
+Screenshots must come from an actual implemented build or be reconstructed from exact legal board state and real UI. Do not depict inaccessible art, fake mechanics, inflated progress, or impossible paths.
+
+---
+
+## 30. Motion
+
+| Event | Default duration | Easing / intent | Reduced motion |
+|---|---:|---|---|
+| Button press | 80 ms down + 100 ms up | ease-out, tactile 2 px | colour change only |
+| Tile selection | 120 ms | ease-out, 0.97→1.00 + border | instant border |
+| Pair route | 220 ms total | linear draw, brief hold, ease-out fade | 180 ms static line + fade |
+| Pair removal | 160–200 ms | ease-in scale 1→0.88 + fade | 100 ms fade |
+| Hint | 900 ms semantic duration | two gentle synchronized pulses | static double ring |
+| Artwork reveal after last pair | 450–650 ms hold | quiet, allow recognition | 250 ms hold |
+| Reward entry | 280–360 ms | ease-out scale 0.98→1 + fade | 150 ms fade |
+| Modal entry | 180–220 ms | backdrop fade + panel 0.98→1 | 120 ms fade |
+| Modal exit | 140–180 ms | ease-in fade | 100 ms fade |
+| Chapter navigation | 180–240 ms | horizontal 16 px slide + crossfade | crossfade only |
+| Stage transition | retain 220 ms lift/fade + 140 ms settle | current authored sheet metaphor | simple crossfade |
+
+Rules:
+
+- No bounce, elastic, slot-machine cascade, camera shake, confetti storm, or perpetual decorative animation.
+- Input locks follow existing semantics; motion must not create new delay after the visual has finished.
+- Reduced motion is a future settings capability; design all states so animation is never required to understand them.
+
+### 30.1 Future audio hooks
+
+Audio is out of scope, but implementation should expose clean event hooks for:
+
+- tile select;
+- successful pair/route;
+- Hint activation;
+- blocked interaction feedback, if audio is later desired;
+- non-final Stage complete;
+- artwork reward;
+- ordinary button press.
+
+Do not design or source audio in this phase.
+
+---
+
+## 31. Accessibility
+
+| Component / condition | Risk | Mitigation | QA method |
+|---|---|---|---|
+| Cohort 45–64 | small/low-weight text, slower scan | 14 px absolute floor; critical ≥16; weights 500–800; clear hierarchy | Android at arm’s length; `nice-to-have user validation` |
+| Low brightness | borders/states disappear | 2–3 px structural borders; dark charcoal; opaque cards | 20–30% brightness in dim room |
+| Daylight | pale UI washes out | ≥4.5:1 text; strong board frame; no pastel-only control | outdoor/bright-window device test |
+| Colour vision deficiency | teal/gold/coral states merge | glyph + border pattern + fill + label; no colour-only state | protanopia/deuteranopia/tritanopia simulation + grayscale |
+| 7×7 density | symbol search fatigue | 56 px opaque cards; 38–40 px filled silhouettes; limited detail | Level 80, 22 types, timed find tasks |
+| 22 symbol types | confusing identities | grayscale silhouettes; confusion-pair matrix; no colour identity | 56/28 px contact sheets; pair naming test |
+| Locked/current/completed | status ambiguity | lock/check/pointer glyphs plus fill/border | grayscale screenshot review |
+| Hint vs selected | both look highlighted | selected teal single border + marker; Hint gold double ring + paired pulse | 900 ms observation, colour simulation |
+| Blocker vs tile | dark card mistaken for tile | chipped terrain silhouette, relief lock, stone planes, no symbol card | grayscale peripheral test |
+| Route on bright/dark art | line disappears | 11 px cream halo + 5 px teal core | bright/dark/busy pilot artworks |
+| Touch targets | mis-taps | min 48×48 and 8 px separation | Android tap-grid/manual thumb reach |
+| Reduced motion | state depends on pulse/slide | static borders/glyphs and instant states | reduced-motion mode walkthrough |
+| Text over artwork | unreadable | opaque chip/scrim; avoid direct overlay | worst-case bright/dark image crops |
+| Loading/failure | mistaken for locked | spinner/label vs lock vs unavailable-image glyph | throttle/offline manual network QA |
+
+Acceptance for critical text and controls: no clipping at 480×800, renderScale 1 and 2; no dependence on font anti-aliasing to make thin strokes visible.
+
+---
+
+## 32. Android / HiDPI QA
+
+### 32.1 Required matrix
+
+- Logical `480×800` at renderScale 1 and automatic renderScale 2.
+- DPR near 1, 2, and >2 clamped to 2; include POCO X6 Pro-class DPR ≈3.
+- Narrow/tall portrait, common 20:9 portrait, tablet portrait, wide desktop, landscape rotation retaining centered portrait.
+- WebGL and Canvas fallback where practical.
+- 4×4, 5×5, 6×6, 7×7; rectangular pre-stage; multi-stage sheet stack.
+- bright, dark, and busy production-pilot artwork.
+
+### 32.2 Visual checks
+
+- Canvas is centered, not cropped/stretched; safe-area shell works with browser chrome changes.
+- Tile borders, rounded corners, filled symbols, route halo/core, blocker relief, and Manrope text stay sharp at scale 1/2.
+- Pointer/touch maps to the same logical cell at both scales.
+- No texture seams in 8 px gaps; artwork fills final board exactly.
+- Board/frame/HUD do not overlap at Level 100 and Stage 3/3.
+- Focus ring exists for browser keyboard without compromising touch UI.
+- Page background gutters use `bg.app`/subtle paper field; no enlarged artwork wallpaper.
+
+### 32.3 Performance and network
+
+- Main Menu: zero artwork requests.
+- Gameplay: current eligible full only; earlier stages art-free.
+- Gallery: only unlocked thumbnails in active chapter; never full; no locked/unavailable request.
+- Full View: selected full only; cached revisit does not reload.
+- Observe texture memory and frame pacing on 7×7 at renderScale 2 during route, Hint, modal, and reward.
+- `needs real-device QA`: first font load, first WebP decode, and first Gallery thumbnail batch on mid-range Android.
+
+---
+
+## 33. Implementation roadmap
+
+This is a future Codex roadmap, not authorization to edit the repository now. Preserve tests and product semantics in every phase. Add focused presentation tests where pure layout/token policy is extracted; Phaser pixels remain manual QA.
+
+### Phase 0 — Production Visual Pilot inputs
+
+- **Scope:** approve six artworks, 12 symbols, and exact screen references defined in section 34 before broad redesign implementation.
+- **Dependencies:** this specification.
+- **Likely repo areas later:** `public/assets/artwork/production`, `art/source/symbols`, `public/assets/symbols`, metadata manifests.
+- **Manual QA:** 256/7×7, Android, WebP ladder, confusion pairs.
+- **Out of scope:** 100 art, all 30 final symbols, code, campaign changes.
+
+### Phase 1 — Tokens, typography, and reusable primitives
+
+- **Scope:** centralise colour/type/spacing/radius/motion tokens; reusable text, button, icon-button, card, modal, focus helpers; load pinned self-hosted font if pilot approves it.
+- **Dependencies:** pilot font metrics.
+- **Likely files:** new `src/game/VisualTokens.ts`, `src/game/UiPrimitives.ts` (names recommended, not mandatory); `src/game/Display.ts`; `src/main.ts`; `public/styles.css`; font assets/licence.
+- **Manual QA:** font ready/fallback, renderScale 1/2, keyboard focus, all button states.
+- **Out of scope:** scene redesign, game rules, SDK/localization/audio.
+
+### Phase 2 — Board shell, tile card, symbols
+
+- **Scope:** frame/interior, fixed-size layouts, opaque tile cards, selected/pressed/removed states, 12-symbol pilot mapping, pre-stage sheets.
+- **Dependencies:** Phase 1; approved pilot symbols.
+- **Likely files:** `src/game/BoardLayout.ts`, `src/game/PlayScene.ts`, `src/game/TileSymbols.ts`, `src/game/SymbolGalleryScene.ts`, symbol assets.
+- **Manual QA:** Levels 1/16/21/30/80/94/100; all board sizes; no geometry or seed change.
+- **Out of scope:** route/Hint/blocker restyle, final 30 symbols.
+
+### Phase 3 — Gameplay feedback and HUD
+
+- **Scope:** route core/halo, Hint endpoints, blocker material, blocked feedback, HUD zones, motion/reduced-motion seam.
+- **Dependencies:** Phase 2.
+- **Likely files:** `src/game/PlayScene.ts`, `src/game/Hint.ts` only if presentation seam is needed (semantics unchanged), optional new visual helpers.
+- **Manual QA:** arbitrary-turn routes, bright/dark/busy art, 900 ms Hint, Pause during locks, blockers, Stage 3/3, Level 100 text.
+- **Out of scope:** pathfinding, Hint selection policy, blocker coordinates/behaviour.
+
+### Phase 4 — Main Menu and Level Select
+
+- **Scope:** brand shell, correct Play/Continue/Play again states, progress card, chapter banner policy, 5×2 states and arrows.
+- **Dependencies:** Phase 1; banner decision from pilot.
+- **Likely files:** `src/game/MainMenuScene.ts`, `src/game/LevelSelectScene.ts`, `src/game/CampaignNavigation.ts` only for existing state exposure, not rule changes.
+- **Manual QA:** progress fixtures 0/1/99/100, Chapters 1/10, keyboard/touch, zero Main Menu artwork requests.
+- **Out of scope:** new progress fields, loading full/locked art, localization.
+
+### Phase 5 — Reward and existing Complete flow
+
+- **Scope:** clean reward layout, 400×400 frame, optional title metadata, transition and Continue hierarchy; visually align subsequent Complete overlay without changing its actions. Direct Reward → Gallery navigation remains deferred.
+- **Dependencies:** Phases 1–3; approved artwork pilot.
+- **Likely files:** `src/game/PlayScene.ts`, `src/game/LevelArtwork.ts`; possible pure presentation metadata file.
+- **Manual QA:** Levels 1/30/80 or production pilot equivalents, replay, final-stage-only, persistence-before-reward, Continue to Complete.
+- **Out of scope:** merging/removing Complete semantics, coins/stars/economy.
+
+### Phase 6 — Gallery and Full View
+
+- **Scope:** overview grid, unlocked/locked/unavailable/loading/failure states, chapter progress, exact full view, titles if curated.
+- **Dependencies:** Phase 1; artwork/export pilot.
+- **Likely files:** `src/game/ArtworkGalleryScene.ts`, `src/game/ArtworkFullViewScene.ts`, `src/game/ArtworkGallery.ts`, `src/game/LevelArtwork.ts`.
+- **Manual QA:** `setProgress` 0/1/29/30/79/80/100; network panel; cache reuse; back-to-chapter; failed load.
+- **Out of scope:** new Gallery persistence, loading locked assets, inventory/seen state.
+
+### Phase 7 — Pause, confirmations, completion modals
+
+- **Scope:** shared modal primitive, Pause menu, restart/exit confirmations, destructive/safe hierarchy, complete overlay visual alignment.
+- **Dependencies:** Phase 1 and gameplay shell.
+- **Likely files:** `src/game/PlayScene.ts`, shared UI primitives.
+- **Manual QA:** exact board preservation on Resume, Stage reset on Restart, progress preservation on Exit, input blocking, no stacked overlays.
+- **Out of scope:** semantic/state-machine rewrite, settings/audio implementation.
+
+### Phase 8 — Vertical slice integration
+
+- **Scope:** Main Menu → Level 1 → Reward → Gallery using approved production-pilot assets; run full tests/build/package measurement.
+- **Dependencies:** Phases 1–7 and pilot assets.
+- **Likely files:** all player-facing scenes above, production artwork/symbol metadata, tests for pure policies and asset integrity.
+- **Manual QA:** fresh install, normal progression, Android portrait, renderScale 1/2, offline/failure, keyboard focus, reduced motion prototype if available.
+- **Out of scope:** rollout to 100 Levels, Yandex SDK, monetization, localization.
+
+### Phase 9 — Rollout readiness gate
+
+- **Scope:** compare vertical slice against this document; close accessibility/network/performance defects; freeze asset templates and measured budgets.
+- **Dependencies:** Phase 8.
+- **Manual QA:** all section 31/32 matrices and screenshot truthfulness.
+- **Out of scope:** automatic approval of 100-art production. Batch production remains chapter-by-chapter with QA after every 10.
+
+Recommended implementation discipline: one phase/PR at a time after the pilot, green tests before the next phase, and no mixed gameplay-rule refactor in visual PRs.
+
+---
+
+## 34. Production pilot
+
+The immediate next stage is **Production Visual Pilot**, not mass production.
+
+### 34.1 Six corrected artworks
+
+Select six new production-quality works, not automatic reuse of validation images:
+
+1. Ch.1 window/interior — warm bright simple.
+2. Ch.3 threshold or courtyard — bright/busy but controlled.
+3. Ch.4 interior — paper/poetcore medium value.
+4. Ch.6 journey vista — coastal bright.
+5. Ch.8 threshold/interior — dark warm/cool contrast.
+6. Ch.10 courtyard/threshold — dark quiet magic, one impossible event.
+
+This set covers four composition families, bright/dark/busy cases, palette migration, architecture/rail/ceramic QA, and the 7×7 stress case.
+
+### 34.2 Twelve production symbols
+
+Required subset maximises confusion coverage:
+
+- cup, teapot;
+- leaf, feather;
+- star, snowflake;
+- camera, compass;
+- shell, flower;
+- lantern, jam jar.
+
+Acceptance: 56 px and 28 px, colour and grayscale, 22-type contact board simulation, 45–64 recognition as `nice-to-have user validation`.
+
+### 34.3 Vertical slice reference
+
+Create exact reference/mockups for:
+
+- Main Menu;
+- Level 1 gameplay with final-stage reveal;
+- Reward;
+- Gallery and Full View.
+
+Then implement that route only after the assets and metrics pass. Keep current Level geometry, seed, pairs, progression, persistence, Hint, blockers, and loading policy.
+
+### 34.4 Pilot measurements and gate
+
+- Android at renderScale 1/2, low brightness, daylight, colour-vision simulation.
+- WebP quality ladder and median/p90/max/total bytes.
+- First decode/loading behaviour and cache reuse.
+- 7×7 overlay even if Level 1 itself is smaller, to validate the art/symbol system.
+- Gate passes when all six art pieces are PASS/retouched-to-PASS, all 12 symbols clear confusion QA, vertical reference follows this spec, and no architecture/privacy/loading invariant is violated.
+
+Real-user testing is nice-to-have and does not block the pilot. Any unresolved device observation is labelled `needs real-device QA`, not invented as a test result.
+
+---
+
+## 35. Explicit non-goals
+
+This specification does not authorize or define:
+
+- new theme, naming research, market research, or comparison of visual directions;
+- gameplay code changes, mechanics, timer, lives, economy, story, characters, shuffle, power-ups, or hard turn limit;
+- changes to Levels, seeds, pair counts, board scale, blockers, multi-stage distribution, progression, persistence, or Gallery unlock architecture;
+- Yandex SDK integration, monetization, localization, or detailed audio design;
+- production of all 100 artworks or all 30 final symbols;
+- branch, commit, PR, or repository mutation at this stage;
+- arbitrary desktop layout, dynamic tile scaling, virtual-border paths, or art behind non-final stages;
+- loading locked/unavailable Gallery assets;
+- use of current engineering fixture byte averages as a final production budget;
+- user-test results that have not actually been collected.
+
+The v1 decision is final for production planning:
+
+> **Curated Cozy Places artwork + Warm Premium Cozy functional UI.**
+
+Parameters may be adjusted only inside the stated acceptable ranges after the Production Visual Pilot or real-device QA. Reopening the overall art direction requires concrete failure evidence, not preference drift.
+
+---
+
+## Source baseline
+
+- Repository and `dev` baseline: `https://github.com/whil3true/pairs_and_paths`, commit `3192ea29a163f227bdb3230372cddd18bed4c229`.
+- Reviewed: `README.md`, `docs/PRODUCT_SPEC.md`, `docs/ARCHITECTURE.md`, `docs/GAME_RULES.md`, `docs/TESTING.md`.
+- Reviewed visual validation pack: report, 18 artwork tests, three moodboards, 7×7 obstruction sheet, scale comparison, gameplay/UI mockups, 30-symbol sheet, icon and cover concepts, and generation manifest.
+- Manrope source/licensing reference: Google Fonts `ofl/manrope` and SIL Open Font License 1.1.
