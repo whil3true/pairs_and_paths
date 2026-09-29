@@ -20,8 +20,55 @@ import {
 import {
   getArtworkGallerySlotState, getDefaultArtworkGalleryChapter, getUnlockedArtworkCount,
 } from "../.test-dist/game/ArtworkGallery.js";
+import {
+  BORDERS, COMPONENT_RADII, MOTION, RADII, SPACING, TYPOGRAPHY, VISUAL_COLORS,
+} from "../.test-dist/game/VisualTokens.js";
+import { resolveButtonVisual } from "../.test-dist/game/UiPolicy.js";
 
 const progressAt = (completedThroughLevel) => ({ version: 1, completedThroughLevel });
+
+test("production visual tokens protect core palette and layout invariants", () => {
+  assert.equal(VISUAL_COLORS.bg.app.hex, "#F5EEDF");
+  assert.equal(VISUAL_COLORS.bg.app.phaser, 0xf5eedf);
+  assert.equal(VISUAL_COLORS.primary.teal.hex, "#176B69");
+  assert.equal(VISUAL_COLORS.state.danger.hex, "#A5423F");
+  assert.equal("error" in VISUAL_COLORS, false);
+  assert.equal(SPACING.minimumTouchTarget, 48);
+  assert.equal(SPACING.primaryButtonHeight, 56);
+  for (const value of [SPACING.screenMargin, SPACING.boardMargin, SPACING.cardPadding,
+    SPACING.buttonPadding, SPACING.buttonStackGap, SPACING.iconLabelGap]) assert.equal(value % 4, 0);
+  assert.deepEqual(RADII, { s: 8, m: 12, l: 16, xl: 20, modal: 24 });
+  assert.equal(COMPONENT_RADII.boardOuter, 22);
+  assert.deepEqual(BORDERS, { divider: 1, structural: 2, emphasized: 3 });
+  assert.equal(MOTION.hint, 900);
+  assert.deepEqual([MOTION.stageLift, MOTION.stageSettle], [220, 140]);
+});
+
+test("typography roles preserve production floors and valid metrics", () => {
+  assert.equal(Object.keys(TYPOGRAPHY).length, 11);
+  for (const role of Object.values(TYPOGRAPHY)) {
+    assert.ok(role.weight > 0);
+    assert.ok(role.size >= 14);
+    assert.ok(role.lineHeight >= role.size);
+  }
+  assert.equal(TYPOGRAPHY.hudSecondary.size, 16);
+  assert.equal(TYPOGRAPHY.buttonPrimary.size, 19);
+});
+
+test("button visual policy is deterministic and exposes disabled and focus states", () => {
+  const primaryPressed = resolveButtonVisual("primary", "pressed");
+  assert.deepEqual(resolveButtonVisual("primary", "pressed"), primaryPressed);
+  assert.equal(primaryPressed.fill, VISUAL_COLORS.primary.tealPressed.phaser);
+  assert.equal(primaryPressed.offsetY, 2);
+  const primaryHover = resolveButtonVisual("primary", "hover");
+  assert.equal(primaryHover.fill, VISUAL_COLORS.primary.tealHover.phaser);
+  assert.notEqual(primaryHover.fill, VISUAL_COLORS.primary.teal.phaser);
+  assert.equal(primaryHover.offsetY, -1);
+  assert.equal(resolveButtonVisual("primary", "disabled").fill, VISUAL_COLORS.primary.tealDisabled.phaser);
+  assert.equal(resolveButtonVisual("primary", "disabled").offsetY, 0);
+  assert.equal(resolveButtonVisual("secondary", "disabled").border, VISUAL_COLORS.state.locked.phaser);
+  assert.equal(resolveButtonVisual("secondary", "focus").focusRing, true);
+});
 
 const validatePilotWebp = (webp, path, expectedSize) => {
   const message = (reason) => `${path}: ${reason}`;

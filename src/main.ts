@@ -12,6 +12,7 @@ import {
 } from "./game/Display.js";
 import { WebPlatform } from "./platform/WebPlatform.js";
 import { WebProgressStore } from "./platform/WebProgressStore.js";
+import { VISUAL_COLORS } from "./game/VisualTokens.js";
 
 const platform = new WebPlatform();
 const progressStore = new WebProgressStore();
@@ -29,7 +30,7 @@ const renderScale = isLegacyRenderScaleDebugRequested(search) ? 1 : automaticRen
 new Phaser.Game({
   type: Phaser.AUTO,
   parent: "game",
-  backgroundColor: "#10182b",
+  backgroundColor: VISUAL_COLORS.bg.app.hex,
   scene: [
     new BootScene(route),
     new MainMenuScene(progressStore, renderScale),
