@@ -230,32 +230,38 @@ export class PlayScene extends Phaser.Scene {
   private renderFrameOverlay(): void {
     const frame = getBoardFrameBounds(this.layout);
     const content = getBoardContentBounds(this.layout);
-    const outlineInset = BOARD_VISUAL_STYLE.borderWidth / 2;
-    const textureWidth = frame.width + BOARD_VISUAL_STYLE.borderWidth;
-    const textureHeight = frame.height + BOARD_VISUAL_STYLE.borderWidth;
+    const { outlineInset } = BOARD_VISUAL_STYLE;
     const ringSource = this.make.graphics(undefined, false)
       .fillStyle(BOARD_VISUAL_STYLE.frameFill, 1)
       .lineStyle(BOARD_VISUAL_STYLE.borderWidth, BOARD_VISUAL_STYLE.frameBorder, 1)
       .fillRoundedRect(
-        outlineInset, outlineInset, frame.width, frame.height, BOARD_VISUAL_STYLE.outerRadius,
+        outlineInset,
+        outlineInset,
+        frame.width - BOARD_VISUAL_STYLE.borderWidth,
+        frame.height - BOARD_VISUAL_STYLE.borderWidth,
+        BOARD_VISUAL_STYLE.outlineRadius,
       )
       .strokeRoundedRect(
-        outlineInset, outlineInset, frame.width, frame.height, BOARD_VISUAL_STYLE.outerRadius,
+        outlineInset,
+        outlineInset,
+        frame.width - BOARD_VISUAL_STYLE.borderWidth,
+        frame.height - BOARD_VISUAL_STYLE.borderWidth,
+        BOARD_VISUAL_STYLE.outlineRadius,
       );
     const opening = this.make.graphics(undefined, false)
       .fillStyle(0xffffff, 1)
       .fillRoundedRect(
-        content.left - frame.left + outlineInset,
-        content.top - frame.top + outlineInset,
+        content.left - frame.left,
+        content.top - frame.top,
         content.width,
         content.height,
         BOARD_VISUAL_STYLE.innerRadius,
       );
     const ring = this.add.renderTexture(
-      frame.left - outlineInset,
-      frame.top - outlineInset,
-      textureWidth,
-      textureHeight,
+      frame.left,
+      frame.top,
+      frame.width,
+      frame.height,
     ).setOrigin(0).setDepth(1);
     ring.draw(ringSource).erase(opening);
     ringSource.destroy();

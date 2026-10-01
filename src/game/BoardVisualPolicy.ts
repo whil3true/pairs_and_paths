@@ -52,6 +52,8 @@ export const BOARD_VISUAL_STYLE = Object.freeze({
   outerRadius: COMPONENT_RADII.boardOuter,
   innerRadius: COMPONENT_RADII.boardInner,
   borderWidth: BORDERS.structural,
+  outlineInset: BORDERS.structural / 2,
+  outlineRadius: COMPONENT_RADII.boardOuter - BORDERS.structural / 2,
   frameFill: VISUAL_COLORS.surface.elevated.phaser,
   frameBorder: VISUAL_COLORS.border.strong.phaser,
   interiorFill: VISUAL_COLORS.surface.board.phaser,

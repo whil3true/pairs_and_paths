@@ -665,6 +665,16 @@ test("production board and tile visual policies protect frozen geometry and toke
     const frame = getBoardFrameBounds(board);
     assert.deepEqual([content.left, content.top, content.right, content.bottom], expectedContent);
     assert.deepEqual([frame.left, frame.top, frame.right, frame.bottom], expectedFrame);
+    const outlinePath = [
+      frame.left + BOARD_VISUAL_STYLE.outlineInset,
+      frame.top + BOARD_VISUAL_STYLE.outlineInset,
+      frame.right - BOARD_VISUAL_STYLE.outlineInset,
+      frame.bottom - BOARD_VISUAL_STYLE.outlineInset,
+    ];
+    assert.deepEqual(outlinePath.map((edge, index) => (
+      index < 2 ? edge - BOARD_VISUAL_STYLE.borderWidth / 2
+        : edge + BOARD_VISUAL_STYLE.borderWidth / 2
+    )), expectedFrame);
     assert.deepEqual([content.centerX, content.centerY], [240, 420]);
   }
   const rectangular = layout(5, 6);
@@ -678,6 +688,8 @@ test("production board and tile visual policies protect frozen geometry and toke
   assert.equal(BOARD_VISUAL_STYLE.outerRadius, 22);
   assert.equal(BOARD_VISUAL_STYLE.innerRadius, 16);
   assert.equal(BOARD_VISUAL_STYLE.borderWidth, 2);
+  assert.equal(BOARD_VISUAL_STYLE.outlineInset, 1);
+  assert.equal(BOARD_VISUAL_STYLE.outlineRadius + BOARD_VISUAL_STYLE.outlineInset, 22);
   assert.equal(BOARD_VISUAL_STYLE.frameFill, VISUAL_COLORS.surface.elevated.phaser);
   assert.equal(BOARD_VISUAL_STYLE.frameBorder, VISUAL_COLORS.border.strong.phaser);
   assert.equal(BOARD_VISUAL_STYLE.backingFill, VISUAL_COLORS.surface.elevated.phaser);
