@@ -4,7 +4,7 @@ import { recordStageCompletion, type CampaignProgress } from "../progress/Campai
 import type { ProgressStore } from "../progress/ProgressStore.js";
 import { BoardLayout, getVisibleBackingCount } from "./BoardLayout.js";
 import {
-  BOARD_SHEET_OFFSET, BOARD_VISUAL_STYLE, getBoardContentBounds, getBoardFrameBounds,
+  BOARD_SHEET_OFFSET_X, BOARD_SHEET_OFFSET_Y, BOARD_VISUAL_STYLE, getBoardContentBounds, getBoardFrameBounds,
 } from "./BoardVisualPolicy.js";
 import type { PlayStartData } from "./SceneStart.js";
 import { createLevelStage, getStageClearOutcome, getStageCount, hasNextLevel } from "./LevelSequence.js";
@@ -160,6 +160,7 @@ export class PlayScene extends Phaser.Scene {
     this.renderStageStack(stageCount);
     this.currentBoardVisual = this.add.container(0, 0).setDepth(10);
     this.renderArtwork();
+    this.renderBoardInnerEdge();
     this.route = this.add.graphics().setDepth(2);
     this.currentBoardVisual.add(this.route);
     this.renderBoard();
@@ -220,7 +221,8 @@ export class PlayScene extends Phaser.Scene {
     const backingCount = getVisibleBackingCount(this.currentStageIndex, stageCount);
     const sheets: Phaser.GameObjects.Graphics[] = [];
     for (let depth = backingCount; depth >= 1; depth -= 1) {
-      const sheet = this.add.graphics().setPosition(depth * BOARD_SHEET_OFFSET, depth * BOARD_SHEET_OFFSET)
+      const sheet = this.add.graphics()
+        .setPosition(depth * BOARD_SHEET_OFFSET_X, depth * BOARD_SHEET_OFFSET_Y)
         .fillStyle(BOARD_VISUAL_STYLE.backingFill, 1)
         .lineStyle(BOARD_VISUAL_STYLE.borderWidth, BOARD_VISUAL_STYLE.backingBorder, 1)
         .fillRoundedRect(frame.left, frame.top, frame.width, frame.height, BOARD_VISUAL_STYLE.outerRadius)
@@ -235,6 +237,14 @@ export class PlayScene extends Phaser.Scene {
       .fillRoundedRect(content.left, content.top, content.width, content.height, BOARD_VISUAL_STYLE.innerRadius);
     sheets.push(this.frontSheet);
     this.stageStackVisual = this.add.container(0, 0, sheets).setDepth(1);
+  }
+
+  private renderBoardInnerEdge(): void {
+    const content = getBoardContentBounds(this.layout);
+    const edge = this.add.graphics().setDepth(1)
+      .lineStyle(BOARD_VISUAL_STYLE.innerEdgeWidth, BOARD_VISUAL_STYLE.frameFill, 1)
+      .strokeRoundedRect(content.left, content.top, content.width, content.height, BOARD_VISUAL_STYLE.innerRadius);
+    this.currentBoardVisual!.add(edge);
   }
 
   private renderBoard(): void {
@@ -260,7 +270,9 @@ export class PlayScene extends Phaser.Scene {
   private createTile(point: GridPoint, tileId: number): void {
     const { x, y } = this.layout.cellCenter(point);
     const definition = getTileSymbol(tileId);
-    const visual = new TileVisual(this, x, y, this.add.image(0, 0, definition.assetKey));
+    const visual = new TileVisual(
+      this, x, y, this.add.image(0, 0, definition.assetKey), definition.displaySize,
+    );
     this.currentBoardVisual!.add(visual.root);
     this.tiles.set(keyOf(point), visual);
   }
@@ -401,7 +413,10 @@ export class PlayScene extends Phaser.Scene {
       },
     });
     if (this.nextSheet !== null) {
-      this.tweens.add({ targets: this.nextSheet, x: "-=7", y: "-=7", duration: 220, ease: "Quad.InOut" });
+      this.tweens.add({
+        targets: this.nextSheet, y: `-=${BOARD_SHEET_OFFSET_Y}`,
+        duration: 220, ease: "Quad.InOut",
+      });
     }
   }
 

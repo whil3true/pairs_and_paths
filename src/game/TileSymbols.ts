@@ -1,8 +1,13 @@
+export const PRODUCTION_SYMBOL_DISPLAY_SIZE = 56;
+export const LEGACY_SYMBOL_DISPLAY_SIZE = 38;
+
 export interface TileSymbolDefinition {
   readonly name: string;
   readonly assetKey: string;
   readonly assetPath: string;
   readonly artwork: "production-pilot" | "legacy-placeholder";
+  /** Full prepared canvas for production; temporary normalized canvas for legacy art. */
+  readonly displaySize: typeof PRODUCTION_SYMBOL_DISPLAY_SIZE | typeof LEGACY_SYMBOL_DISPLAY_SIZE;
 }
 
 const symbol = (name: string, artwork: TileSymbolDefinition["artwork"]): TileSymbolDefinition => Object.freeze({
@@ -12,6 +17,7 @@ const symbol = (name: string, artwork: TileSymbolDefinition["artwork"]): TileSym
     ? `assets/production-pilot/symbols/${name}.png`
     : `assets/symbols/${name}.png`,
   artwork,
+  displaySize: artwork === "production-pilot" ? PRODUCTION_SYMBOL_DISPLAY_SIZE : LEGACY_SYMBOL_DISPLAY_SIZE,
 });
 
 const pilot = (name: string): TileSymbolDefinition => symbol(name, "production-pilot");
