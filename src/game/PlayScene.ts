@@ -5,7 +5,7 @@ import type { ProgressStore } from "../progress/ProgressStore.js";
 import { BoardLayout, getVisibleBackingCount } from "./BoardLayout.js";
 import {
   BOARD_SHEET_OFFSET_X, BOARD_SHEET_OFFSET_Y, BOARD_VISUAL_STYLE, getBoardContentBounds, getBoardFrameBounds,
-  getBackingSheetShadeAlpha,
+  getBackingSheetShadeAlpha, getBoardFrameOpening,
 } from "./BoardVisualPolicy.js";
 import type { PlayStartData } from "./SceneStart.js";
 import { createLevelStage, getStageClearOutcome, getStageCount, hasNextLevel } from "./LevelSequence.js";
@@ -219,17 +219,14 @@ export class PlayScene extends Phaser.Scene {
       placement.y + placement.size / 2,
       artwork.fullAssetKey,
     ).setDisplaySize(placement.size, placement.size).setDepth(0);
-    const clip = this.add.graphics().fillStyle(0xffffff, 1)
-      .fillRoundedRect(placement.x, placement.y, placement.size, placement.size, BOARD_VISUAL_STYLE.innerRadius)
-      .setVisible(false);
-    image.setMask(clip.createGeometryMask());
-    this.currentBoardVisual!.add([apertureBacking, image, clip]);
+    this.currentBoardVisual!.add([apertureBacking, image]);
     this.currentArtworkVisual = image;
   }
 
   private renderFrameOverlay(): void {
     const frame = getBoardFrameBounds(this.layout);
-    const content = getBoardContentBounds(this.layout);
+    const openingPolicy = getBoardFrameOpening(this.layout, this.currentArtworkVisual !== null);
+    const openingBounds = openingPolicy.bounds;
     const { outlineInset } = BOARD_VISUAL_STYLE;
     const ringSource = this.make.graphics(undefined, false)
       .fillStyle(BOARD_VISUAL_STYLE.frameFill, 1)
@@ -251,11 +248,11 @@ export class PlayScene extends Phaser.Scene {
     const opening = this.make.graphics(undefined, false)
       .fillStyle(0xffffff, 1)
       .fillRoundedRect(
-        content.left - frame.left,
-        content.top - frame.top,
-        content.width,
-        content.height,
-        BOARD_VISUAL_STYLE.innerRadius,
+        openingBounds.left - frame.left,
+        openingBounds.top - frame.top,
+        openingBounds.width,
+        openingBounds.height,
+        openingPolicy.radius,
       );
     const ring = this.add.renderTexture(
       frame.left,
@@ -277,9 +274,7 @@ export class PlayScene extends Phaser.Scene {
     for (let depth = backingCount; depth >= 1; depth -= 1) {
       const base = this.add.graphics()
         .fillStyle(BOARD_VISUAL_STYLE.backingFill, 1)
-        .lineStyle(BOARD_VISUAL_STYLE.borderWidth, BOARD_VISUAL_STYLE.backingBorder, 1)
-        .fillRoundedRect(frame.left, frame.top, frame.width, frame.height, BOARD_VISUAL_STYLE.outerRadius)
-        .strokeRoundedRect(frame.left, frame.top, frame.width, frame.height, BOARD_VISUAL_STYLE.outerRadius);
+        .fillRoundedRect(frame.left, frame.top, frame.width, frame.height, BOARD_VISUAL_STYLE.outerRadius);
       const shade = this.add.graphics()
         .fillStyle(BOARD_VISUAL_STYLE.sheetShade, 1)
         .fillRoundedRect(frame.left, frame.top, frame.width, frame.height, BOARD_VISUAL_STYLE.outerRadius)

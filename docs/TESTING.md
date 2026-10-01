@@ -60,7 +60,7 @@ The pure presentation calculation is also checked: Stage 1/3 exposes two backing
 
 ## Board and tile visual verification
 
-Pure tests freeze the board/frame bounds at every square campaign size, rectangular centering, fixed pitch/tile geometry, the 4 px outer-tile clearance, production radii, absence of an intrusive inner-edge policy, and the 2 px outer contour. They also verify that the active frame and backing sheets share `surface.elevated`, while `border.strong` is structural/shading colour rather than a filled bezel. Tile fills, borders, pressed timing, selected fill/border/no-marker policy, vertical sheet offsets, and depth shade progression remain frozen. Catalog tests freeze all 30 deterministic `TileId` definitions, unique names and keys, the 12 production-pilot paths and 56 px prepared-canvas presentation, and 18 explicit legacy-placeholder paths and 38 px temporary presentation. Runtime tests read each referenced PNG to validate its signature and 256×256 8-bit RGBA header; production-pilot files additionally must match the approved SHA-256 values and staged source bytes. Tests never rewrite binary assets.
+Pure tests freeze the board/frame bounds at every square campaign size, rectangular centering, fixed pitch/tile geometry, the production radii, and the 2 px outer contour. They derive the artwork aperture exactly 2 px inside every content edge and protect its constant 20 px radius across board sizes. They also verify that the active frame and borderless backing sheets share `surface.elevated`, while `border.strong` is outer structure/shading rather than a filled bezel. Tile tests protect the quiet `1 px divider` default edge plus unchanged emphasized state borders, pressed timing, and selected fill/no-marker policy; sheet offsets and depth shade progression remain frozen. Catalog tests freeze all 30 deterministic `TileId` definitions, unique names and keys, the 12 production-pilot paths and 56 px prepared-canvas presentation, and 18 explicit legacy-placeholder paths and 38 px temporary presentation. Runtime tests read each referenced PNG to validate its signature and 256×256 8-bit RGBA header; production-pilot files additionally must match the approved SHA-256 values and staged source bytes. Tests never rewrite binary assets.
 
 The developer gallery remains available at `?debug=1&symbols=1`, iterates the shared `TILE_SYMBOLS` catalog, and uses the same `TileVisual` treatment as gameplay. After deployment, verify all 30 transparent PNG textures on Android, then compare `?debug=1&level=1` and `?debug=1&level=80`. Confirm the board has no prototype cell grid, empty cells expose the warm interior or artwork, symbols are untinted, selection is teal, and there are no black squares, missing assets, opaque symbol backgrounds, or unexpected pixelation. The 18 legacy symbols are placeholders pending later production artwork.
 
@@ -177,6 +177,11 @@ post-clear reward uses the same full image. Earlier stages remain artwork-free. 
 and DevTools network inspection are manual because headless tests do not exercise Phaser pixels or
 browser request logs. The fixtures are technical visuals only; full market/theme research and visual
 redesign remain deferred.
+
+For the Phase 2B.4 board treatment, verify `?debug=1&level=1` has one seamless warm aperture with clearly
+rounded artwork corners; `?debug=1&level=24&stage=1` and `?debug=1&level=30&stage=1` have uniform lower
+corners and depth from displacement plus 10/18% shade without repeated outlines; and `?debug=1&level=27`
+has quiet but readable 1 px default tile edges while Selected, Hint, and Blocked remain prominent.
 
 ## Pause flow verification
 

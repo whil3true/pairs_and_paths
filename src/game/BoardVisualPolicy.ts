@@ -2,6 +2,8 @@ import { BoardLayout } from "./BoardLayout.js";
 import { BORDERS, COMPONENT_RADII, VISUAL_COLORS } from "./VisualTokens.js";
 
 export const BOARD_FRAME_PADDING = 8;
+export const BOARD_ARTWORK_APERTURE_INSET = 2;
+export const BOARD_ARTWORK_APERTURE_RADIUS = 20;
 export const BOARD_SHEET_OFFSET_X = 0;
 export const BOARD_SHEET_OFFSET_Y = 7;
 export const BOARD_SHEET_SHADE_ALPHA = Object.freeze([0, 0.10, 0.18] as const);
@@ -45,6 +47,26 @@ export const getBoardFrameBounds = (layout: BoardLayout): VisualBounds => {
   );
 };
 
+export const getBoardArtworkApertureBounds = (layout: BoardLayout): VisualBounds => {
+  const content = getBoardContentBounds(layout);
+  return bounds(
+    content.left + BOARD_ARTWORK_APERTURE_INSET,
+    content.top + BOARD_ARTWORK_APERTURE_INSET,
+    content.right - BOARD_ARTWORK_APERTURE_INSET,
+    content.bottom - BOARD_ARTWORK_APERTURE_INSET,
+  );
+};
+
+export interface BoardFrameOpening {
+  readonly bounds: VisualBounds;
+  readonly radius: number;
+}
+
+export const getBoardFrameOpening = (layout: BoardLayout, hasArtwork: boolean): BoardFrameOpening => Object.freeze({
+  bounds: hasArtwork ? getBoardArtworkApertureBounds(layout) : getBoardContentBounds(layout),
+  radius: hasArtwork ? BOARD_ARTWORK_APERTURE_RADIUS : COMPONENT_RADII.boardInner,
+});
+
 export const BOARD_VISUAL_STYLE = Object.freeze({
   framePadding: BOARD_FRAME_PADDING,
   sheetOffsetX: BOARD_SHEET_OFFSET_X,
@@ -58,6 +80,5 @@ export const BOARD_VISUAL_STYLE = Object.freeze({
   frameBorder: VISUAL_COLORS.border.strong.phaser,
   interiorFill: VISUAL_COLORS.surface.board.phaser,
   backingFill: VISUAL_COLORS.surface.elevated.phaser,
-  backingBorder: VISUAL_COLORS.border.soft.phaser,
   sheetShade: VISUAL_COLORS.border.strong.phaser,
 });
