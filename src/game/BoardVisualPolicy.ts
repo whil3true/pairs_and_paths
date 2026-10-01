@@ -57,6 +57,16 @@ export const getBoardArtworkApertureBounds = (layout: BoardLayout): VisualBounds
   );
 };
 
+export interface BoardFrameOpening {
+  readonly bounds: VisualBounds;
+  readonly radius: number;
+}
+
+export const getBoardFrameOpening = (layout: BoardLayout, hasArtwork: boolean): BoardFrameOpening => Object.freeze({
+  bounds: hasArtwork ? getBoardArtworkApertureBounds(layout) : getBoardContentBounds(layout),
+  radius: hasArtwork ? BOARD_ARTWORK_APERTURE_RADIUS : COMPONENT_RADII.boardInner,
+});
+
 export const BOARD_VISUAL_STYLE = Object.freeze({
   framePadding: BOARD_FRAME_PADDING,
   sheetOffsetX: BOARD_SHEET_OFFSET_X,

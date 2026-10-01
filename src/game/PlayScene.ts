@@ -5,7 +5,7 @@ import type { ProgressStore } from "../progress/ProgressStore.js";
 import { BoardLayout, getVisibleBackingCount } from "./BoardLayout.js";
 import {
   BOARD_SHEET_OFFSET_X, BOARD_SHEET_OFFSET_Y, BOARD_VISUAL_STYLE, getBoardContentBounds, getBoardFrameBounds,
-  BOARD_ARTWORK_APERTURE_RADIUS, getBackingSheetShadeAlpha, getBoardArtworkApertureBounds,
+  getBackingSheetShadeAlpha, getBoardFrameOpening,
 } from "./BoardVisualPolicy.js";
 import type { PlayStartData } from "./SceneStart.js";
 import { createLevelStage, getStageClearOutcome, getStageCount, hasNextLevel } from "./LevelSequence.js";
@@ -225,7 +225,8 @@ export class PlayScene extends Phaser.Scene {
 
   private renderFrameOverlay(): void {
     const frame = getBoardFrameBounds(this.layout);
-    const aperture = getBoardArtworkApertureBounds(this.layout);
+    const openingPolicy = getBoardFrameOpening(this.layout, this.currentArtworkVisual !== null);
+    const openingBounds = openingPolicy.bounds;
     const { outlineInset } = BOARD_VISUAL_STYLE;
     const ringSource = this.make.graphics(undefined, false)
       .fillStyle(BOARD_VISUAL_STYLE.frameFill, 1)
@@ -247,11 +248,11 @@ export class PlayScene extends Phaser.Scene {
     const opening = this.make.graphics(undefined, false)
       .fillStyle(0xffffff, 1)
       .fillRoundedRect(
-        aperture.left - frame.left,
-        aperture.top - frame.top,
-        aperture.width,
-        aperture.height,
-        BOARD_ARTWORK_APERTURE_RADIUS,
+        openingBounds.left - frame.left,
+        openingBounds.top - frame.top,
+        openingBounds.width,
+        openingBounds.height,
+        openingPolicy.radius,
       );
     const ring = this.add.renderTexture(
       frame.left,

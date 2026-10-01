@@ -8,7 +8,7 @@ import {
   BOARD_ARTWORK_APERTURE_INSET, BOARD_ARTWORK_APERTURE_RADIUS, BOARD_FRAME_PADDING,
   BOARD_SHEET_OFFSET_X, BOARD_SHEET_OFFSET_Y, BOARD_SHEET_SHADE_ALPHA,
   BOARD_VISUAL_STYLE, getBackingSheetShadeAlpha, getBoardArtworkApertureBounds,
-  getBoardContentBounds, getBoardFrameBounds,
+  getBoardContentBounds, getBoardFrameBounds, getBoardFrameOpening,
 } from "../.test-dist/game/BoardVisualPolicy.js";
 import { isSymbolGalleryRequested, parseDebugStart } from "../.test-dist/game/DebugStart.js";
 import {
@@ -721,6 +721,26 @@ test("production board and tile visual policies protect frozen geometry and toke
   assert.equal(TILE_VISUAL_STYLE.pressedDuration, 80);
   assert.equal(PRODUCTION_SYMBOL_DISPLAY_SIZE, 56);
   assert.equal(LEGACY_SYMBOL_DISPLAY_SIZE, 38);
+});
+
+test("frame opening policy applies overlap only when artwork is present", () => {
+  const square = layout(4, 4);
+  const artworkOpening = getBoardFrameOpening(square, true);
+  assert.deepEqual(
+    [artworkOpening.bounds.left, artworkOpening.bounds.top,
+      artworkOpening.bounds.right, artworkOpening.bounds.bottom, artworkOpening.radius],
+    [114, 294, 366, 546, 20],
+  );
+  const noArtworkOpening = getBoardFrameOpening(square, false);
+  assert.deepEqual(
+    [noArtworkOpening.bounds.left, noArtworkOpening.bounds.top,
+      noArtworkOpening.bounds.right, noArtworkOpening.bounds.bottom, noArtworkOpening.radius],
+    [112, 292, 368, 548, 16],
+  );
+
+  const rectangular = layout(5, 6);
+  assert.deepEqual(getBoardFrameOpening(rectangular, false).bounds, getBoardContentBounds(rectangular));
+  assert.equal(getBoardFrameOpening(rectangular, false).radius, BOARD_VISUAL_STYLE.innerRadius);
 });
 
 test("stage stack backing count communicates remaining stages", () => {
