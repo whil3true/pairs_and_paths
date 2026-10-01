@@ -27,7 +27,9 @@ disables the Hint control. Hint has no persistence or economy; Shuffle is not pa
 
 Startup resolves normal play to Stage 1 of the first uncompleted level (or Level 1 after recorded campaign completion). A valid developer campaign jump bypasses stored position and disables writes for the entire resulting session. Other debug features retain normal persistence. The gated `?debug=1&resetProgress=1` clear runs before scene choice, so combining it with `symbols=1` clears once and then opens the gallery; the gallery itself never writes progress.
 
-`TileSymbols` is the presentation-only mapping from domain `TileId` to 30 ordered PNG runtime texture keys and six reusable accents. The runtime assets live under `public/assets/symbols/*.png`; `PlayScene` preloads them through `scene.load.image(...)`, asks the catalog for each tile definition, and owns Phaser card/image creation and feedback. Editable prototype SVG masters remain under `art/source/symbols/*.svg`, outside `public`, so they are not shipped in the production build.
+`TileSymbols` is the presentation-only, deterministic mapping from domain `TileId` to 30 ordered PNG runtime definitions. Twelve approved pilot definitions load from `public/assets/production-pilot/symbols/*.png`; the other definitions remain explicit legacy placeholders in `public/assets/symbols/*.png`. `TileVisual` owns the shared rounded card, untinted symbol, and selected/Hint/error state rendering used by both `PlayScene` and the developer symbol gallery, while the stable interactive cell zone remains owned by `PlayScene`.
+
+`BoardVisualPolicy` derives content and eight-pixel frame bounds from `BoardLayout` without Phaser. `PlayScene` uses it for the rounded production frame, warm no-art interior, and at most two offset multi-stage backing sheets; logical cell geometry and route coordinates remain owned by `BoardLayout`.
 
 `LevelArtwork` is similarly campaign/presentation metadata; the domain, generator, solver, moves,
 and pathfinder remain unaware of it. Its pilot catalog maps Levels 1/30/80 to separate opaque full

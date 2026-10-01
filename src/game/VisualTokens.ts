@@ -17,7 +17,7 @@ export const VISUAL_COLORS = Object.freeze({
   state: Object.freeze({
     success: color("#2D7464"), locked: color("#7C8685"), lockedFill: color("#E3E1DA"),
     selectedFill: color("#D7E8E3"), hint: color("#C98519"), hintFill: color("#F2DDB5"),
-    danger: color("#A5423F"),
+    danger: color("#A5423F"), pressedFill: color("#F4EEE2"),
   }),
   route: Object.freeze({ core: color("#0B7475"), halo: color("#FFF3D2") }),
   blocker: Object.freeze({ fill: color("#62645E"), dark: color("#3F4543") }),
@@ -71,7 +71,7 @@ export const SHADOWS = Object.freeze({
 });
 
 export const MOTION = Object.freeze({
-  buttonPressDown: 80, buttonPressUp: 100, tileSelection: 120, pairRoute: 220,
+  buttonPressDown: 80, buttonPressUp: 100, tilePress: 80, tileSelection: 120, pairRoute: 220,
   pairRemovalMin: 160, pairRemovalMax: 200, hint: 900,
   artworkRevealMin: 450, artworkRevealMax: 650,
   rewardEntryMin: 280, rewardEntryMax: 360,
