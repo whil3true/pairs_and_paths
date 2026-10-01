@@ -8,7 +8,7 @@ import {
   BOARD_ARTWORK_APERTURE_INSET, BOARD_ARTWORK_APERTURE_RADIUS, BOARD_FRAME_PADDING,
   BOARD_SHEET_OFFSET_X, BOARD_SHEET_OFFSET_Y, BOARD_SHEET_SHADE_ALPHA,
   BOARD_VISUAL_STYLE, getBackingSheetShadeAlpha, getBoardArtworkApertureBounds,
-  getBoardContentBounds, getBoardFrameBounds, getBoardFrameOpening,
+  getBoardArtworkApertureCorners, getBoardContentBounds, getBoardFrameBounds, getBoardFrameOpening,
 } from "../.test-dist/game/BoardVisualPolicy.js";
 import { isSymbolGalleryRequested, parseDebugStart } from "../.test-dist/game/DebugStart.js";
 import {
@@ -741,6 +741,36 @@ test("frame opening policy applies overlap only when artwork is present", () => 
   const rectangular = layout(5, 6);
   assert.deepEqual(getBoardFrameOpening(rectangular, false).bounds, getBoardContentBounds(rectangular));
   assert.equal(getBoardFrameOpening(rectangular, false).radius, BOARD_VISUAL_STYLE.innerRadius);
+});
+
+test("artwork aperture corner tangents keep a fixed radius across board sizes", () => {
+  for (const [side, expected] of [
+    [4, {
+      topLeft: [[114, 294], [134, 314], [134, 294], [114, 314]],
+      topRight: [[366, 294], [346, 314], [346, 294], [366, 314]],
+      bottomRight: [[366, 546], [346, 526], [346, 546], [366, 526]],
+      bottomLeft: [[114, 546], [134, 526], [134, 546], [114, 526]],
+    }],
+    [7, {
+      topLeft: [[18, 198], [38, 218], [38, 198], [18, 218]],
+      topRight: [[462, 198], [442, 218], [442, 198], [462, 218]],
+      bottomRight: [[462, 642], [442, 622], [442, 642], [462, 622]],
+      bottomLeft: [[18, 642], [38, 622], [38, 642], [18, 622]],
+    }],
+  ]) {
+    const corners = getBoardArtworkApertureCorners(layout(side, side));
+    for (const name of ["topLeft", "topRight", "bottomRight", "bottomLeft"]) {
+      const geometry = corners[name];
+      assert.deepEqual([
+        [geometry.corner.x, geometry.corner.y],
+        [geometry.center.x, geometry.center.y],
+        [geometry.horizontalTangent.x, geometry.horizontalTangent.y],
+        [geometry.verticalTangent.x, geometry.verticalTangent.y],
+      ], expected[name]);
+      assert.equal(Math.abs(geometry.center.x - geometry.verticalTangent.x), BOARD_ARTWORK_APERTURE_RADIUS);
+      assert.equal(Math.abs(geometry.center.y - geometry.horizontalTangent.y), BOARD_ARTWORK_APERTURE_RADIUS);
+    }
+  }
 });
 
 test("stage stack backing count communicates remaining stages", () => {
