@@ -58,11 +58,11 @@ Campaign tests freeze the exact distribution of 19 multi-stage levels, comprisin
 
 The pure presentation calculation is also checked: Stage 1/3 exposes two backing sheets, Stage 2/3 one, and final or single stages none. Phaser tween pixels are intentionally not unit-tested. Manual checks cover the visible stack before the first move, promotion during the short transition, cleanup on Replay/Next/restart, and disappearance when moving from Level 30 to single-stage Level 31. The rectangles are prototype affordance only; production visual design remains deferred.
 
-## Tile visual verification
+## Board and tile visual verification
 
-Pure tests freeze the catalog ordering and reusable accent metadata, require 30 unique asset keys, and cover every campaign `TileId` through the maximum of 22. Runtime asset tests require the public symbol directory to contain exactly the 30 catalog PNGs, validate the PNG signature, require 256×256 dimensions, 8-bit channels and RGBA color type, and verify that a correspondingly named SVG source master remains under `art/source/symbols`.
+Pure tests freeze the board/frame bounds at every square campaign size, rectangular centering, fixed pitch/tile geometry, production radii, fills, borders, pressed timing, and selected teal. Catalog tests freeze all 30 deterministic `TileId` definitions, unique names and keys, the 12 production-pilot paths, and 18 explicit legacy-placeholder paths. Runtime tests read each referenced PNG to validate its signature and 256×256 8-bit RGBA header; production-pilot files additionally must match the approved SHA-256 values and staged source bytes. Tests never rewrite binary assets.
 
-The developer gallery remains available at `?debug=1&symbols=1` and iterates the shared `TILE_SYMBOLS` catalog. After deployment, verify all 30 transparent PNG textures on Android, then compare `?debug=1&level=1` and `?debug=1&level=80`. Confirm there are no black squares, missing assets, opaque backgrounds, or unexpected pixelation. Artwork-quality issues in leaf, flame, mountain, gem, feather, shell, compass, clover, lantern, crystal, and planet are known prototype limitations and are deferred to final art direction.
+The developer gallery remains available at `?debug=1&symbols=1`, iterates the shared `TILE_SYMBOLS` catalog, and uses the same `TileVisual` treatment as gameplay. After deployment, verify all 30 transparent PNG textures on Android, then compare `?debug=1&level=1` and `?debug=1&level=80`. Confirm the board has no prototype cell grid, empty cells expose the warm interior or artwork, symbols are untinted, selection is teal, and there are no black squares, missing assets, opaque symbol backgrounds, or unexpected pixelation. The 18 legacy symbols are placeholders pending later production artwork.
 
 ### Responsive and HiDPI QA
 

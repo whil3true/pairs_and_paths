@@ -1,8 +1,12 @@
 import assert from "node:assert/strict";
-import { readFile, readdir } from "node:fs/promises";
+import { createHash } from "node:crypto";
+import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 import { BoardLayout, getVisibleBackingCount } from "../.test-dist/game/BoardLayout.js";
+import {
+  BOARD_FRAME_PADDING, BOARD_SHEET_OFFSET, BOARD_VISUAL_STYLE, getBoardContentBounds, getBoardFrameBounds,
+} from "../.test-dist/game/BoardVisualPolicy.js";
 import { isSymbolGalleryRequested, parseDebugStart } from "../.test-dist/game/DebugStart.js";
 import {
   computePortraitFrame, computeRenderScale, isLegacyRenderScaleDebugRequested,
@@ -13,7 +17,8 @@ import {
   createLevel, getChapterNumber, getLevelConfig, hasNextLevel, levelSeed,
   MULTI_STAGE_LEVELS, createLevelStage, getLevelStageConfigs, getStageClearOutcome, getStageCount, preStageSeed,
 } from "../.test-dist/game/LevelSequence.js";
-import { getTileSymbol, TILE_ACCENT_COLORS, TILE_SYMBOLS } from "../.test-dist/game/TileSymbols.js";
+import { getTileSymbol, TILE_SYMBOLS } from "../.test-dist/game/TileSymbols.js";
+import { TILE_SYMBOL_TARGET_SIZE, TILE_VISUAL_STYLE } from "../.test-dist/game/TileVisual.js";
 import {
   computeContainedSquarePlacement, getLevelArtwork, isArtworkRevealStage, isArtworkUnlocked, LEVEL_ARTWORK,
 } from "../.test-dist/game/LevelArtwork.js";
@@ -202,34 +207,33 @@ test("square artwork placement is centered within final board bounds", () => {
   ]) assert.throws(() => computeContainedSquarePlacement(...dimensions), RangeError);
 });
 
-test("tile symbol catalog covers the campaign with stable unique assets and valid reusable accents", () => {
+test("tile symbol catalog implements the deterministic 30-entry production mapping", () => {
   const maxCampaignTileId = Math.max(...Array.from({ length: TOTAL_LEVELS }, (_, index) => index + 1)
     .flatMap((level) => getLevelStageConfigs(level).map(({ pairCount }) => pairCount)));
   assert.equal(maxCampaignTileId, 22);
   assert.equal(TILE_SYMBOLS.length, 30);
-  assert.deepEqual(TILE_SYMBOLS.slice(0, 8).map(({ name }) => name),
-    ["sun", "moon", "drop", "star", "leaf", "flame", "cloud", "mountain"]);
+  assert.deepEqual(TILE_SYMBOLS.map(({ name }) => name), [
+    "cup", "teapot", "sun", "cloud", "key", "leaf", "feather", "flower", "clover", "acorn",
+    "bell", "compass", "camera", "mountain", "planet", "shell", "wave", "lightning", "fish", "flame",
+    "mushroom", "crystal", "jam-jar", "heart", "butterfly", "snowflake", "moon", "star", "lantern", "gem",
+  ]);
   assert.equal(Object.isFrozen(TILE_SYMBOLS), true);
   assert.ok(TILE_SYMBOLS.slice(0, 8).every(Object.isFrozen));
+  assert.equal(new Set(TILE_SYMBOLS.map(({ name }) => name)).size, TILE_SYMBOLS.length);
   assert.equal(new Set(TILE_SYMBOLS.map(({ assetKey }) => assetKey)).size, TILE_SYMBOLS.length);
-  assert.ok(new Set(TILE_SYMBOLS.map(({ accentIndex }) => accentIndex)).size < TILE_SYMBOLS.length);
-  for (let tileId = 1; tileId <= maxCampaignTileId; tileId += 1) {
+  for (let tileId = 1; tileId <= TILE_SYMBOLS.length; tileId += 1) {
     const first = getTileSymbol(tileId);
     assert.strictEqual(getTileSymbol(tileId), first);
-    assert.ok(first.accentIndex >= 0 && first.accentIndex < TILE_ACCENT_COLORS.length);
-    assert.match(first.assetPath, /^assets\/symbols\/[a-z]+\.png$/);
+    const prefix = first.artwork === "production-pilot"
+      ? "assets/production-pilot/symbols/" : "assets/symbols/";
+    assert.equal(first.assetPath, `${prefix}${first.name}.png`);
   }
   assert.throws(() => getTileSymbol(0), RangeError);
   assert.throws(() => getTileSymbol(TILE_SYMBOLS.length + 1), RangeError);
 });
 
-test("tile symbol runtime PNGs are committed 256x256 RGBA textures with preserved SVG masters", async () => {
-  const runtimeDir = new URL("../public/assets/symbols/", import.meta.url);
-  const runtimeFiles = (await readdir(runtimeDir)).sort();
-  assert.deepEqual(runtimeFiles, TILE_SYMBOLS.map(({ name }) => `${name}.png`).sort());
-
+test("tile symbol runtime PNG paths resolve to committed 256x256 RGBA textures", async () => {
   for (const definition of TILE_SYMBOLS) {
-    assert.match(definition.assetPath, /^assets\/symbols\/[a-z]+\.png$/);
     const png = await readFile(new URL(`../public/${definition.assetPath}`, import.meta.url));
     assert.equal(png.subarray(0, 8).toString("hex"), "89504e470d0a1a0a",
       `${definition.name} must have a valid PNG signature`);
@@ -238,8 +242,37 @@ test("tile symbol runtime PNGs are committed 256x256 RGBA textures with preserve
     assert.equal(png[24], 8, `${definition.name} must use 8-bit channels`);
     assert.equal(png[25], 6, `${definition.name} must use RGBA color type`);
 
-    const svg = await readFile(new URL(`../art/source/symbols/${definition.name}.svg`, import.meta.url), "utf8");
-    assert.match(svg, /^<svg\b/, `${definition.name} must retain its SVG source master`);
+    if (definition.artwork === "legacy-placeholder") {
+      const svg = await readFile(new URL(`../art/source/symbols/${definition.name}.svg`, import.meta.url), "utf8");
+      assert.match(svg, /^<svg\b/, `${definition.name} must retain its legacy SVG source master`);
+    }
+  }
+});
+
+test("approved production pilot symbol hashes match staged sources and review values", async () => {
+  const expected = new Map(Object.entries({
+    cup: "ce07c4113f5944b9b7c2b65b0514d3043887ead9b11330b21e4f19b2321fd3b8",
+    teapot: "203df497d4255bc13c115f5ef784f5c20e83e21db8217f98ed105c939ea1db23",
+    leaf: "d5674f92c7893fda9f94f596bbf51afce8972e45b43eae5ed870c99e5a252c7c",
+    feather: "3d706278be02778073b1e4605fdc9cf3148731c30f268c239b86fe83df4ef577",
+    flower: "6a1e7d1a74a5afe7490652128d922b7a76355e60af6f76fb4ecfcfc509a01570",
+    compass: "ea02c3fe274b00f14337edf228b07394ae3bfa47cbda9881d5be60555aea9873",
+    camera: "d00f2273f7959647250a941dfe4a3649cfcf40a634974605f49738984e69a5b0",
+    shell: "5906913f270ec7807ef108da9c721a6d170efbf94f94e9776d1c1133dd6cb6e9",
+    "jam-jar": "4e5dfb63c1855ab5cd9fe9b9852ef08c6e3dd9ce8e4ab8d1f25dbf3511709dc5",
+    snowflake: "5f33be15a18acf49d91e001bfa020fadf945e88105d5fa004ea7f32c10278b79",
+    star: "e10b7edee6cbed95b92f2183773f2b361b55a1b3de3bbfc7b6627b6b27442cf3",
+    lantern: "edab028cb64b0ea44bf2c0d0453f0e4ec4bb044cafeaca4ee17096ba87729695",
+  }));
+  const production = TILE_SYMBOLS.filter(({ artwork }) => artwork === "production-pilot");
+  assert.equal(production.length, 12);
+  assert.deepEqual(production.map(({ name }) => name), [...expected.keys()]);
+  for (const definition of production) {
+    const runtime = await readFile(new URL(`../public/${definition.assetPath}`, import.meta.url));
+    const staged = await readFile(new URL(`../art/production-pilot/symbols/${definition.name}.png`, import.meta.url));
+    const digest = createHash("sha256").update(runtime).digest("hex");
+    assert.equal(digest, expected.get(definition.name));
+    assert.deepEqual(runtime, staged, `${definition.name} runtime must match its approved staged source`);
   }
 });
 
@@ -608,6 +641,39 @@ test("real cell centers and the full board fit the portrait play area", () => {
   assert.equal(BoardLayout.CELL_PITCH - BoardLayout.TILE_SIZE, 8);
   assert.equal(7 * BoardLayout.CELL_PITCH, 448);
   assert.ok(full.boardLeft >= 0 && full.boardRight <= 480);
+});
+
+test("production board and tile visual policies protect frozen geometry and tokens", () => {
+  const cases = [
+    [4, [112, 292, 368, 548], [104, 284, 376, 556]],
+    [5, [80, 260, 400, 580], [72, 252, 408, 588]],
+    [6, [48, 228, 432, 612], [40, 220, 440, 620]],
+    [7, [16, 196, 464, 644], [8, 188, 472, 652]],
+  ];
+  for (const [side, expectedContent, expectedFrame] of cases) {
+    const board = layout(side, side);
+    const content = getBoardContentBounds(board);
+    const frame = getBoardFrameBounds(board);
+    assert.deepEqual([content.left, content.top, content.right, content.bottom], expectedContent);
+    assert.deepEqual([frame.left, frame.top, frame.right, frame.bottom], expectedFrame);
+    assert.deepEqual([content.centerX, content.centerY], [240, 420]);
+  }
+  const rectangular = layout(5, 6);
+  assert.deepEqual([getBoardContentBounds(rectangular).centerX, getBoardContentBounds(rectangular).centerY], [240, 420]);
+  assert.equal(rectangular.pitch, 64);
+  assert.equal(BOARD_FRAME_PADDING, 8);
+  assert.equal(BOARD_SHEET_OFFSET, 7);
+  assert.equal(BOARD_VISUAL_STYLE.outerRadius, 22);
+  assert.equal(BOARD_VISUAL_STYLE.innerRadius, 16);
+  assert.equal(BOARD_VISUAL_STYLE.frameFill, VISUAL_COLORS.border.strong.phaser);
+  assert.equal(TILE_VISUAL_STYLE.size, 56);
+  assert.equal(TILE_VISUAL_STYLE.radius, 12);
+  assert.equal(TILE_VISUAL_STYLE.fill, VISUAL_COLORS.surface.card.phaser);
+  assert.equal(TILE_VISUAL_STYLE.border, VISUAL_COLORS.border.strong.phaser);
+  assert.equal(TILE_VISUAL_STYLE.selectedBorder, VISUAL_COLORS.primary.teal.phaser);
+  assert.equal(TILE_VISUAL_STYLE.pressedFill, VISUAL_COLORS.state.pressedFill.phaser);
+  assert.equal(TILE_VISUAL_STYLE.pressedDuration, 80);
+  assert.equal(TILE_SYMBOL_TARGET_SIZE, 38);
 });
 
 test("stage stack backing count communicates remaining stages", () => {

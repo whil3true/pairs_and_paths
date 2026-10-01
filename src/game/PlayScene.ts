@@ -3,6 +3,9 @@ import type { PlatformService } from "../platform/PlatformService.js";
 import { recordStageCompletion, type CampaignProgress } from "../progress/CampaignProgress.js";
 import type { ProgressStore } from "../progress/ProgressStore.js";
 import { BoardLayout, getVisibleBackingCount } from "./BoardLayout.js";
+import {
+  BOARD_SHEET_OFFSET, BOARD_VISUAL_STYLE, getBoardContentBounds, getBoardFrameBounds,
+} from "./BoardVisualPolicy.js";
 import type { PlayStartData } from "./SceneStart.js";
 import { createLevelStage, getStageClearOutcome, getStageCount, hasNextLevel } from "./LevelSequence.js";
 import { getTileSymbol, preloadTileSymbols } from "./TileSymbols.js";
@@ -11,17 +14,7 @@ import {
 } from "./Display.js";
 import { getHintMove } from "./Hint.js";
 import { computeContainedSquarePlacement, getLevelArtwork, isArtworkRevealStage } from "./LevelArtwork.js";
-
-interface TileVisual {
-  readonly card: Phaser.GameObjects.Rectangle;
-  readonly symbol: Phaser.GameObjects.Image;
-  readonly symbolSize: number;
-}
-
-const TILE_STROKE_DEFAULT = 0xb9cce2;
-const TILE_STROKE_SELECTED = 0xffd34e;
-const TILE_STROKE_HINT = 0x45d8d0;
-const TILE_STROKE_BLOCKED = 0xff4d5e;
+import { TileVisual } from "./TileVisual.js";
 
 const keyOf = ({ col, row }: GridPoint): string => `${col},${row}`;
 const samePoint = (left: GridPoint, right: GridPoint): boolean =>
@@ -39,8 +32,8 @@ export class PlayScene extends Phaser.Scene {
   private route!: Phaser.GameObjects.Graphics;
   private stageStackVisual: Phaser.GameObjects.Container | null = null;
   private currentBoardVisual: Phaser.GameObjects.Container | null = null;
-  private frontSheet: Phaser.GameObjects.Rectangle | null = null;
-  private nextSheet: Phaser.GameObjects.Rectangle | null = null;
+  private frontSheet: Phaser.GameObjects.Graphics | null = null;
+  private nextSheet: Phaser.GameObjects.Graphics | null = null;
   private levelText!: Phaser.GameObjects.Text;
   private remainingText!: Phaser.GameObjects.Text;
   private seedText!: Phaser.GameObjects.Text;
@@ -167,9 +160,9 @@ export class PlayScene extends Phaser.Scene {
     this.renderStageStack(stageCount);
     this.currentBoardVisual = this.add.container(0, 0).setDepth(10);
     this.renderArtwork();
-    this.renderBoard();
-    this.route = this.add.graphics().setDepth(20);
+    this.route = this.add.graphics().setDepth(2);
     this.currentBoardVisual.add(this.route);
+    this.renderBoard();
     this.currentBoardVisual.sort("depth");
     this.updateRemaining();
     if (animateIn) {
@@ -212,29 +205,34 @@ export class PlayScene extends Phaser.Scene {
       placement.x + placement.size / 2,
       placement.y + placement.size / 2,
       artwork.fullAssetKey,
-    ).setDisplaySize(placement.size, placement.size).setDepth(-2);
-    this.currentBoardVisual!.add(image);
+    ).setDisplaySize(placement.size, placement.size).setDepth(0);
+    const clip = this.add.graphics().fillStyle(0xffffff, 1)
+      .fillRoundedRect(placement.x, placement.y, placement.size, placement.size, BOARD_VISUAL_STYLE.innerRadius)
+      .setVisible(false);
+    image.setMask(clip.createGeometryMask());
+    this.currentBoardVisual!.add([image, clip]);
     this.currentArtworkVisual = image;
   }
 
   private renderStageStack(stageCount: number): void {
-    const padding = 8;
-    const offset = 7;
-    const width = this.layout.boardRight - this.layout.boardLeft + padding * 2;
-    const height = this.layout.boardBottom - this.layout.boardTop + padding * 2;
-    const centerX = (this.layout.boardLeft + this.layout.boardRight) / 2;
-    const centerY = (this.layout.boardTop + this.layout.boardBottom) / 2;
+    const frame = getBoardFrameBounds(this.layout);
+    const content = getBoardContentBounds(this.layout);
     const backingCount = getVisibleBackingCount(this.currentStageIndex, stageCount);
-    const sheets: Phaser.GameObjects.Rectangle[] = [];
+    const sheets: Phaser.GameObjects.Graphics[] = [];
     for (let depth = backingCount; depth >= 1; depth -= 1) {
-      const sheet = this.add.rectangle(centerX + depth * offset, centerY + depth * offset,
-        width, height, depth === 1 ? 0x263b58 : 0x1f314a, 1)
-        .setStrokeStyle(2, depth === 1 ? 0x6684a8 : 0x526b8b, 0.9);
+      const sheet = this.add.graphics().setPosition(depth * BOARD_SHEET_OFFSET, depth * BOARD_SHEET_OFFSET)
+        .fillStyle(BOARD_VISUAL_STYLE.backingFill, 1)
+        .lineStyle(BOARD_VISUAL_STYLE.borderWidth, BOARD_VISUAL_STYLE.backingBorder, 1)
+        .fillRoundedRect(frame.left, frame.top, frame.width, frame.height, BOARD_VISUAL_STYLE.outerRadius)
+        .strokeRoundedRect(frame.left, frame.top, frame.width, frame.height, BOARD_VISUAL_STYLE.outerRadius);
       sheets.push(sheet);
       if (depth === 1) this.nextSheet = sheet;
     }
-    this.frontSheet = this.add.rectangle(centerX, centerY, width, height, 0x14243a, 1)
-      .setStrokeStyle(2, 0x7694b8, 0.9);
+    this.frontSheet = this.add.graphics()
+      .fillStyle(BOARD_VISUAL_STYLE.frameFill, 1)
+      .fillRoundedRect(frame.left, frame.top, frame.width, frame.height, BOARD_VISUAL_STYLE.outerRadius)
+      .fillStyle(BOARD_VISUAL_STYLE.interiorFill, 1)
+      .fillRoundedRect(content.left, content.top, content.width, content.height, BOARD_VISUAL_STYLE.innerRadius);
     sheets.push(this.frontSheet);
     this.stageStackVisual = this.add.container(0, 0, sheets).setDepth(1);
   }
@@ -243,16 +241,10 @@ export class PlayScene extends Phaser.Scene {
     for (let row = 0; row < this.board.height; row += 1) for (let col = 0; col < this.board.width; col += 1) {
       const point = { col, row };
       const { x, y } = this.layout.cellCenter(point);
-      const revealActive = this.currentArtworkVisual !== null;
-      const cell = this.add.rectangle(
-        x, y, this.layout.tileSize, this.layout.tileSize, 0x1a2941, revealActive ? 0.14 : 0.52,
-      )
-        .setStrokeStyle(1, 0x324663, 0.65);
-      this.currentBoardVisual!.add(cell);
       if (this.board.isBlocked(point)) {
         const blockerSize = this.layout.tileSize - 6;
         const blocker = this.add.rectangle(x, y, blockerSize, blockerSize, 0x26303d, 1)
-          .setStrokeStyle(3, 0x59687a, 1);
+          .setStrokeStyle(3, 0x59687a, 1).setDepth(4);
         this.currentBoardVisual!.add(blocker);
         continue;
       }
@@ -268,13 +260,9 @@ export class PlayScene extends Phaser.Scene {
   private createTile(point: GridPoint, tileId: number): void {
     const { x, y } = this.layout.cellCenter(point);
     const definition = getTileSymbol(tileId);
-    const card = this.add.rectangle(x, y, this.layout.tileSize, this.layout.tileSize, 0x253b57)
-      .setStrokeStyle(3, TILE_STROKE_DEFAULT).setDepth(5).setName("board-cell");
-    const symbolSize = Math.round(this.layout.tileSize * 0.66);
-    const symbol = this.add.image(x, y, definition.assetKey).setDisplaySize(symbolSize, symbolSize)
-      .setDepth(6);
-    this.currentBoardVisual!.add([card, symbol]);
-    this.tiles.set(keyOf(point), { card, symbol, symbolSize });
+    const visual = new TileVisual(this, x, y, this.add.image(0, 0, definition.assetKey));
+    this.currentBoardVisual!.add(visual.root);
+    this.tiles.set(keyOf(point), visual);
   }
 
   private onCellTapped(point: GridPoint): void {
@@ -283,6 +271,7 @@ export class PlayScene extends Phaser.Scene {
       this.setSelected(null);
       return;
     }
+    this.tiles.get(keyOf(point))?.press(this.tweens);
     if (this.selected === null) {
       this.setSelected(point);
       return;
@@ -306,7 +295,7 @@ export class PlayScene extends Phaser.Scene {
   private showBlockedPair(first: GridPoint, second: GridPoint): void {
     this.inputLocked = true;
     for (const point of [first, second]) {
-      this.tiles.get(keyOf(point))?.card.setStrokeStyle(5, TILE_STROKE_BLOCKED);
+      this.tiles.get(keyOf(point))?.setState("blocked");
     }
     this.time.delayedCall(180, () => {
       this.inputLocked = false;
@@ -324,11 +313,7 @@ export class PlayScene extends Phaser.Scene {
   private styleTile(point: GridPoint, selected: boolean): void {
     const visual = this.tiles.get(keyOf(point));
     if (visual === undefined) return;
-    visual.card.setStrokeStyle(selected ? 5 : 3,
-      selected ? TILE_STROKE_SELECTED : TILE_STROKE_DEFAULT);
-    visual.card.setScale(selected ? 1.06 : 1);
-    visual.symbol.setDisplaySize(visual.symbolSize * (selected ? 1.06 : 1),
-      visual.symbolSize * (selected ? 1.06 : 1));
+    visual.setState(selected ? "selected" : "default");
   }
 
   private showHint(): void {
@@ -342,7 +327,7 @@ export class PlayScene extends Phaser.Scene {
     this.hintActive = true;
     this.hintedPoints = [move.start, move.end];
     for (const point of this.hintedPoints) {
-      this.tiles.get(keyOf(point))?.card.setStrokeStyle(5, TILE_STROKE_HINT);
+      this.tiles.get(keyOf(point))?.setState("hint");
     }
     this.hintTimer = this.time.delayedCall(900, () => this.clearHintFeedback(true));
   }
@@ -385,8 +370,7 @@ export class PlayScene extends Phaser.Scene {
 
   private removeTile(point: GridPoint): void {
     const visual = this.tiles.get(keyOf(point));
-    visual?.card.destroy();
-    visual?.symbol.destroy();
+    visual?.destroy();
     this.tiles.delete(keyOf(point));
   }
 
