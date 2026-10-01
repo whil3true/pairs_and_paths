@@ -5,8 +5,10 @@ import test from "node:test";
 
 import { BoardLayout, getVisibleBackingCount } from "../.test-dist/game/BoardLayout.js";
 import {
-  BOARD_FRAME_PADDING, BOARD_SHEET_OFFSET_X, BOARD_SHEET_OFFSET_Y, BOARD_SHEET_SHADE_ALPHA,
-  BOARD_VISUAL_STYLE, getBackingSheetShadeAlpha, getBoardContentBounds, getBoardFrameBounds,
+  BOARD_ARTWORK_APERTURE_INSET, BOARD_ARTWORK_APERTURE_RADIUS, BOARD_FRAME_PADDING,
+  BOARD_SHEET_OFFSET_X, BOARD_SHEET_OFFSET_Y, BOARD_SHEET_SHADE_ALPHA,
+  BOARD_VISUAL_STYLE, getBackingSheetShadeAlpha, getBoardArtworkApertureBounds,
+  getBoardContentBounds, getBoardFrameBounds,
 } from "../.test-dist/game/BoardVisualPolicy.js";
 import { isSymbolGalleryRequested, parseDebugStart } from "../.test-dist/game/DebugStart.js";
 import {
@@ -663,8 +665,14 @@ test("production board and tile visual policies protect frozen geometry and toke
     const board = layout(side, side);
     const content = getBoardContentBounds(board);
     const frame = getBoardFrameBounds(board);
+    const aperture = getBoardArtworkApertureBounds(board);
     assert.deepEqual([content.left, content.top, content.right, content.bottom], expectedContent);
     assert.deepEqual([frame.left, frame.top, frame.right, frame.bottom], expectedFrame);
+    assert.deepEqual(
+      [aperture.left, aperture.top, aperture.right, aperture.bottom],
+      expectedContent.map((edge, index) => index < 2
+        ? edge + BOARD_ARTWORK_APERTURE_INSET : edge - BOARD_ARTWORK_APERTURE_INSET),
+    );
     const outlinePath = [
       frame.left + BOARD_VISUAL_STYLE.outlineInset,
       frame.top + BOARD_VISUAL_STYLE.outlineInset,
@@ -681,6 +689,8 @@ test("production board and tile visual policies protect frozen geometry and toke
   assert.deepEqual([getBoardContentBounds(rectangular).centerX, getBoardContentBounds(rectangular).centerY], [240, 420]);
   assert.equal(rectangular.pitch, 64);
   assert.equal(BOARD_FRAME_PADDING, 8);
+  assert.equal(BOARD_ARTWORK_APERTURE_INSET, 2);
+  assert.equal(BOARD_ARTWORK_APERTURE_RADIUS, 20);
   assert.equal(BOARD_SHEET_OFFSET_X, 0);
   assert.equal(BOARD_SHEET_OFFSET_Y, 7);
   assert.equal("innerEdgeWidth" in BOARD_VISUAL_STYLE, false);
@@ -693,14 +703,18 @@ test("production board and tile visual policies protect frozen geometry and toke
   assert.equal(BOARD_VISUAL_STYLE.frameFill, VISUAL_COLORS.surface.elevated.phaser);
   assert.equal(BOARD_VISUAL_STYLE.frameBorder, VISUAL_COLORS.border.strong.phaser);
   assert.equal(BOARD_VISUAL_STYLE.backingFill, VISUAL_COLORS.surface.elevated.phaser);
+  assert.equal("backingBorder" in BOARD_VISUAL_STYLE, false);
   assert.equal(BOARD_VISUAL_STYLE.frameFill, BOARD_VISUAL_STYLE.backingFill);
   assert.notEqual(BOARD_VISUAL_STYLE.frameFill, VISUAL_COLORS.border.strong.phaser);
   assert.equal(TILE_VISUAL_STYLE.size, 56);
   assert.equal(TILE_VISUAL_STYLE.radius, 12);
   assert.equal(TILE_VISUAL_STYLE.fill, VISUAL_COLORS.surface.card.phaser);
-  assert.equal(TILE_VISUAL_STYLE.border, VISUAL_COLORS.border.strong.phaser);
+  assert.equal(TILE_VISUAL_STYLE.border, VISUAL_COLORS.divider.phaser);
+  assert.equal(TILE_VISUAL_STYLE.borderWidth, BORDERS.divider);
   assert.equal(TILE_VISUAL_STYLE.selectedBorder, VISUAL_COLORS.primary.teal.phaser);
   assert.equal(TILE_VISUAL_STYLE.selectedFill, VISUAL_COLORS.state.selectedFill.phaser);
+  assert.equal(TILE_VISUAL_STYLE.hintBorder, VISUAL_COLORS.state.hint.phaser);
+  assert.equal(TILE_VISUAL_STYLE.blockedBorder, VISUAL_COLORS.state.danger.phaser);
   assert.equal(TILE_VISUAL_STYLE.emphasizedBorderWidth, 3);
   assert.equal(TILE_VISUAL_STYLE.selectedMarker, false);
   assert.equal(TILE_VISUAL_STYLE.pressedFill, VISUAL_COLORS.state.pressedFill.phaser);

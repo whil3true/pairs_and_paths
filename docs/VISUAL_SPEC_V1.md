@@ -259,7 +259,7 @@ Rules:
 
 Assignments:
 
-- button `16`; icon button `14`; tile card `12`; level card `16`; chapter banner `20`; artwork/thumbnail `16`; modal `24`; board outer frame `22`, board inner opening `16`.
+- button `16`; icon button `14`; tile card `12`; level card `16`; chapter banner `20`; artwork/thumbnail `16`; modal `24`; board outer frame `22`; no-art interior `16`; gameplay artwork aperture `20`.
 - Do not create pill buttons unless the content is a small status chip. Rounded does not mean capsule everywhere.
 
 ### 7.2 Borders
@@ -365,15 +365,15 @@ Rectangular pre-stages use the same center and pitch. Do not resize tiles or art
 ### 10.2 Frame
 
 - Outer frame extends `8 px` beyond content bounds.
-- Outer radius `22 px`; inner opening radius `16 px`.
-- The physical frame is a true warm `surface.elevated` ring outside the content bounds, with a thin `2 px border.strong` structural contour on its outer boundary. It is not a thick, dark `border.strong`-filled bezel.
-- No frame paint or inner-edge stroke may enter the content opening. The full `4 px` clearance from an outer tile edge to the content boundary remains unobstructed, including around Hint rings.
+- Outer radius `22 px`; the gameplay artwork aperture radius is `20 px`.
+- The physical frame is one continuous procedural `surface.elevated` ring, with a thin `2 px border.strong` structural contour only on its outer boundary. Its transparent aperture is not assembled from independent corner caps, and it has no dark inner bezel.
+- The aperture is inset `2 px` from every content edge, so the frame overlaps the underlying artwork by `2 px`. This presentation-only overlap does not alter cells, hit zones, routes, blockers, or tiles, which render above the overlay.
 - `shadow.card` only on the frame, never on the artwork itself.
 - Maximum frame at 7×7 is `464×464`, bounds `8..472` × `188..652`.
 
 ### 10.3 Interior
 
-- Final Stage with artwork: the unchanged square artwork fills the exact board content bounds, with no crop/stretch, global blur, or tint. The warm frame is rendered above the artwork, and its `16 px` rounded opening visually covers the square artwork's outer corners. A matching `surface.elevated` aperture backing prevents light or dark triangular corner artifacts. This rounded aperture is presentation only: no destructive asset crop occurs, no stroke paints over the opening, and Full View and Reward retain the complete square source composition.
+- Final Stage with artwork: the unchanged square artwork fills the exact board content bounds, with no crop/stretch, global blur, or tint. One continuous warm procedural frame overlay renders above it; the inset `20 px`-radius aperture visibly covers the square source edges and corners. A matching `surface.elevated` backing prevents corner artifacts. The overlay alone owns the visible gameplay boundary; gameplay objects render above it, while Full View and Reward retain the complete square source composition.
 - Pre-stage/no-art: fill `surface.board`, with a very subtle paper noise or 4% darker edge vignette. No fake preview artwork.
 - Empty cell on final Stage: fully reveals artwork. No empty-cell outline.
 - Empty cell on pre-stage: no hard square. Optional inset well at ≤8% charcoal alpha to retain spatial legibility; must disappear visually before resembling a tile.
@@ -383,8 +383,9 @@ Rectangular pre-stages use the same center and pitch. Do not resize tiles or art
 ### 10.4 Size treatment
 
 - 4×4 and 5×5 get no decorative enlargement; retain centered negative space.
-- 6×6 and 7×7 use identical frame construction.
-- Multi-stage backing sheets and the active frame share one warm `surface.elevated` base material. Backing sheets retain `2 px border.soft`, the existing 8 px padding, horizontal offset `0`, and downward vertical offset `7 px` per layer; at most two sheets. Neutral `border.strong` overlays express current physical depth: front 0%, depth 1 10%, and depth 2 18%, so every deeper sheet is darker. Promotion removes depth shade as a sheet becomes the front; shade belongs to current physical depth, never Stage identity. The stack stays centered on the board X axis and communicates stages, not stacked spatial boards.
+- 4×4 through 7×7 and rectangular pre-stages use identical fixed-radius vector corner construction; only straight edge lengths vary. No raster frame is stretched between board sizes.
+- The current flat-material frame remains procedural geometry. If a future Work/art phase introduces a bitmap frame with paper grain, painted edges, decorative corners, or baked shading, it must use NineSlice / 9-slice scaling so its corners do not stretch; NineSlice is not part of the current implementation.
+- Multi-stage backing sheets and the active frame share one warm `surface.elevated` base material. Buried sheets have no explicit border or outline: repeated stroke contours are forbidden because they visually stack. They retain the existing 8 px padding, horizontal offset `0`, and downward vertical offset `7 px` per layer; at most two sheets. Neutral `border.strong` shade overlays express current physical depth: front 0%, depth 1 10%, and depth 2 18%, so displacement plus shade communicates depth. Promotion removes depth shade as a sheet becomes the front; shade belongs to current physical depth, never Stage identity. The stack stays centered on the board X axis and communicates stages, not stacked spatial boards.
 
 ### 10.5 Artwork readability rule
 
@@ -397,7 +398,7 @@ The board must pass with a bright, dark, and busy artwork. Tile and route recogn
 - Fixed size: `56×56 px`.
 - Fill: `surface.card` at **100% opacity**. This is the production default; artwork never shows through the symbol area.
 - Radius: `12 px`.
-- Border: `2 px border.strong`.
+- Border: `1 px divider` (`#D9CDB8`).
 - Painted symbol target: approximately `36–40 px`; absolute maximum painted extent approximately `42×42 px`. PNG canvas display size is a separate presentation property (section 12.1).
 - Default shadow: none; allow the tile depth shadow from section 7 only if low-brightness QA requires it.
 
