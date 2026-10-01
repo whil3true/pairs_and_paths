@@ -26,6 +26,7 @@ export class TileVisual {
   private readonly card: Phaser.GameObjects.Graphics;
   private readonly marker: Phaser.GameObjects.Graphics;
   private state: TileVisualState = "default";
+  private pressed = false;
 
   constructor(
     scene: Phaser.Scene,
@@ -50,15 +51,19 @@ export class TileVisual {
 
   press(tweens: Phaser.Tweens.TweenManager): void {
     tweens.killTweensOf(this.root);
+    this.pressed = true;
     this.root.setScale(TILE_VISUAL_STYLE.pressedScale);
-    this.draw(TILE_VISUAL_STYLE.pressedFill);
+    this.draw();
     tweens.add({
       targets: this.root,
       scaleX: 1,
       scaleY: 1,
       duration: TILE_VISUAL_STYLE.pressedDuration,
       ease: "Quad.Out",
-      onComplete: () => this.draw(),
+      onComplete: () => {
+        this.pressed = false;
+        this.draw();
+      },
     });
   }
 
@@ -66,8 +71,9 @@ export class TileVisual {
     this.root.destroy(true);
   }
 
-  private draw(fill = TILE_VISUAL_STYLE.fill): void {
+  private draw(): void {
     const half = TILE_VISUAL_STYLE.size / 2;
+    const fill = this.pressed ? TILE_VISUAL_STYLE.pressedFill : TILE_VISUAL_STYLE.fill;
     const border = this.state === "selected" ? TILE_VISUAL_STYLE.selectedBorder
       : this.state === "hint" ? TILE_VISUAL_STYLE.hintBorder
         : this.state === "blocked" ? TILE_VISUAL_STYLE.blockedBorder : TILE_VISUAL_STYLE.border;
