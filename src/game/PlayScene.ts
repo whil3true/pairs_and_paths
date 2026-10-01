@@ -166,6 +166,7 @@ export class PlayScene extends Phaser.Scene {
     this.renderStageStack(stageCount);
     this.currentBoardVisual = this.add.container(0, 0).setDepth(10);
     this.renderArtwork();
+    this.renderFrameOverlay();
     this.route = this.add.graphics().setDepth(2);
     this.currentBoardVisual.add(this.route);
     this.renderBoard();
@@ -224,6 +225,48 @@ export class PlayScene extends Phaser.Scene {
     image.setMask(clip.createGeometryMask());
     this.currentBoardVisual!.add([apertureBacking, image, clip]);
     this.currentArtworkVisual = image;
+  }
+
+  private renderFrameOverlay(): void {
+    const frame = getBoardFrameBounds(this.layout);
+    const content = getBoardContentBounds(this.layout);
+    const { outlineInset } = BOARD_VISUAL_STYLE;
+    const ringSource = this.make.graphics(undefined, false)
+      .fillStyle(BOARD_VISUAL_STYLE.frameFill, 1)
+      .lineStyle(BOARD_VISUAL_STYLE.borderWidth, BOARD_VISUAL_STYLE.frameBorder, 1)
+      .fillRoundedRect(
+        outlineInset,
+        outlineInset,
+        frame.width - BOARD_VISUAL_STYLE.borderWidth,
+        frame.height - BOARD_VISUAL_STYLE.borderWidth,
+        BOARD_VISUAL_STYLE.outlineRadius,
+      )
+      .strokeRoundedRect(
+        outlineInset,
+        outlineInset,
+        frame.width - BOARD_VISUAL_STYLE.borderWidth,
+        frame.height - BOARD_VISUAL_STYLE.borderWidth,
+        BOARD_VISUAL_STYLE.outlineRadius,
+      );
+    const opening = this.make.graphics(undefined, false)
+      .fillStyle(0xffffff, 1)
+      .fillRoundedRect(
+        content.left - frame.left,
+        content.top - frame.top,
+        content.width,
+        content.height,
+        BOARD_VISUAL_STYLE.innerRadius,
+      );
+    const ring = this.add.renderTexture(
+      frame.left,
+      frame.top,
+      frame.width,
+      frame.height,
+    ).setOrigin(0).setDepth(1);
+    ring.draw(ringSource).erase(opening);
+    ringSource.destroy();
+    opening.destroy();
+    this.currentBoardVisual!.add(ring);
   }
 
   private renderStageStack(stageCount: number): void {
