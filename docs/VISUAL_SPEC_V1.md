@@ -366,14 +366,14 @@ Rectangular pre-stages use the same center and pitch. Do not resize tiles or art
 
 - Outer frame extends `8 px` beyond content bounds.
 - Outer radius `22 px`; inner opening radius `16 px`.
-- An `8 px border.strong` inner-edge stroke follows the exact content bounds above the artwork and below route, blockers, and tiles, making the rounded opening explicit without changing gameplay bounds.
+- No inner-edge stroke may enter the content bounds. The full `4 px` clearance from an outer tile edge to the content boundary remains unobstructed, including around Hint rings.
 - Fill `border.strong`; optional subtle paper-toned outer stroke `2 px #B8AA93`.
 - `shadow.card` only on the frame, never on the artwork itself.
 - Maximum frame at 7×7 is `464×464`, bounds `8..472` × `188..652`.
 
 ### 10.3 Interior
 
-- Final Stage with artwork: artwork fills the exact board content bounds, square, no crop/stretch, no global blur, no tint. Gameplay clips it to a `16 px` rounded opening and renders the frame inner edge above it. The source remains an unchanged square; Full View and Reward use its complete square composition.
+- Final Stage with artwork: the unchanged square artwork fills the exact board content bounds, with no crop/stretch, global blur, or tint. Gameplay clips it to a `16 px` rounded opening over a dark `border.strong` aperture backing, so masked corners reveal the board/frame colour without light antialias gaps. No stroke paints over the opening. Full View and Reward retain the complete square artwork composition.
 - Pre-stage/no-art: fill `surface.board`, with a very subtle paper noise or 4% darker edge vignette. No fake preview artwork.
 - Empty cell on final Stage: fully reveals artwork. No empty-cell outline.
 - Empty cell on pre-stage: no hard square. Optional inset well at ≤8% charcoal alpha to retain spatial legibility; must disappear visually before resembling a tile.
@@ -384,7 +384,7 @@ Rectangular pre-stages use the same center and pitch. Do not resize tiles or art
 
 - 4×4 and 5×5 get no decorative enlargement; retain centered negative space.
 - 6×6 and 7×7 use identical frame construction.
-- Multi-stage backing sheets: `surface.elevated`/`surface.board`, `2 px border.soft`, existing 8 px padding, horizontal offset `0`, and downward vertical offset `7 px` per layer; at most two sheets. The stack stays centered on the board X axis. It communicates stages, not stacked spatial boards.
+- Multi-stage backing sheets: a shared warm `surface.elevated` base, `2 px border.soft`, existing 8 px padding, horizontal offset `0`, and downward vertical offset `7 px` per layer; at most two sheets. The active front has no shade. Visible depth 1 adds approximately 10% neutral `border.strong` shade and depth 2 adds approximately 18%, so every deeper sheet is darker. Promotion removes the sheet's shade as it becomes the front; shade belongs to current physical depth, never Stage identity. The stack stays centered on the board X axis and communicates stages, not stacked spatial boards.
 
 ### 10.5 Artwork readability rule
 
