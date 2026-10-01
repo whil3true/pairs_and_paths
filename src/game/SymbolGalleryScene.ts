@@ -30,7 +30,7 @@ export class SymbolGalleryScene extends Phaser.Scene {
     TILE_SYMBOLS.forEach((definition, index) => {
       const x = startX + (index % columns) * columnPitch;
       const y = startY + Math.floor(index / columns) * rowPitch;
-      new TileVisual(this, x, y, this.add.image(0, 0, definition.assetKey));
+      new TileVisual(this, x, y, this.add.image(0, 0, definition.assetKey), definition.displaySize);
       setHiDpiTextResolution(this.add.text(x, y + 45, `${index + 1}. ${definition.name}`, {
         color: VISUAL_COLORS.text.secondary.hex, fontFamily: FONT_FAMILY, fontSize: "11px",
       }).setOrigin(0.5), this.renderScale);

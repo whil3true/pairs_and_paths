@@ -1,6 +1,5 @@
 import { BORDERS, COMPONENT_RADII, MOTION, VISUAL_COLORS } from "./VisualTokens.js";
 
-export const TILE_SYMBOL_TARGET_SIZE = 38;
 export const TILE_SYMBOL_MAX_SIZE = 42;
 
 export const TILE_VISUAL_STYLE = Object.freeze({
@@ -10,6 +9,8 @@ export const TILE_VISUAL_STYLE = Object.freeze({
   pressedFill: VISUAL_COLORS.state.pressedFill.phaser,
   border: VISUAL_COLORS.border.strong.phaser,
   selectedBorder: VISUAL_COLORS.primary.teal.phaser,
+  selectedFill: VISUAL_COLORS.state.selectedFill.phaser,
+  selectedMarker: false,
   hintBorder: VISUAL_COLORS.state.hint.phaser,
   blockedBorder: VISUAL_COLORS.state.danger.phaser,
   borderWidth: BORDERS.structural,
@@ -33,12 +34,13 @@ export class TileVisual {
     x: number,
     y: number,
     readonly symbol: Phaser.GameObjects.Image,
+    displaySize: number,
   ) {
     this.card = scene.add.graphics();
     this.marker = scene.add.graphics();
     this.symbol.setPosition(0, 0);
     const source = this.symbol.texture.getSourceImage() as { width: number; height: number };
-    const scale = Math.min(TILE_SYMBOL_TARGET_SIZE / source.width, TILE_SYMBOL_TARGET_SIZE / source.height);
+    const scale = Math.min(displaySize / source.width, displaySize / source.height);
     this.symbol.setDisplaySize(source.width * scale, source.height * scale);
     this.root = scene.add.container(x, y, [this.card, this.symbol, this.marker]).setDepth(5).setName("board-cell");
     this.draw();
@@ -73,7 +75,8 @@ export class TileVisual {
 
   private draw(): void {
     const half = TILE_VISUAL_STYLE.size / 2;
-    const fill = this.pressed ? TILE_VISUAL_STYLE.pressedFill : TILE_VISUAL_STYLE.fill;
+    const fill = this.pressed ? TILE_VISUAL_STYLE.pressedFill
+      : this.state === "selected" ? TILE_VISUAL_STYLE.selectedFill : TILE_VISUAL_STYLE.fill;
     const border = this.state === "selected" ? TILE_VISUAL_STYLE.selectedBorder
       : this.state === "hint" ? TILE_VISUAL_STYLE.hintBorder
         : this.state === "blocked" ? TILE_VISUAL_STYLE.blockedBorder : TILE_VISUAL_STYLE.border;
@@ -83,12 +86,7 @@ export class TileVisual {
       .fillRoundedRect(-half, -half, TILE_VISUAL_STYLE.size, TILE_VISUAL_STYLE.size, TILE_VISUAL_STYLE.radius)
       .strokeRoundedRect(-half, -half, TILE_VISUAL_STYLE.size, TILE_VISUAL_STYLE.size, TILE_VISUAL_STYLE.radius);
     this.marker.clear();
-    if (this.state === "selected") {
-      const inset = 2;
-      const start = -half + inset + borderWidth / 2;
-      this.marker.lineStyle(2, TILE_VISUAL_STYLE.selectedBorder, 1).beginPath()
-        .moveTo(start, start + 9).lineTo(start, start).lineTo(start + 9, start).strokePath();
-    } else if (this.state === "hint") {
+    if (this.state === "hint") {
       this.marker.lineStyle(1, TILE_VISUAL_STYLE.hintBorder, 1)
         .strokeRoundedRect(-half + 5, -half + 5, TILE_VISUAL_STYLE.size - 10, TILE_VISUAL_STYLE.size - 10,
           TILE_VISUAL_STYLE.radius - 3);

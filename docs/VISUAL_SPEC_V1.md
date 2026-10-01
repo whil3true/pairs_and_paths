@@ -145,7 +145,7 @@ All HEX values are sRGB. RGB is given as `r,g,b`. Alpha tokens are stated separa
 
 ### 4.3 Colour-blind safety
 
-- Selected = teal border + inset corner marker.
+- Selected = full `state.selectedFill` + teal border; no corner marker/check/notch.
 - Hint = gold double border + synchronized pulse on both endpoints.
 - Completed = check glyph + success tint.
 - Locked = lock glyph + desaturated fill.
@@ -333,7 +333,7 @@ All button states change both geometry/position and colour. Hover is an enhancem
 |---|---|---|---|---|
 | Default | role default | 2 px structural | normal label | 100% |
 | Pressed | darker or selected fill | translate 1–2 px | unchanged | 100% |
-| Selected | `state.selectedFill` | 3 px teal + inset corner notch/dot | optional check | 100% |
+| Selected | `state.selectedFill` | 3 px teal; no corner marker/notch | no check | 100% |
 | Active | role default | teal leading edge or border | active label | 100% |
 | Hint | `state.hintFill` optional | 3 px gold double ring | paired bulb/spark marker | 100% |
 | Disabled | pale teal/stone | soft border | disabled glyph if meaningful | content ≥70%; never opacity alone |
@@ -366,13 +366,14 @@ Rectangular pre-stages use the same center and pitch. Do not resize tiles or art
 
 - Outer frame extends `8 px` beyond content bounds.
 - Outer radius `22 px`; inner opening radius `16 px`.
+- An `8 px border.strong` inner-edge stroke follows the exact content bounds above the artwork and below route, blockers, and tiles, making the rounded opening explicit without changing gameplay bounds.
 - Fill `border.strong`; optional subtle paper-toned outer stroke `2 px #B8AA93`.
 - `shadow.card` only on the frame, never on the artwork itself.
 - Maximum frame at 7×7 is `464×464`, bounds `8..472` × `188..652`.
 
 ### 10.3 Interior
 
-- Final Stage with artwork: artwork fills the exact board content bounds, square, no crop/stretch, no global blur, no tint. Frame clips it to `16 px` inner radius.
+- Final Stage with artwork: artwork fills the exact board content bounds, square, no crop/stretch, no global blur, no tint. Gameplay clips it to a `16 px` rounded opening and renders the frame inner edge above it. The source remains an unchanged square; Full View and Reward use its complete square composition.
 - Pre-stage/no-art: fill `surface.board`, with a very subtle paper noise or 4% darker edge vignette. No fake preview artwork.
 - Empty cell on final Stage: fully reveals artwork. No empty-cell outline.
 - Empty cell on pre-stage: no hard square. Optional inset well at ≤8% charcoal alpha to retain spatial legibility; must disappear visually before resembling a tile.
@@ -383,7 +384,7 @@ Rectangular pre-stages use the same center and pitch. Do not resize tiles or art
 
 - 4×4 and 5×5 get no decorative enlargement; retain centered negative space.
 - 6×6 and 7×7 use identical frame construction.
-- Multi-stage backing sheets: `surface.elevated`/`surface.board`, `2 px border.soft`, existing 8 px padding and 7 px layer offsets; at most two sheets. They communicate stages, not stacked spatial boards.
+- Multi-stage backing sheets: `surface.elevated`/`surface.board`, `2 px border.soft`, existing 8 px padding, horizontal offset `0`, and downward vertical offset `7 px` per layer; at most two sheets. The stack stays centered on the board X axis. It communicates stages, not stacked spatial boards.
 
 ### 10.5 Artwork readability rule
 
@@ -397,14 +398,14 @@ The board must pass with a bright, dark, and busy artwork. Tile and route recogn
 - Fill: `surface.card` at **100% opacity**. This is the production default; artwork never shows through the symbol area.
 - Radius: `12 px`.
 - Border: `2 px border.strong`.
-- Internal symbol safe box: `38×38 px` default; absolute maximum painted extent `42×42 px`.
+- Painted symbol target: approximately `36–40 px`; absolute maximum painted extent approximately `42×42 px`. PNG canvas display size is a separate presentation property (section 12.1).
 - Default shadow: none; allow the tile depth shadow from section 7 only if low-brightness QA requires it.
 
 States:
 
 - Default: base specification.
 - Pressed: scale to `0.96` around center for 70–90 ms; fill `#F4EEE2`.
-- Selected: `3 px primary.teal`; add `2 px` inset teal corner marker at top-left; keep symbol unchanged.
+- Selected: full `state.selectedFill`, `3 px primary.teal` border, unchanged symbol, no marker/check/notch, and no scale.
 - Hint: `3 px state.hint` outer ring plus a second `1 px` inner ring; optional `state.hintFill` wash up to 35%. No teal marker.
 - Removed: do not leave a card ghost. Route completes, then card/symbol scale to `0.88` and fade to zero; resulting cell is fully empty.
 - Disabled is not a normal tile state. Input locks must not visually grey the board during 900 ms Hint or route animation.
@@ -426,6 +427,7 @@ States:
 - Perspective: frontal or shallow three-quarter consistently; no mix of isometric and side-view objects.
 - Light: upper-left, very restrained. No cast shadow outside the symbol silhouette.
 - Padding: minimum `7 px` from tile edge; preferred painted box `36–40 px`.
+- Production prepared-canvas PNGs own their transparent authored padding. Runtime displays the complete square canvas at `56×56 px`, centered, preserving aspect ratio and adding no tint, crop, stretch, or second `38 px` canvas reduction. Legacy placeholder canvases retain the temporary normalized `38×38 px` treatment until replacement. Canvas display size is not the painted silhouette size; production painted extent remains targeted at `36–40 px` and approximately `≤42 px` absolute.
 - Visual weight: painted area target `38–52%` of the 56×56 card.
 - Grayscale rule: every pair remains distinguishable after desaturation and 256→56→28 px reduction.
 - Do not assign identity by family colour. Up to 22 types can appear together.
@@ -515,7 +517,7 @@ Semantics remain exactly: highlight both endpoint tiles for `900 ms`; no route, 
 - Both endpoints receive the same synchronized treatment.
 - Optional fill: `state.hintFill` at 35% over tile fill; symbols remain full contrast.
 - Pulse: two restrained scale cycles `1.00 → 1.035 → 1.00`, approximately `360 ms` each, then a quiet hold/fade to the 900 ms boundary.
-- Add a small gold corner sparkle/notch distinct from the teal selected marker.
+- A final gold sparkle/notch decision is deferred to the dedicated Hint phase; Selected has no corner marker.
 - Existing manual selection clears before Hint, so selected teal and Hint gold never stack.
 - Reduced motion: no scaling; rings appear instantly, hold, and disappear at 900 ms.
 - Hint button remains static; only endpoint tiles animate.
@@ -658,10 +660,18 @@ If no curated artwork title exists, omit the title and preserve the spacing as b
 
 ### 20.2 Transition
 
-- After final pair removal, allow the board artwork to remain unobstructed for `450–650 ms`.
-- Crossfade/scale into the clean 400×400 reward frame over `280–360 ms`.
-- Continue enters after the artwork, with no coin, stars, confetti storm, streak, chest, or count-up. A direct Gallery action is deferred and must not be introduced as a visual-only change.
-- Continue follows existing reward → Complete flow unless a later explicitly approved product change merges them. This specification does not change semantics.
+Future implementation direction (not part of Phase 2B.1):
+
+1. The route completes and the last pair disappears.
+2. Clean artwork remains unobstructed inside the board for roughly `450–650 ms`.
+3. The board/frame begins to fade and the gameplay background receives a restrained dim overlay rather than a hard cut to black.
+4. Artwork smoothly scales and moves from its gameplay board position into the `400×400` Reward frame.
+5. The Reward frame becomes radius approximately `20 px` with gold treatment.
+6. Heading, metadata, and Continue enter only after the artwork transition.
+7. No coins, stars, confetti, economy, streak, chest, or count-up is introduced.
+8. Continue preserves the current Reward → Complete semantics; a direct Gallery action remains deferred.
+
+This is one continuous transformation from gameplay artwork into Reward artwork, never an abrupt black-screen replacement. After the initial clean reveal, a future implementation may use approximately `280–360 ms` for the artwork/frame transition; easing remains open until implementation and device QA.
 
 ---
 
@@ -1171,7 +1181,7 @@ Do not design or source audio in this phase.
 | 7×7 density | symbol search fatigue | 56 px opaque cards; 38–40 px filled silhouettes; limited detail | Level 80, 22 types, timed find tasks |
 | 22 symbol types | confusing identities | grayscale silhouettes; confusion-pair matrix; no colour identity | 56/28 px contact sheets; pair naming test |
 | Locked/current/completed | status ambiguity | lock/check/pointer glyphs plus fill/border | grayscale screenshot review |
-| Hint vs selected | both look highlighted | selected teal single border + marker; Hint gold double ring + paired pulse | 900 ms observation, colour simulation |
+| Hint vs selected | both look highlighted | selected full pale-teal fill + teal single border and no marker; Hint gold double ring + paired pulse | 900 ms observation, colour simulation |
 | Blocker vs tile | dark card mistaken for tile | chipped terrain silhouette, relief lock, stone planes, no symbol card | grayscale peripheral test |
 | Route on bright/dark art | line disappears | 11 px cream halo + 5 px teal core | bright/dark/busy pilot artworks |
 | Touch targets | mis-taps | min 48×48 and 8 px separation | Android tap-grid/manual thumb reach |

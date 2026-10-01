@@ -5,7 +5,8 @@ import test from "node:test";
 
 import { BoardLayout, getVisibleBackingCount } from "../.test-dist/game/BoardLayout.js";
 import {
-  BOARD_FRAME_PADDING, BOARD_SHEET_OFFSET, BOARD_VISUAL_STYLE, getBoardContentBounds, getBoardFrameBounds,
+  BOARD_FRAME_PADDING, BOARD_INNER_EDGE_WIDTH, BOARD_SHEET_OFFSET_X, BOARD_SHEET_OFFSET_Y,
+  BOARD_VISUAL_STYLE, getBoardContentBounds, getBoardFrameBounds,
 } from "../.test-dist/game/BoardVisualPolicy.js";
 import { isSymbolGalleryRequested, parseDebugStart } from "../.test-dist/game/DebugStart.js";
 import {
@@ -17,8 +18,10 @@ import {
   createLevel, getChapterNumber, getLevelConfig, hasNextLevel, levelSeed,
   MULTI_STAGE_LEVELS, createLevelStage, getLevelStageConfigs, getStageClearOutcome, getStageCount, preStageSeed,
 } from "../.test-dist/game/LevelSequence.js";
-import { getTileSymbol, TILE_SYMBOLS } from "../.test-dist/game/TileSymbols.js";
-import { TILE_SYMBOL_TARGET_SIZE, TILE_VISUAL_STYLE } from "../.test-dist/game/TileVisual.js";
+import {
+  getTileSymbol, LEGACY_SYMBOL_DISPLAY_SIZE, PRODUCTION_SYMBOL_DISPLAY_SIZE, TILE_SYMBOLS,
+} from "../.test-dist/game/TileSymbols.js";
+import { TILE_VISUAL_STYLE } from "../.test-dist/game/TileVisual.js";
 import {
   computeContainedSquarePlacement, getLevelArtwork, isArtworkRevealStage, isArtworkUnlocked, LEVEL_ARTWORK,
 } from "../.test-dist/game/LevelArtwork.js";
@@ -227,7 +230,13 @@ test("tile symbol catalog implements the deterministic 30-entry production mappi
     const prefix = first.artwork === "production-pilot"
       ? "assets/production-pilot/symbols/" : "assets/symbols/";
     assert.equal(first.assetPath, `${prefix}${first.name}.png`);
+    assert.equal(first.displaySize, first.artwork === "production-pilot"
+      ? PRODUCTION_SYMBOL_DISPLAY_SIZE : LEGACY_SYMBOL_DISPLAY_SIZE);
   }
+  assert.ok(TILE_SYMBOLS.filter(({ artwork }) => artwork === "production-pilot")
+    .every(({ displaySize }) => displaySize === 56));
+  assert.ok(TILE_SYMBOLS.filter(({ artwork }) => artwork === "legacy-placeholder")
+    .every(({ displaySize }) => displaySize === 38));
   assert.throws(() => getTileSymbol(0), RangeError);
   assert.throws(() => getTileSymbol(TILE_SYMBOLS.length + 1), RangeError);
 });
@@ -662,7 +671,10 @@ test("production board and tile visual policies protect frozen geometry and toke
   assert.deepEqual([getBoardContentBounds(rectangular).centerX, getBoardContentBounds(rectangular).centerY], [240, 420]);
   assert.equal(rectangular.pitch, 64);
   assert.equal(BOARD_FRAME_PADDING, 8);
-  assert.equal(BOARD_SHEET_OFFSET, 7);
+  assert.equal(BOARD_SHEET_OFFSET_X, 0);
+  assert.equal(BOARD_SHEET_OFFSET_Y, 7);
+  assert.equal(BOARD_INNER_EDGE_WIDTH, 8);
+  assert.equal(BOARD_VISUAL_STYLE.innerEdgeWidth, 8);
   assert.equal(BOARD_VISUAL_STYLE.outerRadius, 22);
   assert.equal(BOARD_VISUAL_STYLE.innerRadius, 16);
   assert.equal(BOARD_VISUAL_STYLE.frameFill, VISUAL_COLORS.border.strong.phaser);
@@ -671,9 +683,13 @@ test("production board and tile visual policies protect frozen geometry and toke
   assert.equal(TILE_VISUAL_STYLE.fill, VISUAL_COLORS.surface.card.phaser);
   assert.equal(TILE_VISUAL_STYLE.border, VISUAL_COLORS.border.strong.phaser);
   assert.equal(TILE_VISUAL_STYLE.selectedBorder, VISUAL_COLORS.primary.teal.phaser);
+  assert.equal(TILE_VISUAL_STYLE.selectedFill, VISUAL_COLORS.state.selectedFill.phaser);
+  assert.equal(TILE_VISUAL_STYLE.emphasizedBorderWidth, 3);
+  assert.equal(TILE_VISUAL_STYLE.selectedMarker, false);
   assert.equal(TILE_VISUAL_STYLE.pressedFill, VISUAL_COLORS.state.pressedFill.phaser);
   assert.equal(TILE_VISUAL_STYLE.pressedDuration, 80);
-  assert.equal(TILE_SYMBOL_TARGET_SIZE, 38);
+  assert.equal(PRODUCTION_SYMBOL_DISPLAY_SIZE, 56);
+  assert.equal(LEGACY_SYMBOL_DISPLAY_SIZE, 38);
 });
 
 test("stage stack backing count communicates remaining stages", () => {
@@ -682,6 +698,13 @@ test("stage stack backing count communicates remaining stages", () => {
   assert.equal(getVisibleBackingCount(2, 3), 0);
   assert.equal(getVisibleBackingCount(0, 2), 1);
   assert.equal(getVisibleBackingCount(0, 1), 0);
+  const offsets = (stageIndex, stageCount) => Array.from(
+    { length: getVisibleBackingCount(stageIndex, stageCount) },
+    (_, index) => [(index + 1) * BOARD_SHEET_OFFSET_X, (index + 1) * BOARD_SHEET_OFFSET_Y],
+  );
+  assert.deepEqual(offsets(0, 3), [[0, 7], [0, 14]]);
+  assert.deepEqual(offsets(1, 3), [[0, 7]]);
+  assert.deepEqual(offsets(2, 3), []);
 });
 
 test("smaller boards remain centered in the same safe play area", () => {

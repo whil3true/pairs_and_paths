@@ -2,7 +2,9 @@ import { BoardLayout } from "./BoardLayout.js";
 import { BORDERS, COMPONENT_RADII, VISUAL_COLORS } from "./VisualTokens.js";
 
 export const BOARD_FRAME_PADDING = 8;
-export const BOARD_SHEET_OFFSET = 7;
+export const BOARD_SHEET_OFFSET_X = 0;
+export const BOARD_SHEET_OFFSET_Y = 7;
+export const BOARD_INNER_EDGE_WIDTH = 8;
 
 export interface VisualBounds {
   readonly left: number;
@@ -38,7 +40,9 @@ export const getBoardFrameBounds = (layout: BoardLayout): VisualBounds => {
 
 export const BOARD_VISUAL_STYLE = Object.freeze({
   framePadding: BOARD_FRAME_PADDING,
-  sheetOffset: BOARD_SHEET_OFFSET,
+  sheetOffsetX: BOARD_SHEET_OFFSET_X,
+  sheetOffsetY: BOARD_SHEET_OFFSET_Y,
+  innerEdgeWidth: BOARD_INNER_EDGE_WIDTH,
   outerRadius: COMPONENT_RADII.boardOuter,
   innerRadius: COMPONENT_RADII.boardInner,
   borderWidth: BORDERS.structural,
