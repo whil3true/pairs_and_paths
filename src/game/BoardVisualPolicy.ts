@@ -4,7 +4,14 @@ import { BORDERS, COMPONENT_RADII, VISUAL_COLORS } from "./VisualTokens.js";
 export const BOARD_FRAME_PADDING = 8;
 export const BOARD_SHEET_OFFSET_X = 0;
 export const BOARD_SHEET_OFFSET_Y = 7;
-export const BOARD_INNER_EDGE_WIDTH = 8;
+export const BOARD_SHEET_SHADE_ALPHA = Object.freeze([0, 0.10, 0.18] as const);
+
+export const getBackingSheetShadeAlpha = (depth: number): number => {
+  if (!Number.isInteger(depth) || depth < 0 || depth >= BOARD_SHEET_SHADE_ALPHA.length) {
+    throw new RangeError(`Board sheet depth must be 0..${BOARD_SHEET_SHADE_ALPHA.length - 1}`);
+  }
+  return BOARD_SHEET_SHADE_ALPHA[depth]!;
+};
 
 export interface VisualBounds {
   readonly left: number;
@@ -42,7 +49,6 @@ export const BOARD_VISUAL_STYLE = Object.freeze({
   framePadding: BOARD_FRAME_PADDING,
   sheetOffsetX: BOARD_SHEET_OFFSET_X,
   sheetOffsetY: BOARD_SHEET_OFFSET_Y,
-  innerEdgeWidth: BOARD_INNER_EDGE_WIDTH,
   outerRadius: COMPONENT_RADII.boardOuter,
   innerRadius: COMPONENT_RADII.boardInner,
   borderWidth: BORDERS.structural,
@@ -50,4 +56,5 @@ export const BOARD_VISUAL_STYLE = Object.freeze({
   interiorFill: VISUAL_COLORS.surface.board.phaser,
   backingFill: VISUAL_COLORS.surface.elevated.phaser,
   backingBorder: VISUAL_COLORS.border.soft.phaser,
+  sheetShade: VISUAL_COLORS.border.strong.phaser,
 });

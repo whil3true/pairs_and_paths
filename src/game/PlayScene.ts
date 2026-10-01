@@ -5,6 +5,7 @@ import type { ProgressStore } from "../progress/ProgressStore.js";
 import { BoardLayout, getVisibleBackingCount } from "./BoardLayout.js";
 import {
   BOARD_SHEET_OFFSET_X, BOARD_SHEET_OFFSET_Y, BOARD_VISUAL_STYLE, getBoardContentBounds, getBoardFrameBounds,
+  getBackingSheetShadeAlpha,
 } from "./BoardVisualPolicy.js";
 import type { PlayStartData } from "./SceneStart.js";
 import { createLevelStage, getStageClearOutcome, getStageCount, hasNextLevel } from "./LevelSequence.js";
@@ -20,6 +21,11 @@ const keyOf = ({ col, row }: GridPoint): string => `${col},${row}`;
 const samePoint = (left: GridPoint, right: GridPoint): boolean =>
   left.col === right.col && left.row === right.row;
 
+interface BackingSheetVisual {
+  readonly root: Phaser.GameObjects.Container;
+  readonly shade: Phaser.GameObjects.Graphics;
+}
+
 export class PlayScene extends Phaser.Scene {
   private board!: Board;
   private layout!: BoardLayout;
@@ -33,7 +39,7 @@ export class PlayScene extends Phaser.Scene {
   private stageStackVisual: Phaser.GameObjects.Container | null = null;
   private currentBoardVisual: Phaser.GameObjects.Container | null = null;
   private frontSheet: Phaser.GameObjects.Graphics | null = null;
-  private nextSheet: Phaser.GameObjects.Graphics | null = null;
+  private nextSheet: BackingSheetVisual | null = null;
   private levelText!: Phaser.GameObjects.Text;
   private remainingText!: Phaser.GameObjects.Text;
   private seedText!: Phaser.GameObjects.Text;
@@ -160,7 +166,6 @@ export class PlayScene extends Phaser.Scene {
     this.renderStageStack(stageCount);
     this.currentBoardVisual = this.add.container(0, 0).setDepth(10);
     this.renderArtwork();
-    this.renderBoardInnerEdge();
     this.route = this.add.graphics().setDepth(2);
     this.currentBoardVisual.add(this.route);
     this.renderBoard();
@@ -179,7 +184,10 @@ export class PlayScene extends Phaser.Scene {
   private destroyBoardVisuals(): void {
     this.clearHintFeedback(false);
     if (this.frontSheet !== null) this.tweens.killTweensOf(this.frontSheet);
-    if (this.nextSheet !== null) this.tweens.killTweensOf(this.nextSheet);
+    if (this.nextSheet !== null) {
+      this.tweens.killTweensOf(this.nextSheet.root);
+      this.tweens.killTweensOf(this.nextSheet.shade);
+    }
     if (this.stageStackVisual !== null) this.tweens.killTweensOf(this.stageStackVisual);
     if (this.currentBoardVisual !== null) this.tweens.killTweensOf(this.currentBoardVisual);
     this.stageStackVisual?.destroy(true);
@@ -202,6 +210,9 @@ export class PlayScene extends Phaser.Scene {
     const placement = computeContainedSquarePlacement(
       this.layout.boardLeft, this.layout.boardTop, width, height,
     );
+    const apertureBacking = this.add.graphics().setDepth(-1)
+      .fillStyle(BOARD_VISUAL_STYLE.frameFill, 1)
+      .fillRect(placement.x, placement.y, placement.size, placement.size);
     const image = this.add.image(
       placement.x + placement.size / 2,
       placement.y + placement.size / 2,
@@ -211,7 +222,7 @@ export class PlayScene extends Phaser.Scene {
       .fillRoundedRect(placement.x, placement.y, placement.size, placement.size, BOARD_VISUAL_STYLE.innerRadius)
       .setVisible(false);
     image.setMask(clip.createGeometryMask());
-    this.currentBoardVisual!.add([image, clip]);
+    this.currentBoardVisual!.add([apertureBacking, image, clip]);
     this.currentArtworkVisual = image;
   }
 
@@ -219,15 +230,24 @@ export class PlayScene extends Phaser.Scene {
     const frame = getBoardFrameBounds(this.layout);
     const content = getBoardContentBounds(this.layout);
     const backingCount = getVisibleBackingCount(this.currentStageIndex, stageCount);
-    const sheets: Phaser.GameObjects.Graphics[] = [];
+    const sheets: Phaser.GameObjects.GameObject[] = [];
     for (let depth = backingCount; depth >= 1; depth -= 1) {
-      const sheet = this.add.graphics()
-        .setPosition(depth * BOARD_SHEET_OFFSET_X, depth * BOARD_SHEET_OFFSET_Y)
+      const base = this.add.graphics()
         .fillStyle(BOARD_VISUAL_STYLE.backingFill, 1)
         .lineStyle(BOARD_VISUAL_STYLE.borderWidth, BOARD_VISUAL_STYLE.backingBorder, 1)
         .fillRoundedRect(frame.left, frame.top, frame.width, frame.height, BOARD_VISUAL_STYLE.outerRadius)
         .strokeRoundedRect(frame.left, frame.top, frame.width, frame.height, BOARD_VISUAL_STYLE.outerRadius);
-      sheets.push(sheet);
+      const shade = this.add.graphics()
+        .fillStyle(BOARD_VISUAL_STYLE.sheetShade, 1)
+        .fillRoundedRect(frame.left, frame.top, frame.width, frame.height, BOARD_VISUAL_STYLE.outerRadius)
+        .setAlpha(getBackingSheetShadeAlpha(depth));
+      const sheet: BackingSheetVisual = {
+        root: this.add.container(
+          depth * BOARD_SHEET_OFFSET_X, depth * BOARD_SHEET_OFFSET_Y, [base, shade],
+        ),
+        shade,
+      };
+      sheets.push(sheet.root);
       if (depth === 1) this.nextSheet = sheet;
     }
     this.frontSheet = this.add.graphics()
@@ -237,14 +257,6 @@ export class PlayScene extends Phaser.Scene {
       .fillRoundedRect(content.left, content.top, content.width, content.height, BOARD_VISUAL_STYLE.innerRadius);
     sheets.push(this.frontSheet);
     this.stageStackVisual = this.add.container(0, 0, sheets).setDepth(1);
-  }
-
-  private renderBoardInnerEdge(): void {
-    const content = getBoardContentBounds(this.layout);
-    const edge = this.add.graphics().setDepth(1)
-      .lineStyle(BOARD_VISUAL_STYLE.innerEdgeWidth, BOARD_VISUAL_STYLE.frameFill, 1)
-      .strokeRoundedRect(content.left, content.top, content.width, content.height, BOARD_VISUAL_STYLE.innerRadius);
-    this.currentBoardVisual!.add(edge);
   }
 
   private renderBoard(): void {
@@ -414,7 +426,11 @@ export class PlayScene extends Phaser.Scene {
     });
     if (this.nextSheet !== null) {
       this.tweens.add({
-        targets: this.nextSheet, y: `-=${BOARD_SHEET_OFFSET_Y}`,
+        targets: this.nextSheet.root, y: `-=${BOARD_SHEET_OFFSET_Y}`,
+        duration: 220, ease: "Quad.InOut",
+      });
+      this.tweens.add({
+        targets: this.nextSheet.shade, alpha: getBackingSheetShadeAlpha(0),
         duration: 220, ease: "Quad.InOut",
       });
     }

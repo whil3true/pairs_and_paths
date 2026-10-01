@@ -5,8 +5,8 @@ import test from "node:test";
 
 import { BoardLayout, getVisibleBackingCount } from "../.test-dist/game/BoardLayout.js";
 import {
-  BOARD_FRAME_PADDING, BOARD_INNER_EDGE_WIDTH, BOARD_SHEET_OFFSET_X, BOARD_SHEET_OFFSET_Y,
-  BOARD_VISUAL_STYLE, getBoardContentBounds, getBoardFrameBounds,
+  BOARD_FRAME_PADDING, BOARD_SHEET_OFFSET_X, BOARD_SHEET_OFFSET_Y, BOARD_SHEET_SHADE_ALPHA,
+  BOARD_VISUAL_STYLE, getBackingSheetShadeAlpha, getBoardContentBounds, getBoardFrameBounds,
 } from "../.test-dist/game/BoardVisualPolicy.js";
 import { isSymbolGalleryRequested, parseDebugStart } from "../.test-dist/game/DebugStart.js";
 import {
@@ -673,8 +673,8 @@ test("production board and tile visual policies protect frozen geometry and toke
   assert.equal(BOARD_FRAME_PADDING, 8);
   assert.equal(BOARD_SHEET_OFFSET_X, 0);
   assert.equal(BOARD_SHEET_OFFSET_Y, 7);
-  assert.equal(BOARD_INNER_EDGE_WIDTH, 8);
-  assert.equal(BOARD_VISUAL_STYLE.innerEdgeWidth, 8);
+  assert.equal("innerEdgeWidth" in BOARD_VISUAL_STYLE, false);
+  assert.equal((BoardLayout.CELL_PITCH - BoardLayout.TILE_SIZE) / 2, 4);
   assert.equal(BOARD_VISUAL_STYLE.outerRadius, 22);
   assert.equal(BOARD_VISUAL_STYLE.innerRadius, 16);
   assert.equal(BOARD_VISUAL_STYLE.frameFill, VISUAL_COLORS.border.strong.phaser);
@@ -705,6 +705,27 @@ test("stage stack backing count communicates remaining stages", () => {
   assert.deepEqual(offsets(0, 3), [[0, 7], [0, 14]]);
   assert.deepEqual(offsets(1, 3), [[0, 7]]);
   assert.deepEqual(offsets(2, 3), []);
+});
+
+test("stage sheet shade follows current visual depth rather than stage identity", () => {
+  assert.deepEqual(BOARD_SHEET_SHADE_ALPHA, [0, 0.10, 0.18]);
+  const shades = [0, 1, 2].map(getBackingSheetShadeAlpha);
+  assert.deepEqual(shades, [0, 0.10, 0.18]);
+  assert.ok(shades[2] > shades[1] && shades[1] > shades[0]);
+  assert.throws(() => getBackingSheetShadeAlpha(3), RangeError);
+
+  const stageShades = (stageIndex, stageCount) => [
+    getBackingSheetShadeAlpha(0),
+    ...Array.from(
+      { length: getVisibleBackingCount(stageIndex, stageCount) },
+      (_, index) => getBackingSheetShadeAlpha(index + 1),
+    ),
+  ];
+  assert.deepEqual(stageShades(0, 2), [0, 0.10]);
+  assert.deepEqual(stageShades(1, 2), [0]);
+  assert.deepEqual(stageShades(0, 3), [0, 0.10, 0.18]);
+  assert.deepEqual(stageShades(1, 3), [0, 0.10]);
+  assert.deepEqual(stageShades(2, 3), [0]);
 });
 
 test("smaller boards remain centered in the same safe play area", () => {
