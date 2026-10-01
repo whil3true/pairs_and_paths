@@ -166,6 +166,7 @@ export class PlayScene extends Phaser.Scene {
     this.renderStageStack(stageCount);
     this.currentBoardVisual = this.add.container(0, 0).setDepth(10);
     this.renderArtwork();
+    this.renderFrameOverlay();
     this.route = this.add.graphics().setDepth(2);
     this.currentBoardVisual.add(this.route);
     this.renderBoard();
@@ -224,6 +225,42 @@ export class PlayScene extends Phaser.Scene {
     image.setMask(clip.createGeometryMask());
     this.currentBoardVisual!.add([apertureBacking, image, clip]);
     this.currentArtworkVisual = image;
+  }
+
+  private renderFrameOverlay(): void {
+    const frame = getBoardFrameBounds(this.layout);
+    const content = getBoardContentBounds(this.layout);
+    const outlineInset = BOARD_VISUAL_STYLE.borderWidth / 2;
+    const textureWidth = frame.width + BOARD_VISUAL_STYLE.borderWidth;
+    const textureHeight = frame.height + BOARD_VISUAL_STYLE.borderWidth;
+    const ringSource = this.make.graphics(undefined, false)
+      .fillStyle(BOARD_VISUAL_STYLE.frameFill, 1)
+      .lineStyle(BOARD_VISUAL_STYLE.borderWidth, BOARD_VISUAL_STYLE.frameBorder, 1)
+      .fillRoundedRect(
+        outlineInset, outlineInset, frame.width, frame.height, BOARD_VISUAL_STYLE.outerRadius,
+      )
+      .strokeRoundedRect(
+        outlineInset, outlineInset, frame.width, frame.height, BOARD_VISUAL_STYLE.outerRadius,
+      );
+    const opening = this.make.graphics(undefined, false)
+      .fillStyle(0xffffff, 1)
+      .fillRoundedRect(
+        content.left - frame.left + outlineInset,
+        content.top - frame.top + outlineInset,
+        content.width,
+        content.height,
+        BOARD_VISUAL_STYLE.innerRadius,
+      );
+    const ring = this.add.renderTexture(
+      frame.left - outlineInset,
+      frame.top - outlineInset,
+      textureWidth,
+      textureHeight,
+    ).setOrigin(0).setDepth(1);
+    ring.draw(ringSource).erase(opening);
+    ringSource.destroy();
+    opening.destroy();
+    this.currentBoardVisual!.add(ring);
   }
 
   private renderStageStack(stageCount: number): void {

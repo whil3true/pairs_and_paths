@@ -677,7 +677,12 @@ test("production board and tile visual policies protect frozen geometry and toke
   assert.equal((BoardLayout.CELL_PITCH - BoardLayout.TILE_SIZE) / 2, 4);
   assert.equal(BOARD_VISUAL_STYLE.outerRadius, 22);
   assert.equal(BOARD_VISUAL_STYLE.innerRadius, 16);
-  assert.equal(BOARD_VISUAL_STYLE.frameFill, VISUAL_COLORS.border.strong.phaser);
+  assert.equal(BOARD_VISUAL_STYLE.borderWidth, 2);
+  assert.equal(BOARD_VISUAL_STYLE.frameFill, VISUAL_COLORS.surface.elevated.phaser);
+  assert.equal(BOARD_VISUAL_STYLE.frameBorder, VISUAL_COLORS.border.strong.phaser);
+  assert.equal(BOARD_VISUAL_STYLE.backingFill, VISUAL_COLORS.surface.elevated.phaser);
+  assert.equal(BOARD_VISUAL_STYLE.frameFill, BOARD_VISUAL_STYLE.backingFill);
+  assert.notEqual(BOARD_VISUAL_STYLE.frameFill, VISUAL_COLORS.border.strong.phaser);
   assert.equal(TILE_VISUAL_STYLE.size, 56);
   assert.equal(TILE_VISUAL_STYLE.radius, 12);
   assert.equal(TILE_VISUAL_STYLE.fill, VISUAL_COLORS.surface.card.phaser);
