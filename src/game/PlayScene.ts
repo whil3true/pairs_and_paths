@@ -46,6 +46,7 @@ export class PlayScene extends Phaser.Scene {
   private route!: Phaser.GameObjects.Graphics;
   private routeTween: Phaser.Tweens.Tween | null = null;
   private routeHoldTimer: Phaser.Time.TimerEvent | null = null;
+  private initialStageSettleTimer: Phaser.Time.TimerEvent | null = null;
   private removalTween: Phaser.Tweens.Tween | null = null;
   private stageStackVisual: Phaser.GameObjects.Container | null = null;
   private currentBoardVisual: Phaser.GameObjects.Container | null = null;
@@ -109,6 +110,7 @@ export class PlayScene extends Phaser.Scene {
     for (const object of [this.pauseControl.container, this.hintControl.container,
       this.levelText, this.remainingText, this.stageText]) object.setDepth(30);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.clearInitialStageSettle();
       this.clearHintFeedback();
       this.hidePause();
       this.artworkPresentation?.destroy(true);
@@ -146,7 +148,7 @@ export class PlayScene extends Phaser.Scene {
     this.destroyBoardVisuals();
     this.setGameplayHudVisible(true);
     this.selected = null;
-    this.inputLocked = animateIn;
+    this.inputLocked = true;
 
     const level = createLevelStage(this.currentLevelNumber, this.currentStageIndex);
     this.board = level.board;
@@ -173,10 +175,24 @@ export class PlayScene extends Phaser.Scene {
         targets: [this.stageStackVisual, this.currentBoardVisual], x: 0, y: 0, alpha: 1,
         duration: 140, ease: "Quad.Out", onComplete: () => { this.inputLocked = false; },
       });
+    } else {
+      this.initialStageSettleTimer = this.time.delayedCall(
+        GAMEPLAY_FEEDBACK.initialStageSettleDuration,
+        () => {
+          this.initialStageSettleTimer = null;
+          this.inputLocked = false;
+        },
+      );
     }
   }
 
+  private clearInitialStageSettle(): void {
+    this.initialStageSettleTimer?.remove(false);
+    this.initialStageSettleTimer = null;
+  }
+
   private destroyBoardVisuals(): void {
+    this.clearInitialStageSettle();
     this.clearHintFeedback();
     this.routeTween?.stop();
     this.routeTween = null;

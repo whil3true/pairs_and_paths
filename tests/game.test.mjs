@@ -23,7 +23,7 @@ import {
 import {
   getTileSymbol, LEGACY_SYMBOL_DISPLAY_SIZE, PRODUCTION_SYMBOL_DISPLAY_SIZE, TILE_SYMBOLS,
 } from "../.test-dist/game/TileSymbols.js";
-import { TILE_VISUAL_STYLE } from "../.test-dist/game/TileVisual.js";
+import { resolveTileFill, TILE_VISUAL_STYLE } from "../.test-dist/game/TileVisual.js";
 import {
   computeContainedSquarePlacement, getLevelArtwork, isArtworkRevealStage, isArtworkUnlocked, LEVEL_ARTWORK,
 } from "../.test-dist/game/LevelArtwork.js";
@@ -134,6 +134,7 @@ test("partial route progression follows physical length for arbitrary polylines"
 });
 
 test("gameplay feedback policy freezes route, Hint, removal, and blocker values", () => {
+  assert.equal(GAMEPLAY_FEEDBACK.initialStageSettleDuration, 80);
   assert.equal(GAMEPLAY_FEEDBACK.route.haloWidth, 11);
   assert.equal(GAMEPLAY_FEEDBACK.route.coreWidth, 5);
   assert.deepEqual([
@@ -154,6 +155,17 @@ test("gameplay feedback policy freezes route, Hint, removal, and blocker values"
   assert.equal(BLOCKER_VISUAL_STYLE.edgeWidth, 3);
   assert.equal(BLOCKER_VISUAL_STYLE.fill, VISUAL_COLORS.blocker.fill.phaser);
   assert.equal(BLOCKER_VISUAL_STYLE.edge, VISUAL_COLORS.blocker.dark.phaser);
+});
+
+test("semantic tile states take precedence over transient pressed fill", () => {
+  assert.equal(resolveTileFill("default", false), TILE_VISUAL_STYLE.fill);
+  assert.equal(resolveTileFill("default", true), TILE_VISUAL_STYLE.pressedFill);
+  assert.equal(resolveTileFill("selected", false), TILE_VISUAL_STYLE.selectedFill);
+  assert.equal(resolveTileFill("selected", true), TILE_VISUAL_STYLE.selectedFill);
+  for (const state of ["hint", "blocked"]) {
+    assert.equal(resolveTileFill(state, false), TILE_VISUAL_STYLE.fill);
+    assert.equal(resolveTileFill(state, true), TILE_VISUAL_STYLE.fill);
+  }
 });
 
 const validatePilotWebp = (webp, path, expectedSize) => {

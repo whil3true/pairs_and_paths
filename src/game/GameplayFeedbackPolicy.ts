@@ -3,6 +3,7 @@ import { BORDERS, MOTION, VISUAL_COLORS } from "./VisualTokens.js";
 
 export const GAMEPLAY_FEEDBACK = Object.freeze({
   route: Object.freeze({ haloWidth: 11, coreWidth: 5, entryDuration: 180, holdDuration: 40, fadeDuration: 60 }),
+  initialStageSettleDuration: 80,
   blockedDuration: 160,
   removal: Object.freeze({ duration: 180, scale: 0.88 }),
   hint: Object.freeze({ duration: MOTION.hint, pulseHalfDuration: 180, pulseRepeats: 1, scalePeak: 1.035,
