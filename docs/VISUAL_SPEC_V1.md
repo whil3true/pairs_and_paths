@@ -259,7 +259,7 @@ Rules:
 
 Assignments:
 
-- button `16`; icon button `14`; tile card `12`; level card `16`; chapter banner `20`; artwork/thumbnail `16`; modal `24`; board outer frame `22`; no-art interior `16`; gameplay artwork aperture `20`.
+- button `16`; icon button `14`; tile card `12`; level card `16`; chapter banner `20`; artwork/thumbnail `16`; modal `24`; board outer frame `24`; no-art interior `16`; gameplay artwork aperture `14`.
 - Do not create pill buttons unless the content is a small status chip. Rounded does not mean capsule everywhere.
 
 ### 7.2 Borders
@@ -365,15 +365,15 @@ Rectangular pre-stages use the same center and pitch. Do not resize tiles or art
 ### 10.2 Frame
 
 - Outer frame extends `8 px` beyond content bounds.
-- Outer radius `22 px`; the gameplay artwork aperture radius is `20 px`.
-- The physical frame uses direct procedural `surface.elevated` cover geometry, with a thin `2 px border.strong` structural contour only on its outer boundary. For artwork, one Graphics overlay owns the four overlap strips and four rounded corner wedges; the production aperture requires neither RenderTexture erase nor an artwork mask. Its `2 px` inset and `20 px` radius are unchanged, and it has no dark inner bezel.
-- Only when artwork exists, its aperture is inset `2 px` from every content edge, so the frame overlaps the underlying artwork by `2 px`. A no-art board retains the full content opening, inset `0`, radius `16 px`, and the full `4 px` outer-tile clearance. This presentation-only artwork overlap does not alter cells, hit zones, routes, blockers, or tiles, which render above the overlay.
+- Outer radius `24 px`; the gameplay artwork aperture radius is `14 px`.
+- For artwork, one Graphics overlay owns only the procedural `surface.elevated` overlap strips and four rounded corner wedges. It has no dark external structural outline or dark inner bezel, and requires neither RenderTexture erase nor an artwork mask.
+- All board and tile corner curves share a center `16 px` from the content corner: outer frame `-8 + 24`, no-art opening `0 + 16`, artwork aperture `2 + 14`, and corner tile `4 + 12`. The no-art frame therefore has constant straight and curved thickness `24 - 16 = 8 px`; the artwork frame has thickness `24 - 14 = 10 px`, matching its `8 px` frame padding plus intentional `2 px` artwork overlap. This presentation-only overlap does not alter cells, hit zones, routes, blockers, or tiles, which render above the overlay.
 - `shadow.card` only on the frame, never on the artwork itself.
 - Maximum frame at 7×7 is `464×464`, bounds `8..472` × `188..652`.
 
 ### 10.3 Interior
 
-- Final Stage with artwork: the unchanged square artwork fills the exact board content bounds, with no crop/stretch, global blur, or tint. One continuous warm procedural frame overlay renders above it; the inset `20 px`-radius aperture visibly covers the square source edges and corners. A matching `surface.elevated` backing prevents corner artifacts. The overlay alone owns the visible gameplay boundary; gameplay objects render above it, while Full View and Reward retain the complete square source composition.
+- Final Stage with artwork: the unchanged square artwork fills the exact board content bounds, with no crop/stretch, global blur, or tint. One continuous warm procedural frame overlay renders above it; the inset `14 px`-radius aperture visibly covers the square source edges and corners. A matching `surface.elevated` backing prevents corner artifacts. The overlay alone owns the visible gameplay boundary; gameplay objects render above it, while Full View and Reward retain the complete square source composition.
 - Pre-stage/no-art: fill `surface.board`, with a very subtle paper noise or 4% darker edge vignette. No fake preview artwork.
 - Empty cell on final Stage: fully reveals artwork. No empty-cell outline.
 - Empty cell on pre-stage: no hard square. Optional inset well at ≤8% charcoal alpha to retain spatial legibility; must disappear visually before resembling a tile.
@@ -385,7 +385,7 @@ Rectangular pre-stages use the same center and pitch. Do not resize tiles or art
 - 4×4 and 5×5 get no decorative enlargement; retain centered negative space.
 - 4×4 through 7×7 and rectangular pre-stages use identical fixed-radius vector corner construction; only straight edge lengths vary. No raster frame is stretched between board sizes.
 - The current flat-material frame remains procedural geometry. If a future Work/art phase introduces a bitmap frame with paper grain, painted edges, decorative corners, or baked shading, it must use NineSlice / 9-slice scaling so its corners do not stretch; NineSlice is not part of the current implementation.
-- Multi-stage backing sheets and the active frame share one warm `surface.elevated` base material. Buried sheets have no explicit border or outline: repeated stroke contours are forbidden because they visually stack. They retain the existing 8 px padding, horizontal offset `0`, and downward vertical offset `7 px` per layer; at most two sheets. Neutral `border.strong` shade overlays express current physical depth: front 0%, depth 1 10%, and depth 2 18%, so displacement plus shade communicates depth. Promotion removes depth shade as a sheet becomes the front; shade belongs to current physical depth, never Stage identity. The stack stays centered on the board X axis and communicates stages, not stacked spatial boards.
+- Multi-stage backing sheets and the active frame share one warm `surface.elevated` base material. Buried sheets have no explicit border or outline: repeated stroke contours are forbidden because they visually stack. They retain the existing 8 px padding, horizontal offset `0`, and downward vertical offset `7 px` per layer; at most two sheets. Neutral `border.strong` shade overlays express current physical depth: front 0%, depth 1 16%, and depth 2 28%, so displacement plus shade communicates depth. Promotion removes depth shade as a sheet becomes the front; shade belongs to current physical depth, never Stage identity. The stack stays centered on the board X axis and communicates stages, not stacked spatial boards.
 
 ### 10.5 Artwork readability rule
 

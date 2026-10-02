@@ -3,10 +3,10 @@ import { BORDERS, COMPONENT_RADII, VISUAL_COLORS } from "./VisualTokens.js";
 
 export const BOARD_FRAME_PADDING = 8;
 export const BOARD_ARTWORK_APERTURE_INSET = 2;
-export const BOARD_ARTWORK_APERTURE_RADIUS = 20;
+export const BOARD_ARTWORK_APERTURE_RADIUS = 14;
 export const BOARD_SHEET_OFFSET_X = 0;
 export const BOARD_SHEET_OFFSET_Y = 7;
-export const BOARD_SHEET_SHADE_ALPHA = Object.freeze([0, 0.10, 0.18] as const);
+export const BOARD_SHEET_SHADE_ALPHA = Object.freeze([0, 0.16, 0.28] as const);
 
 export const getBackingSheetShadeAlpha = (depth: number): number => {
   if (!Number.isInteger(depth) || depth < 0 || depth >= BOARD_SHEET_SHADE_ALPHA.length) {
