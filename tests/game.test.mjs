@@ -46,8 +46,8 @@ import {
 import { getChapterTitle, getUiStrings, UI_STRINGS } from "../.test-dist/game/Localization.js";
 import { CHAPTER_PRESENTATIONS, getChapterPresentation, getLevelChapterPresentation } from "../.test-dist/game/ChapterPresentation.js";
 import { getChapterBannerManifest } from "../.test-dist/game/ChapterBannerVisual.js";
-import { formatPrimaryMenuAction, MAIN_MENU_LAYOUT, progressRatio } from "../.test-dist/game/MainMenuVisualPolicy.js";
-import { canNavigateChapter, getLevelCardBounds, LEVEL_SELECT_LAYOUT, resolveLevelCardVisual } from "../.test-dist/game/LevelSelectVisualPolicy.js";
+import { formatPrimaryMenuAction, getMainMenuBrandLayout, MAIN_MENU_LAYOUT, progressRatio } from "../.test-dist/game/MainMenuVisualPolicy.js";
+import { canNavigateChapter, getLevelCardBounds, getLevelCardGeometry, LEVEL_SELECT_LAYOUT, resolveLevelCardVisual } from "../.test-dist/game/LevelSelectVisualPolicy.js";
 import { getPrimaryMenuAction } from "../.test-dist/game/CampaignNavigation.js";
 
 const progressAt = (completedThroughLevel) => ({ version: 1, completedThroughLevel });
@@ -94,6 +94,21 @@ test("main menu production geometry, progress, and localized primary actions are
   }
 });
 
+test("main menu bilingual brand composition cannot overlap tagline or preview", () => {
+  for (const locale of ["ru", "en"]) {
+    const layout = getMainMenuBrandLayout(locale);
+    const brandBottom = layout.titleTops.at(-1) + layout.titleLineHeight;
+    if (layout.taglineTop === null) assert.ok(brandBottom < MAIN_MENU_LAYOUT.preview.y);
+    else {
+      assert.ok(brandBottom < layout.taglineTop);
+      assert.ok(layout.taglineTop + layout.taglineLineHeight < MAIN_MENU_LAYOUT.preview.y);
+    }
+  }
+  assert.equal(getMainMenuBrandLayout("ru").taglineTop, null);
+  assert.equal(getMainMenuBrandLayout("ru").titleRole, "screenTitle");
+  assert.equal(getMainMenuBrandLayout("en").titleRole, "displayBrand");
+});
+
 test("chapter presentation and banner manifests are deterministic campaign-wide", () => {
   assert.equal(CHAPTER_PRESENTATIONS.length, 10);
   assert.deepEqual(CHAPTER_PRESENTATIONS.map(({ number }) => number), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
@@ -116,6 +131,9 @@ test("level select geometry, navigation boundaries, and semantic cards are stabl
   assert.deepEqual(cards[4], { x: 384, y: 352, width: 72, height: 72 });
   assert.deepEqual(cards[5], { x: 24, y: 448, width: 72, height: 72 });
   assert.deepEqual(cards[9], { x: 384, y: 448, width: 72, height: 72 });
+  assert.deepEqual(getLevelCardGeometry(cards[0]), {
+    centerX: 60, centerY: 388, interactiveWidth: 72, interactiveHeight: 72,
+  });
   assert.deepEqual(canNavigateChapter(1), { previous: false, next: true });
   assert.deepEqual(canNavigateChapter(10), { previous: true, next: false });
   assert.deepEqual(["completed", "available", "locked"].map((state) => {

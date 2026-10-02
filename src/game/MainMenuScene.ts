@@ -4,7 +4,7 @@ import { createChapterBanner } from "./ChapterBannerVisual.js";
 import { getChapterNumber, TOTAL_LEVELS } from "./LevelSequence.js";
 import { configureLogicalCamera } from "./Display.js";
 import { DEFAULT_LOCALE, getChapterTitle, getUiStrings, type SupportedLocale } from "./Localization.js";
-import { formatPrimaryMenuAction, MAIN_MENU_LAYOUT, progressRatio } from "./MainMenuVisualPolicy.js";
+import { formatPrimaryMenuAction, getMainMenuBrandLayout, MAIN_MENU_LAYOUT, progressRatio } from "./MainMenuVisualPolicy.js";
 import { playStartData } from "./SceneStart.js";
 import { createCard, createPrimaryButton, createSecondaryButton, createUiText } from "./UiPrimitives.js";
 import { BORDERS, COMPONENT_RADII, VISUAL_COLORS } from "./VisualTokens.js";
@@ -26,18 +26,19 @@ export class MainMenuScene extends Phaser.Scene {
     const strings = getUiStrings(this.locale);
     const previewChapter = getChapterNumber(primary.levelNumber);
 
+    const brandLayout = getMainMenuBrandLayout(this.locale);
     const titleLines = this.locale === "ru" ? strings.gameTitle.split(": ") : [strings.gameTitle];
-    titleLines.forEach((line, index) => createUiText(this, this.renderScale, 240, 26 + index * 34, line,
-      "displayBrand", { align: "center" }).setOrigin(0.5, 0));
-    createUiText(this, this.renderScale, 240, 88, strings.tagline, "hudSecondary", {
-      color: VISUAL_COLORS.text.secondary.hex, align: "center",
-    }).setOrigin(0.5);
+    titleLines.forEach((line, index) => createUiText(this, this.renderScale, 240, brandLayout.titleTops[index]!, line,
+      brandLayout.titleRole, { align: "center" }).setOrigin(0.5, 0));
+    if (brandLayout.taglineTop !== null) createUiText(this, this.renderScale, 240, brandLayout.taglineTop,
+      strings.tagline, "hudSecondary", { color: VISUAL_COLORS.text.secondary.hex, align: "center" }).setOrigin(0.5, 0);
 
     const preview = MAIN_MENU_LAYOUT.preview;
     createChapterBanner(this, previewChapter, preview);
     this.add.graphics().fillStyle(VISUAL_COLORS.surface.elevated.phaser, 0.94)
-      .fillRoundedRect(preview.x + 16, preview.y + preview.height - 72, 250, 56, 12);
-    createUiText(this, this.renderScale, preview.x + 32, preview.y + preview.height - 62,
+      .fillRoundedRect(preview.x + 16, preview.y + 16, 112, 38, 12)
+      .fillRoundedRect(preview.x + 16, preview.y + preview.height - 64, 250, 48, 12);
+    createUiText(this, this.renderScale, preview.x + 32, preview.y + 25,
       strings.chapterLabel(previewChapter), "smallMetadata", { color: VISUAL_COLORS.text.secondary.hex });
     createUiText(this, this.renderScale, preview.x + 32, preview.y + preview.height - 39,
       getChapterTitle(this.locale, previewChapter), "levelTitle");

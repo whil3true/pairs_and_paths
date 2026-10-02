@@ -16,6 +16,22 @@ export const getLevelCardBounds = (index: number) => {
   return Object.freeze({ x: x + column * (cardSize + columnGap), y: y + row * (cardSize + rowGap), width: cardSize, height: cardSize });
 };
 
+export interface LevelCardGeometry {
+  readonly centerX: number;
+  readonly centerY: number;
+  readonly interactiveWidth: number;
+  readonly interactiveHeight: number;
+}
+
+/** Matches Phaser's centered display-origin mapping for a sized Container. */
+export const getLevelCardGeometry = (bounds: Readonly<{ x: number; y: number; width: number; height: number }>): LevelCardGeometry =>
+  Object.freeze({
+    centerX: bounds.x + bounds.width / 2,
+    centerY: bounds.y + bounds.height / 2,
+    interactiveWidth: bounds.width,
+    interactiveHeight: bounds.height,
+  });
+
 export interface LevelCardVisual {
   readonly fill: number; readonly border: number; readonly borderWidth: number;
   readonly affordance: "check" | "tab" | "lock"; readonly selectable: boolean; readonly numberSize: 20 | 22;

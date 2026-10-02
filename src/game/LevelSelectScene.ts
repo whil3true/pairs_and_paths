@@ -6,7 +6,7 @@ import { CHAPTER_COUNT, TOTAL_LEVELS } from "./LevelSequence.js";
 import { configureLogicalCamera } from "./Display.js";
 import { DEFAULT_LOCALE, getChapterTitle, getUiStrings, type SupportedLocale } from "./Localization.js";
 import {
-  canNavigateChapter, getLevelCardBounds, LEVEL_SELECT_LAYOUT, resolveLevelCardVisual,
+  canNavigateChapter, getLevelCardBounds, getLevelCardGeometry, LEVEL_SELECT_LAYOUT, resolveLevelCardVisual,
 } from "./LevelSelectVisualPolicy.js";
 import { playStartData } from "./SceneStart.js";
 import { createIconButton, createSecondaryButton, createUiText } from "./UiPrimitives.js";
@@ -62,12 +62,13 @@ export class LevelSelectScene extends Phaser.Scene {
     const [first, last] = getChapterLevelRange(this.chapter);
     for (let level = first; level <= last; level += 1) {
       const bounds = getLevelCardBounds(level - first);
+      const geometry = getLevelCardGeometry(bounds);
       const state = getLevelState(this.progress, level);
       const visual = resolveLevelCardVisual(state);
-      const card = this.createLevelCard(bounds.x, bounds.y, level, state, false);
+      const card = this.createLevelCard(geometry.centerX, geometry.centerY, level, state, false);
       add(card);
       if (visual.selectable) card.setInteractive(
-        new Phaser.Geom.Rectangle(0, 0, bounds.width, bounds.height), Phaser.Geom.Rectangle.Contains,
+        new Phaser.Geom.Rectangle(0, 0, geometry.interactiveWidth, geometry.interactiveHeight), Phaser.Geom.Rectangle.Contains,
       ).input!.cursor = "pointer";
       if (visual.selectable) card.on("pointerup", () => this.scene.start("PlayScene", playStartData(level)));
     }
@@ -79,28 +80,29 @@ export class LevelSelectScene extends Phaser.Scene {
   }
 
   /** focused is a presentation seam for a later keyboard-navigation owner. */
-  private createLevelCard(x: number, y: number, level: number, state: ReturnType<typeof getLevelState>, focused: boolean): Phaser.GameObjects.Container {
+  private createLevelCard(centerX: number, centerY: number, level: number, state: ReturnType<typeof getLevelState>, focused: boolean): Phaser.GameObjects.Container {
     const size = LEVEL_SELECT_LAYOUT.grid.cardSize;
+    const half = size / 2;
     const visual = resolveLevelCardVisual(state);
     const graphics = this.add.graphics();
     if (focused) graphics.lineStyle(3, VISUAL_COLORS.primary.teal.phaser)
-      .strokeRoundedRect(-4, -4, size + 8, size + 8, COMPONENT_RADII.levelCard + 4);
-    graphics.fillStyle(visual.fill).fillRoundedRect(0, 0, size, size, COMPONENT_RADII.levelCard)
+      .strokeRoundedRect(-half - 4, -half - 4, size + 8, size + 8, COMPONENT_RADII.levelCard + 4);
+    graphics.fillStyle(visual.fill).fillRoundedRect(-half, -half, size, size, COMPONENT_RADII.levelCard)
       .lineStyle(visual.borderWidth, visual.border)
-      .strokeRoundedRect(0, 0, size, size, COMPONENT_RADII.levelCard);
-    const number = createUiText(this, this.renderScale, size / 2, size / 2, String(level), "sectionHeading", {
+      .strokeRoundedRect(-half, -half, size, size, COMPONENT_RADII.levelCard);
+    const number = createUiText(this, this.renderScale, 0, 0, String(level), "sectionHeading", {
       color: state === "locked" ? VISUAL_COLORS.text.tertiary.hex : VISUAL_COLORS.text.primary.hex, align: "center",
     }).setOrigin(0.5);
     if (visual.numberSize === 20) number.setFontSize(20);
     if (visual.affordance === "check") graphics.lineStyle(2, VISUAL_COLORS.state.success.phaser)
-      .beginPath().moveTo(53, 16).lineTo(57, 20).lineTo(64, 11).strokePath();
+      .beginPath().moveTo(17, -20).lineTo(21, -16).lineTo(28, -25).strokePath();
     else if (visual.affordance === "tab") graphics.fillStyle(VISUAL_COLORS.accent.gold.phaser)
-      .fillTriangle(30, 72, 42, 72, 36, 64);
+      .fillTriangle(-6, 36, 6, 36, 0, 28);
     else {
-      graphics.lineStyle(2, VISUAL_COLORS.state.locked.phaser).strokeRoundedRect(53, 14, 11, 10, 2)
-        .beginPath().arc(58.5, 14, 4, Math.PI, 0).strokePath();
+      graphics.lineStyle(2, VISUAL_COLORS.state.locked.phaser).strokeRoundedRect(17, -22, 11, 10, 2)
+        .beginPath().arc(22.5, -22, 4, Math.PI, 0).strokePath();
     }
-    return this.add.container(x, y, [graphics, number]).setSize(size, size);
+    return this.add.container(centerX, centerY, [graphics, number]).setSize(size, size);
   }
 
   private createChapterArrow(x: number, pointsRight: boolean, enabled: boolean, objects: Phaser.GameObjects.GameObject[]): void {
