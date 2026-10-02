@@ -35,6 +35,12 @@ spam protection, blocker and stage isolation, cleanup on Menu/Replay/Next, and d
 the Complete overlay. Hint does not auto-remove or show a route and remains unlimited; Shuffle is
 not part of this test scope.
 
+Phase 3 pure tests additionally freeze the compact gameplay HUD bounds, Russian pair grammar,
+route widths and 120/40/60 ms phase total, arbitrary-turn physical-length route interpolation,
+900 ms Hint pulse policy, 180 ms removal policy, and blocker footprint/token ownership. Renderer
+appearance remains manual QA: use Levels 27 and 30 for HUD rows, a bent legal route, and synchronized
+Hint/removal feedback; use Levels 11 and 30 Stage 3 for opaque procedural blocker terrain.
+
 Generator tests check exact pair multiplicity, deterministic regeneration, non-adjacent product pairs, witness replay, solver replay, metrics, and product density. Campaign tests freeze the 100/10/10 constants, chapter boundaries, progression-band coverage, and important early band transitions; reject out-of-range levels; check next-level boundaries; and check all 100 levels for validity, solver replay, non-adjacency, deterministic replay, and distinct consecutive snapshots. Levels 1–4 have at least two initial legal moves; Level 5 has exactly one because its frozen seed and pair count now use the approved 4×4 final geometry; every campaign Level has at least one initial legal move. This Level 5 result is a known deterministic geometry-migration consequence, not a generator failure. `npm run simulate -- --count 10000` retains the deterministic 7×7/20-pair generator quality gate.
 
 `npm run analyze:progression -- --samples 300` is the heavier manual calibration command. It compiles and invokes production generation, validation, solving, and solution measurement without Phaser or a browser. It prints candidate-profile failure counts and objective solver-path metrics plus exact ten-level chapter aggregates for the campaign. `npm run analyze:progression -- --campaign-only` skips the heavy candidate sweep and reports exact campaign validation, milestones, range/chapter aggregates, cumulative removals, and the longest forced-start run. See `PROGRESSION_REPORT.md` for the recorded calibration run.

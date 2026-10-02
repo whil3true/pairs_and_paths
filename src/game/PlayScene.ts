@@ -16,6 +16,11 @@ import {
 import { getHintMove } from "./Hint.js";
 import { computeContainedSquarePlacement, getLevelArtwork, isArtworkRevealStage } from "./LevelArtwork.js";
 import { TileVisual } from "./TileVisual.js";
+import { createBlockerVisual } from "./BlockerVisual.js";
+import { GAMEPLAY_HUD, formatRemainingPairs } from "./GameplayHudPolicy.js";
+import { GAMEPLAY_FEEDBACK, partialPolyline } from "./GameplayFeedbackPolicy.js";
+import { createSecondaryButton, createUiText, type UiButton } from "./UiPrimitives.js";
+import { MOTION, VISUAL_COLORS } from "./VisualTokens.js";
 
 const keyOf = ({ col, row }: GridPoint): string => `${col},${row}`;
 const samePoint = (left: GridPoint, right: GridPoint): boolean =>
@@ -34,23 +39,25 @@ export class PlayScene extends Phaser.Scene {
   private hintActive = false;
   private hintedPoints: readonly [GridPoint, GridPoint] | null = null;
   private hintTimer: Phaser.Time.TimerEvent | null = null;
+  private hintTween: Phaser.Tweens.Tween | null = null;
   private readonly tiles = new Map<string, TileVisual>();
   private route!: Phaser.GameObjects.Graphics;
+  private routeTween: Phaser.Tweens.Tween | null = null;
+  private routeHoldTimer: Phaser.Time.TimerEvent | null = null;
+  private removalTween: Phaser.Tweens.Tween | null = null;
   private stageStackVisual: Phaser.GameObjects.Container | null = null;
   private currentBoardVisual: Phaser.GameObjects.Container | null = null;
   private frontSheet: Phaser.GameObjects.Graphics | null = null;
   private nextSheet: BackingSheetVisual | null = null;
   private levelText!: Phaser.GameObjects.Text;
   private remainingText!: Phaser.GameObjects.Text;
-  private seedText!: Phaser.GameObjects.Text;
+  private stageText!: Phaser.GameObjects.Text;
   private completeOverlay: Phaser.GameObjects.Container | null = null;
   private artworkPresentation: Phaser.GameObjects.Container | null = null;
   private currentArtworkVisual: Phaser.GameObjects.Image | null = null;
   private pauseOverlay: Phaser.GameObjects.Container | null = null;
-  private pauseButton!: Phaser.GameObjects.Rectangle;
-  private pauseText!: Phaser.GameObjects.Text;
-  private hintButton!: Phaser.GameObjects.Rectangle;
-  private hintText!: Phaser.GameObjects.Text;
+  private pauseControl!: UiButton;
+  private hintControl!: UiButton;
   private currentLevelNumber = 1;
   private currentStageIndex = 0;
   private persistenceEnabled = true;
@@ -81,34 +88,26 @@ export class PlayScene extends Phaser.Scene {
 
   create(): void {
     configureLogicalCamera(this, this.renderScale);
-    setHiDpiTextResolution(this.add.text(240, 30, "Pairs & Paths", {
-      color: "#f7fbff", fontFamily: "Arial, sans-serif", fontSize: "32px", fontStyle: "bold",
-    }).setOrigin(0.5), this.renderScale);
-    this.levelText = setHiDpiTextResolution(this.add.text(240, 70, "", {
-      color: "#dceaff", fontFamily: "Arial, sans-serif", fontSize: "20px", fontStyle: "bold",
-    }).setOrigin(0.5), this.renderScale);
-    this.remainingText = setHiDpiTextResolution(this.add.text(240, 98, "", {
-      color: "#bcd1ec", fontFamily: "Arial, sans-serif", fontSize: "20px",
-    }).setOrigin(0.5), this.renderScale);
-    this.seedText = setHiDpiTextResolution(this.add.text(240, 766, "", {
-      color: "#6f86a5", fontFamily: "Arial, sans-serif", fontSize: "13px",
-    }).setOrigin(0.5), this.renderScale);
-    this.pauseButton = this.add.rectangle(54, 34, 84, 38, 0x243c5c).setStrokeStyle(1, 0x91acce)
-      .setInteractive({ useHandCursor: true }).on("pointerdown", () => this.showPause());
-    this.pauseText = setHiDpiTextResolution(this.add.text(54, 34, "Pause", {
-      color: "#dceaff", fontFamily: "Arial, sans-serif", fontSize: "16px",
-    }).setOrigin(0.5), this.renderScale);
-    this.pauseButton.setDepth(30);
-    this.pauseText.setDepth(31);
-    this.hintButton = this.add.rectangle(426, 34, 84, 38, 0x243c5c).setStrokeStyle(1, 0x91acce)
-      .setInteractive({ useHandCursor: true }).on("pointerdown", () => this.showHint());
-    this.hintText = setHiDpiTextResolution(this.add.text(426, 34, "Hint", {
-      color: "#dceaff", fontFamily: "Arial, sans-serif", fontSize: "16px",
-    }).setOrigin(0.5), this.renderScale);
-    this.hintButton.setDepth(30);
-    this.hintText.setDepth(31);
+    this.pauseControl = createSecondaryButton(this, this.renderScale, {
+      x: GAMEPLAY_HUD.pause.centerX, y: GAMEPLAY_HUD.pause.centerY,
+      width: GAMEPLAY_HUD.pause.width, height: GAMEPLAY_HUD.pause.height,
+      label: "Пауза", onActivate: () => this.showPause(),
+    });
+    this.hintControl = createSecondaryButton(this, this.renderScale, {
+      x: GAMEPLAY_HUD.hint.centerX, y: GAMEPLAY_HUD.hint.centerY,
+      width: GAMEPLAY_HUD.hint.width, height: GAMEPLAY_HUD.hint.height,
+      label: "Подсказка", onActivate: () => this.showHint(),
+    });
+    this.levelText = createUiText(this, this.renderScale, GAMEPLAY_HUD.statusLeftX, GAMEPLAY_HUD.statusY,
+      "", "hudPrimary").setOrigin(0, 0);
+    this.remainingText = createUiText(this, this.renderScale, GAMEPLAY_HUD.statusRightX, GAMEPLAY_HUD.statusY,
+      "", "hudPrimary", { align: "right" }).setOrigin(1, 0);
+    this.stageText = createUiText(this, this.renderScale, GAMEPLAY_HUD.stageCenterX, GAMEPLAY_HUD.stageY,
+      "", "hudSecondary", { align: "center" }).setOrigin(0.5, 0);
+    for (const object of [this.pauseControl.container, this.hintControl.container,
+      this.levelText, this.remainingText, this.stageText]) object.setDepth(30);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
-      this.clearHintFeedback(false);
+      this.clearHintFeedback();
       this.hidePause();
       this.artworkPresentation?.destroy(true);
     });
@@ -143,22 +142,15 @@ export class PlayScene extends Phaser.Scene {
     this.artworkPresentation?.destroy(true);
     this.artworkPresentation = null;
     this.destroyBoardVisuals();
-    this.pauseButton.setVisible(true).setInteractive({ useHandCursor: true });
-    this.pauseText.setVisible(true);
-    this.hintButton.setVisible(true).setInteractive({ useHandCursor: true });
-    this.hintText.setVisible(true);
-    this.levelText.setVisible(true);
-    this.remainingText.setVisible(true);
-    this.seedText.setVisible(true);
+    this.setGameplayHudVisible(true);
     this.selected = null;
     this.inputLocked = animateIn;
 
     const level = createLevelStage(this.currentLevelNumber, this.currentStageIndex);
     this.board = level.board;
     const stageCount = getStageCount(this.currentLevelNumber);
-    this.levelText.setText(stageCount === 1 ? `Level ${this.currentLevelNumber}`
-      : `Level ${this.currentLevelNumber} · Stage ${this.currentStageIndex + 1}/${stageCount}`);
-    this.seedText.setText(`Prototype · ${this.platform.displayName} · seed ${level.config.seed}`);
+    this.levelText.setText(`Уровень ${this.currentLevelNumber}`);
+    this.stageText.setText(`Этап ${this.currentStageIndex + 1}/${stageCount}`).setVisible(stageCount > 1);
     this.layout = new BoardLayout({
       sceneWidth: LOGICAL_GAME_WIDTH, sceneHeight: LOGICAL_GAME_HEIGHT,
       boardWidth: this.board.width, boardHeight: this.board.height,
@@ -183,7 +175,13 @@ export class PlayScene extends Phaser.Scene {
   }
 
   private destroyBoardVisuals(): void {
-    this.clearHintFeedback(false);
+    this.clearHintFeedback();
+    this.routeTween?.stop();
+    this.routeTween = null;
+    this.routeHoldTimer?.remove(false);
+    this.routeHoldTimer = null;
+    this.removalTween?.stop();
+    this.removalTween = null;
     if (this.frontSheet !== null) this.tweens.killTweensOf(this.frontSheet);
     if (this.nextSheet !== null) {
       this.tweens.killTweensOf(this.nextSheet.root);
@@ -332,9 +330,7 @@ export class PlayScene extends Phaser.Scene {
       const point = { col, row };
       const { x, y } = this.layout.cellCenter(point);
       if (this.board.isBlocked(point)) {
-        const blockerSize = this.layout.tileSize - 6;
-        const blocker = this.add.rectangle(x, y, blockerSize, blockerSize, 0x26303d, 1)
-          .setStrokeStyle(3, 0x59687a, 1).setDepth(4);
+        const blocker = createBlockerVisual(this, x, y);
         this.currentBoardVisual!.add(blocker);
         continue;
       }
@@ -389,7 +385,7 @@ export class PlayScene extends Phaser.Scene {
     for (const point of [first, second]) {
       this.tiles.get(keyOf(point))?.setState("blocked");
     }
-    this.time.delayedCall(180, () => {
+    this.time.delayedCall(GAMEPLAY_FEEDBACK.blockedDuration, () => {
       this.inputLocked = false;
       this.setSelected(null);
       this.setSelected(second);
@@ -421,13 +417,27 @@ export class PlayScene extends Phaser.Scene {
     for (const point of this.hintedPoints) {
       this.tiles.get(keyOf(point))?.setState("hint");
     }
-    this.hintTimer = this.time.delayedCall(900, () => this.clearHintFeedback(true));
+    const roots = this.hintedPoints.map((point) => this.tiles.get(keyOf(point))?.root)
+      .filter((root): root is Phaser.GameObjects.Container => root !== undefined);
+    if (!this.prefersReducedMotion()) {
+      this.hintTween = this.tweens.add({
+        targets: roots, scaleX: GAMEPLAY_FEEDBACK.hint.scalePeak, scaleY: GAMEPLAY_FEEDBACK.hint.scalePeak,
+        duration: GAMEPLAY_FEEDBACK.hint.pulseHalfDuration, yoyo: true,
+        repeat: GAMEPLAY_FEEDBACK.hint.pulseRepeats, ease: "Sine.InOut",
+      });
+    }
+    this.hintTimer = this.time.delayedCall(GAMEPLAY_FEEDBACK.hint.duration, () => this.clearHintFeedback());
   }
 
-  private clearHintFeedback(restoreStyle: boolean): void {
+  private clearHintFeedback(): void {
     this.hintTimer?.remove(false);
     this.hintTimer = null;
-    if (restoreStyle && this.hintedPoints !== null) {
+    this.hintTween?.stop();
+    this.hintTween = null;
+    if (this.hintedPoints !== null) for (const point of this.hintedPoints) {
+      this.tiles.get(keyOf(point))?.root.setScale(1);
+    }
+    if (this.hintedPoints !== null) {
       for (const point of this.hintedPoints) this.styleTile(point, false);
     }
     this.hintedPoints = null;
@@ -437,37 +447,89 @@ export class PlayScene extends Phaser.Scene {
   private completeMove(move: LegalMove): void {
     this.inputLocked = true;
     this.setSelected(null);
-    this.drawRoute(move.path.points);
-    this.time.delayedCall(220, () => {
+    this.animateRoute(move.path.points, () => {
       this.board = applyMove(this.board, move);
-      this.removeTile(move.start);
-      this.removeTile(move.end);
-      this.route.clear();
-      this.updateRemaining();
-      if (this.tiles.size === 0) this.finishStage();
-      else this.inputLocked = false;
+      this.animateTileRemoval(move.start, move.end, () => {
+        this.updateRemaining();
+        if (this.tiles.size === 0) this.finishStage();
+        else this.inputLocked = false;
+      });
     });
   }
 
-  private drawRoute(points: readonly GridPoint[]): void {
+  private animateRoute(points: readonly GridPoint[], onComplete: () => void): void {
     const mapped = points.map((point) => this.layout.cellCenter(point));
-    this.route.clear().lineStyle(7, 0x152238, 0.85).beginPath();
-    this.route.moveTo(mapped[0]!.x, mapped[0]!.y);
-    mapped.slice(1).forEach(({ x, y }) => this.route.lineTo(x, y));
-    this.route.strokePath().lineStyle(4, 0xffdf5d, 1).beginPath();
-    this.route.moveTo(mapped[0]!.x, mapped[0]!.y);
-    mapped.slice(1).forEach(({ x, y }) => this.route.lineTo(x, y));
-    this.route.strokePath();
+    const state = { progress: 0 };
+    const draw = (): void => this.drawRoute(partialPolyline(mapped, state.progress));
+    draw();
+    this.routeTween = this.tweens.add({
+      targets: state, progress: 1, duration: GAMEPLAY_FEEDBACK.route.entryDuration, ease: "Linear",
+      onUpdate: draw,
+      onComplete: () => {
+        this.routeTween = null;
+        this.routeHoldTimer = this.time.delayedCall(GAMEPLAY_FEEDBACK.route.holdDuration, () => {
+          this.routeHoldTimer = null;
+          this.routeTween = this.tweens.add({
+            targets: this.route, alpha: 0, duration: GAMEPLAY_FEEDBACK.route.fadeDuration, ease: "Linear",
+            onComplete: () => {
+              this.routeTween = null;
+              this.route.clear().setAlpha(1);
+              onComplete();
+            },
+          });
+        });
+      },
+    });
   }
 
-  private removeTile(point: GridPoint): void {
-    const visual = this.tiles.get(keyOf(point));
-    visual?.destroy();
-    this.tiles.delete(keyOf(point));
+  private drawRoute(points: readonly { readonly x: number; readonly y: number }[]): void {
+    this.route.clear();
+    if (points.length === 0) return;
+    const stroke = (width: number, color: number): void => {
+      this.route.lineStyle(width, color, 1).beginPath().moveTo(points[0]!.x, points[0]!.y);
+      points.slice(1).forEach(({ x, y }) => this.route.lineTo(x, y));
+      this.route.strokePath();
+      for (const point of points) this.route.fillStyle(color, 1).fillCircle(point.x, point.y, width / 2);
+    };
+    stroke(GAMEPLAY_FEEDBACK.route.haloWidth, VISUAL_COLORS.route.halo.phaser);
+    stroke(GAMEPLAY_FEEDBACK.route.coreWidth, VISUAL_COLORS.route.core.phaser);
+  }
+
+  private animateTileRemoval(first: GridPoint, second: GridPoint, onComplete: () => void): void {
+    const entries = [first, second].map((point) => [keyOf(point), this.tiles.get(keyOf(point))] as const)
+      .filter((entry): entry is readonly [string, TileVisual] => entry[1] !== undefined);
+    this.removalTween = this.tweens.add({
+      targets: entries.map(([, visual]) => visual.root),
+      scaleX: GAMEPLAY_FEEDBACK.removal.scale, scaleY: GAMEPLAY_FEEDBACK.removal.scale, alpha: 0,
+      duration: GAMEPLAY_FEEDBACK.removal.duration, ease: "Quad.In",
+      onComplete: () => {
+        this.removalTween = null;
+        for (const [key, visual] of entries) {
+          visual.destroy();
+          this.tiles.delete(key);
+        }
+        onComplete();
+      },
+    });
   }
 
   private updateRemaining(): void {
-    this.remainingText.setText(`Pairs remaining: ${this.tiles.size / 2}`);
+    this.remainingText.setText(formatRemainingPairs(this.tiles.size / 2));
+  }
+
+  private prefersReducedMotion(): boolean {
+    return typeof window !== "undefined" && typeof window.matchMedia === "function"
+      && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  }
+
+  private setGameplayHudVisible(visible: boolean): void {
+    this.pauseControl.container.setVisible(visible);
+    this.hintControl.container.setVisible(visible);
+    this.pauseControl.setDisabled(!visible);
+    this.hintControl.setDisabled(!visible);
+    this.levelText.setVisible(visible);
+    this.remainingText.setVisible(visible);
+    this.stageText.setVisible(visible && getStageCount(this.currentLevelNumber) > 1);
   }
 
   private finishStage(): void {
@@ -511,15 +573,9 @@ export class PlayScene extends Phaser.Scene {
       return;
     }
     this.hidePause();
-    this.clearHintFeedback(false);
+    this.clearHintFeedback();
     this.destroyBoardVisuals();
-    this.pauseButton.disableInteractive().setVisible(false);
-    this.pauseText.setVisible(false);
-    this.hintButton.disableInteractive().setVisible(false);
-    this.hintText.setVisible(false);
-    this.levelText.setVisible(false);
-    this.remainingText.setVisible(false);
-    this.seedText.setVisible(false);
+    this.setGameplayHudVisible(false);
     const backdrop = this.add.rectangle(240, 400, 480, 800, 0x07101d, 1).setInteractive();
     const image = this.add.image(240, 382, artwork.fullAssetKey)
       .setDisplaySize(400, 400);
@@ -540,11 +596,8 @@ export class PlayScene extends Phaser.Scene {
 
   private showComplete(): void {
     this.hidePause();
-    this.clearHintFeedback(false);
-    this.pauseButton.disableInteractive().setVisible(false);
-    this.pauseText.setVisible(false);
-    this.hintButton.disableInteractive().setVisible(false);
-    this.hintText.setVisible(false);
+    this.clearHintFeedback();
+    this.setGameplayHudVisible(false);
     const shade = this.add.rectangle(240, 420, 440, 330, 0x0b1220, 0.96).setStrokeStyle(2, 0x7fa8d8);
     const campaignComplete = !hasNextLevel(this.currentLevelNumber);
     const title = setHiDpiTextResolution(this.add.text(240, 315, campaignComplete ? "Campaign complete" : "Complete", {

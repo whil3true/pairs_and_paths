@@ -10,6 +10,12 @@
 
 `PlayScene` owns the current session level number. Next increments it before regeneration; Replay regenerates without changing it. Level 100 instead reports campaign completion and can restart the session at Level 1, never requesting Level 101. `BoardLayout` maps only real cells; route graphics consume arbitrary-length compact polylines. A blocked matching pair receives a brief red stroke before the second tile becomes selection. `src/platform` remains the existing small platform boundary. The project retains plain `tsc`, no bundler, and Phaser 4.2.1.
 
+`PlayScene` also owns the compact gameplay HUD and the lifecycle of route, Hint, blocked-pair, and
+pair-removal feedback. `GameplayHudPolicy` contains only fixed HUD geometry and Russian pair-count
+formatting; `GameplayFeedbackPolicy` contains presentation timing/style constants and physical-length
+partial-polyline math. `BlockerVisual` is a procedural presentation of the existing immutable terrain
+mask. None of these presentation owners changes blocker, path, move, campaign, or Hint-selection semantics.
+
 `BoardLayout` also owns the single campaign-wide presentation scale: a 64 logical px cell pitch and
 56 logical px tile, leaving an 8 px gap. Every existing board and every stage uses these constants;
 dimensions never trigger per-level zoom. The domain maximum is 7×7, which occupies 448×448 in the
@@ -18,7 +24,8 @@ pre-stages may remain rectangular.
 
 `getHintMove(board)` is a pure game-layer policy seam that returns `findLegalMoves(board)[0]` or
 `null`; it neither caches a generator witness nor duplicates pathfinding. `PlayScene` projects that
-current-stage move as two cyan tile outlines for 900 ms. A separate `hintActive` guard blocks tile
+current-stage move as two gold double-ring tile outlines for 900 ms, with synchronized restrained
+pulses unless the browser requests reduced motion. A separate `hintActive` guard blocks tile
 and repeated Hint input without changing transition locking. Board-visual disposal cancels the
 timer before stage replacement, Replay, Next, restart, or shutdown, and completion hides and
 disables the Hint control. Hint has no persistence or economy; Shuffle is not part of v1.

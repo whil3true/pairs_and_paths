@@ -478,6 +478,10 @@ Confusing-pair QA is mandatory for cup/teapot, leaf/feather, star/snowflake, cam
 
 Blocker is terrain, not a tile.
 
+Phase 3 implements the blocker procedurally as one deterministic, fully opaque `56×56` irregular
+stone slab with a clipped corner, `3 px blocker.dark` edge, broad matte planes, restrained cracks and
+a centered `#ECE4D3` closed-lock relief. No raster asset or per-cell randomisation is used.
+
 - Cell footprint: `56×56 px` centered in the same 64 px pitch.
 - Silhouette: irregular squared stone slab with one clipped/chipped corner; radius varies optically around `8 px` but the outer mask is consistent across all blockers.
 - Fill: `blocker.fill`; edge: `3 px blocker.dark`.
@@ -486,13 +490,17 @@ Blocker is terrain, not a tile.
 - Shadow: short inset lower-right shadow plus `0 2 3 rgba(38,56,58,0.25)`; visually heavier than a tile.
 - It is never selectable, never pulses, and never uses family icon colours.
 - On artwork it stays fully opaque. On pre-stage board it must still differ through chipped silhouette, relief glyph, and weight—not dark colour alone.
-- Blocked-pair feedback may draw the existing brief error route/stroke, but the blocker itself does not shake or imply damage.
+- Blocked-pair feedback uses the two endpoint tile danger states for `160 ms`; it draws no route, and the blocker itself does not shake or imply damage.
 
 QA: at 7×7, a user must identify blocker vs tile in grayscale, with peripheral glance, and at 30% screen brightness. `nice-to-have user validation` for 45–64.
 
 ---
 
 ## 14. Route
+
+Phase 3 fixes the production implementation at an `11 px` cream halo and `5 px` teal core. The
+`220 ms` presentation progressively draws by physical polyline length for `120 ms`, holds for
+`40 ms`, then fades for `60 ms`; reinforced circular caps/corners do not alter logical vertices.
 
 - Core: `route.core`.
 - Halo: `route.halo`.
@@ -501,7 +509,7 @@ QA: at 7×7, a user must identify blocker vs tile in grayscale, with peripheral 
 - Joins: round; caps: round; polyline corners use `6 px` visual corner radius where rendering permits without changing logical vertices.
 - Z-order: artwork → empty-cell plane → halo → core → blockers → tile cards/symbols → HUD/modals. Route may terminate visually at selected tile centers but must not paint over symbols.
 - Successful route display: `220 ms` default; acceptable `180–280 ms`.
-- Entry: draw from first endpoint to second over `100–140 ms`; hold `60–80 ms`; fade `60–80 ms`.
+- Entry: draw from first endpoint to second over `120 ms`; hold `40 ms`; fade `60 ms`.
 - Use no particles, sparks, moving dots, or gold.
 - A route is only successful path feedback. Hint never draws it. Blocked-pair/error feedback uses `state.danger`, no cream halo, and a shorter `160 ms` treatment.
 - Route appearance does not imply any turn limit.
@@ -511,6 +519,10 @@ QA: at 7×7, a user must identify blocker vs tile in grayscale, with peripheral 
 ---
 
 ## 15. Hint
+
+Phase 3 retains the approved `3 px` gold outer border and `1 px` inner ring. Both endpoints pulse in
+sync for two `180 ms` up + `180 ms` down cycles (peak `1.035`), then hold quietly to exactly `900 ms`.
+With `prefers-reduced-motion: reduce`, the rings still hold for `900 ms` but tile scaling is omitted.
 
 Semantics remain exactly: highlight both endpoint tiles for `900 ms`; no route, no removal, no repeated input.
 
@@ -528,6 +540,10 @@ Pass condition: endpoint pair is identifiable in a 900 ms glance in deuteranopia
 ---
 
 ## 16. Gameplay HUD
+
+Phase 3 implements the compact top action row with separate Russian Level, remaining-pairs, and
+multi-stage-only Stage text. Active gameplay contains no brand and no visible seed, platform, or
+debug metadata.
 
 ### 16.1 Brand presence
 
