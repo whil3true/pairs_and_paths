@@ -20,7 +20,7 @@ export const VISUAL_COLORS = Object.freeze({
     danger: color("#A5423F"), pressedFill: color("#F4EEE2"),
   }),
   route: Object.freeze({ core: color("#0B7475"), halo: color("#FFF3D2") }),
-  blocker: Object.freeze({ fill: color("#62645E"), dark: color("#3F4543") }),
+  blocker: Object.freeze({ fill: color("#62645E"), dark: color("#3F4543"), relief: color("#ECE4D3") }),
   border: Object.freeze({ strong: color("#344346"), soft: color("#C9BEAA") }),
   divider: color("#D9CDB8"),
   overlay: Object.freeze({ modal: color("#1C2323", 0.72) }),

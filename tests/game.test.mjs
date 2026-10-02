@@ -34,6 +34,10 @@ import {
   BORDERS, COMPONENT_RADII, MOTION, RADII, SPACING, TYPOGRAPHY, VISUAL_COLORS,
 } from "../.test-dist/game/VisualTokens.js";
 import { resolveButtonVisual } from "../.test-dist/game/UiPolicy.js";
+import { GAMEPLAY_HUD, formatRemainingPairs } from "../.test-dist/game/GameplayHudPolicy.js";
+import {
+  BLOCKER_VISUAL_STYLE, GAMEPLAY_FEEDBACK, partialPolyline,
+} from "../.test-dist/game/GameplayFeedbackPolicy.js";
 
 const progressAt = (completedThroughLevel) => ({ version: 1, completedThroughLevel });
 
@@ -78,6 +82,48 @@ test("button visual policy is deterministic and exposes disabled and focus state
   assert.equal(resolveButtonVisual("primary", "disabled").offsetY, 0);
   assert.equal(resolveButtonVisual("secondary", "disabled").border, VISUAL_COLORS.state.locked.phaser);
   assert.equal(resolveButtonVisual("secondary", "focus").focusRing, true);
+});
+
+test("gameplay HUD policy freezes compact production bounds and Russian pair grammar", () => {
+  assert.deepEqual(GAMEPLAY_HUD.pause, { left: 24, top: 20, width: 104, height: 48, centerX: 76, centerY: 44 });
+  assert.deepEqual(GAMEPLAY_HUD.hint, { left: 352, top: 20, width: 104, height: 48, centerX: 404, centerY: 44 });
+  assert.deepEqual(
+    [GAMEPLAY_HUD.statusLeftX, GAMEPLAY_HUD.statusRightX, GAMEPLAY_HUD.stageCenterX],
+    [24, 456, 240],
+  );
+  for (const [count, word] of [[1, "пара"], [2, "пары"], [4, "пары"], [5, "пар"], [11, "пар"],
+    [21, "пара"], [22, "пары"], [25, "пар"]]) {
+    assert.equal(formatRemainingPairs(count), `Осталось: ${count} ${word}`);
+  }
+});
+
+test("partial route progression follows physical length for arbitrary polylines", () => {
+  const route = [{ x: 0, y: 0 }, { x: 10, y: 0 }, { x: 10, y: 10 }];
+  assert.deepEqual(partialPolyline(route, 0), [{ x: 0, y: 0 }]);
+  assert.deepEqual(partialPolyline(route, 0.25), [{ x: 0, y: 0 }, { x: 5, y: 0 }]);
+  assert.deepEqual(partialPolyline(route, 0.5), [{ x: 0, y: 0 }, { x: 10, y: 0 }]);
+  assert.deepEqual(partialPolyline(route, 0.75), [{ x: 0, y: 0 }, { x: 10, y: 0 }, { x: 10, y: 5 }]);
+  assert.deepEqual(partialPolyline(route, 1), route);
+  assert.deepEqual(partialPolyline([{ x: 0, y: 0 }, { x: 3, y: 0 }, { x: 3, y: 4 }, { x: 1, y: 4 }], 8 / 9),
+    [{ x: 0, y: 0 }, { x: 3, y: 0 }, { x: 3, y: 4 }, { x: 2, y: 4 }]);
+});
+
+test("gameplay feedback policy freezes route, Hint, removal, and blocker values", () => {
+  assert.equal(GAMEPLAY_FEEDBACK.route.haloWidth, 11);
+  assert.equal(GAMEPLAY_FEEDBACK.route.coreWidth, 5);
+  assert.equal(GAMEPLAY_FEEDBACK.route.entryDuration + GAMEPLAY_FEEDBACK.route.holdDuration
+    + GAMEPLAY_FEEDBACK.route.fadeDuration, MOTION.pairRoute);
+  assert.equal(GAMEPLAY_FEEDBACK.hint.duration, 900);
+  assert.equal(GAMEPLAY_FEEDBACK.hint.scalePeak, 1.035);
+  assert.equal(GAMEPLAY_FEEDBACK.hint.movingDuration, 720);
+  assert.equal(GAMEPLAY_FEEDBACK.removal.duration, 180);
+  assert.equal(GAMEPLAY_FEEDBACK.removal.scale, 0.88);
+  assert.ok(GAMEPLAY_FEEDBACK.removal.duration >= MOTION.pairRemovalMin);
+  assert.ok(GAMEPLAY_FEEDBACK.removal.duration <= MOTION.pairRemovalMax);
+  assert.equal(BLOCKER_VISUAL_STYLE.size, 56);
+  assert.equal(BLOCKER_VISUAL_STYLE.edgeWidth, 3);
+  assert.equal(BLOCKER_VISUAL_STYLE.fill, VISUAL_COLORS.blocker.fill.phaser);
+  assert.equal(BLOCKER_VISUAL_STYLE.edge, VISUAL_COLORS.blocker.dark.phaser);
 });
 
 const validatePilotWebp = (webp, path, expectedSize) => {
