@@ -208,6 +208,16 @@ rounded artwork corners; `?debug=1&level=24&stage=1` and `?debug=1&level=30&stag
 corners and depth from displacement plus 16/28% shade without repeated outlines; and `?debug=1&level=27`
 has quiet but readable 1 px default tile edges while Selected, Hint, and Blocked remain prominent.
 
+## Post-P1 Android runtime-atlas QA
+
+On an Android device, inspect `?debug=1&level=27`, `?debug=1&level=30&stage=3`, and
+`?debug=1&level=80&stage=2`. Verify default, pressed, Selected, Hint, blocked-pair, and removal
+presentation; confirm symbols and rounded borders have no crop, blur, seams, or neighbouring-frame
+bleed. Confirm artwork, frame, blockers, route geometry/timing, and stage transitions are unchanged.
+Finally open `?debug=1&symbols=1` and inspect all 30 symbols: production art retains its 56 px
+treatment and legacy art its 38 px treatment. Replay and stage transitions must reuse the same
+runtime atlas rather than creating another texture.
+
 ## Pause flow verification
 
 Phaser overlay pixels are intentionally not unit-tested. At `?debug=1&level=1`, select a tile, open Pause, and verify the selection remains visible while board and Hint input do nothing; Resume must restore interaction with the same board and selection. After removing pairs, check that both Restart level and Exit to menu show confirmation, and that each Cancel returns to Pause without resuming. Confirm Restart produces the original deterministic Level 1 Stage 1 board.
