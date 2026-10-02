@@ -1,6 +1,6 @@
 import { BootScene } from "./game/BootScene.js";
 import { resolveStartupRoute } from "./game/CampaignStartup.js";
-import { isProgressResetRequested, isSymbolGalleryRequested, parseDebugSetProgress, parseDebugStart } from "./game/DebugStart.js";
+import { isProgressResetRequested, isSymbolGalleryRequested, parseDebugLocale, parseDebugSetProgress, parseDebugStart } from "./game/DebugStart.js";
 import { MainMenuScene } from "./game/MainMenuScene.js";
 import { LevelSelectScene } from "./game/LevelSelectScene.js";
 import { PlayScene } from "./game/PlayScene.js";
@@ -26,6 +26,7 @@ else {
 const route = resolveStartupRoute(parseDebugStart(search), isSymbolGalleryRequested(search));
 const automaticRenderScale = computeRenderScale(window.devicePixelRatio || 1);
 const renderScale = isLegacyRenderScaleDebugRequested(search) ? 1 : automaticRenderScale;
+const locale = parseDebugLocale(search);
 
 new Phaser.Game({
   type: Phaser.AUTO,
@@ -33,8 +34,8 @@ new Phaser.Game({
   backgroundColor: VISUAL_COLORS.bg.app.hex,
   scene: [
     new BootScene(route),
-    new MainMenuScene(progressStore, renderScale),
-    new LevelSelectScene(progressStore, renderScale),
+    new MainMenuScene(progressStore, renderScale, locale),
+    new LevelSelectScene(progressStore, renderScale, locale),
     new ArtworkGalleryScene(progressStore, renderScale),
     new ArtworkFullViewScene(progressStore, renderScale),
     new PlayScene(platform, progressStore, renderScale),
