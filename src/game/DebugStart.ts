@@ -1,4 +1,5 @@
 import { getStageCount, TOTAL_LEVELS } from "./LevelSequence.js";
+import { DEFAULT_LOCALE, type SupportedLocale } from "./Localization.js";
 
 export interface DebugStartPosition {
   readonly levelNumber: number;
@@ -48,4 +49,11 @@ export const parseDebugSetProgress = (search: string): number | null => {
   if (value === null || value === "") return null;
   const parsed = parseInteger(value);
   return parsed !== null && parsed >= 0 && parsed <= TOTAL_LEVELS ? parsed : null;
+};
+
+/** Non-persistent locale override for deterministic Phase 4 layout QA only. */
+export const parseDebugLocale = (search: string): SupportedLocale => {
+  const params = new URLSearchParams(search);
+  if (params.get("debug") !== "1") return DEFAULT_LOCALE;
+  return params.get("locale") === "en" ? "en" : DEFAULT_LOCALE;
 };

@@ -10,7 +10,7 @@ import {
   BOARD_VISUAL_STYLE, getBackingSheetShadeAlpha, getBoardArtworkApertureBounds,
   getBoardArtworkApertureCorners, getBoardContentBounds, getBoardFrameBounds, getBoardFrameOpening,
 } from "../.test-dist/game/BoardVisualPolicy.js";
-import { isSymbolGalleryRequested, parseDebugStart } from "../.test-dist/game/DebugStart.js";
+import { isSymbolGalleryRequested, parseDebugLocale, parseDebugStart } from "../.test-dist/game/DebugStart.js";
 import {
   computePortraitFrame, computeRenderScale, isLegacyRenderScaleDebugRequested,
 } from "../.test-dist/game/Display.js";
@@ -43,8 +43,113 @@ import {
   BLOCKER_VISUAL_STYLE, createPolylineMetrics, GAMEPLAY_FEEDBACK, partialPolyline,
   partialPolylineFromMetrics,
 } from "../.test-dist/game/GameplayFeedbackPolicy.js";
+import { getChapterTitle, getUiStrings, UI_STRINGS } from "../.test-dist/game/Localization.js";
+import { CHAPTER_PRESENTATIONS, getChapterPresentation, getLevelChapterPresentation } from "../.test-dist/game/ChapterPresentation.js";
+import { getChapterBannerManifest } from "../.test-dist/game/ChapterBannerVisual.js";
+import { formatPrimaryMenuAction, getMainMenuBrandLayout, MAIN_MENU_LAYOUT, progressRatio } from "../.test-dist/game/MainMenuVisualPolicy.js";
+import { canNavigateChapter, getLevelCardBounds, getLevelCardGeometry, LEVEL_SELECT_LAYOUT, resolveLevelCardVisual } from "../.test-dist/game/LevelSelectVisualPolicy.js";
+import { getPrimaryMenuAction } from "../.test-dist/game/CampaignNavigation.js";
 
 const progressAt = (completedThroughLevel) => ({ version: 1, completedThroughLevel });
+
+test("Phase 4 localization dictionaries have equivalent complete shapes", () => {
+  assert.deepEqual(Object.keys(UI_STRINGS).sort(), ["en", "ru"]);
+  assert.deepEqual(Object.keys(UI_STRINGS.ru).sort(), Object.keys(UI_STRINGS.en).sort());
+  const required = ["gameTitle", "tagline", "play", "continueLevel", "playAgainLevel", "levels", "gallery",
+    "openedProgress", "collectionComplete", "chapterLabel", "chapterHeader", "globalProgress", "backToMenu", "chapterTitles"];
+  assert.deepEqual(Object.keys(UI_STRINGS.ru).sort(), required.sort());
+  assert.equal(UI_STRINGS.ru.chapterTitles.length, 10);
+  assert.equal(UI_STRINGS.en.chapterTitles.length, 10);
+  assert.equal(getUiStrings("ru").continueLevel(30), "Продолжить · Уровень 30");
+  assert.equal(getUiStrings("en").continueLevel(30), "Continue · Level 30");
+  assert.equal(getUiStrings("ru").openedProgress(29, 100), "Открыто 29 из 100");
+  assert.equal(getUiStrings("en").openedProgress(29, 100), "Unlocked 29 of 100");
+});
+
+test("localized chapter names are exact and numbered one through ten", () => {
+  assert.deepEqual(Array.from({ length: 10 }, (_, index) => getChapterTitle("ru", index + 1)), [
+    "Утро дома", "Чай и выпечка", "Цветочные лавки", "Книги и письма", "Сады и дворики",
+    "У моря", "Дороги и станции", "Осенние огни", "Зимние окна", "Тихая магия",
+  ]);
+  assert.deepEqual(Array.from({ length: 10 }, (_, index) => getChapterTitle("en", index + 1)), [
+    "Morning at Home", "Tea & Baking", "Flower Shops", "Books & Letters", "Gardens & Courtyards",
+    "By the Sea", "Roads & Stations", "Autumn Lights", "Winter Windows", "Quiet Magic",
+  ]);
+  for (const invalid of [0, 11, 1.5]) assert.throws(() => getChapterTitle("ru", invalid), RangeError);
+});
+
+test("main menu production geometry, progress, and localized primary actions are stable", () => {
+  assert.deepEqual(MAIN_MENU_LAYOUT.preview, { x: 24, y: 124, width: 432, height: 232 });
+  assert.deepEqual(MAIN_MENU_LAYOUT.primary, { x: 24, y: 380, width: 432, height: 64 });
+  assert.deepEqual(MAIN_MENU_LAYOUT.secondaryLeft, { x: 24, y: 460, width: 208, height: 56 });
+  assert.deepEqual(MAIN_MENU_LAYOUT.secondaryRight, { x: 248, y: 460, width: 208, height: 56 });
+  assert.deepEqual(MAIN_MENU_LAYOUT.progress, { x: 24, y: 540, width: 432, height: 104 });
+  assert.deepEqual([0, 1, 50, 100].map((value) => progressRatio(value, 100)), [0, 0.01, 0.5, 1]);
+  for (const [completed, ru, en, target] of [[0, "Играть", "Play", 1], [17, "Продолжить · Уровень 18", "Continue · Level 18", 18],
+    [100, "Играть снова · Уровень 1", "Play Again · Level 1", 1]]) {
+    const action = getPrimaryMenuAction(progressAt(completed));
+    assert.equal(action.levelNumber, target);
+    assert.equal(formatPrimaryMenuAction(action, UI_STRINGS.ru), ru);
+    assert.equal(formatPrimaryMenuAction(action, UI_STRINGS.en), en);
+  }
+});
+
+test("main menu bilingual brand composition cannot overlap tagline or preview", () => {
+  for (const locale of ["ru", "en"]) {
+    const layout = getMainMenuBrandLayout(locale);
+    const brandBottom = layout.titleTops.at(-1) + layout.titleLineHeight;
+    if (layout.taglineTop === null) assert.ok(brandBottom < MAIN_MENU_LAYOUT.preview.y);
+    else {
+      assert.ok(brandBottom < layout.taglineTop);
+      assert.ok(layout.taglineTop + layout.taglineLineHeight < MAIN_MENU_LAYOUT.preview.y);
+    }
+  }
+  assert.equal(getMainMenuBrandLayout("ru").taglineTop, null);
+  assert.equal(getMainMenuBrandLayout("ru").titleRole, "screenTitle");
+  assert.equal(getMainMenuBrandLayout("en").titleRole, "displayBrand");
+});
+
+test("chapter presentation and banner manifests are deterministic campaign-wide", () => {
+  assert.equal(CHAPTER_PRESENTATIONS.length, 10);
+  assert.deepEqual(CHAPTER_PRESENTATIONS.map(({ number }) => number), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+  for (let chapter = 1; chapter <= 10; chapter += 1) {
+    assert.equal(getChapterPresentation(chapter).number, chapter);
+    assert.deepEqual(getChapterBannerManifest(chapter), getChapterBannerManifest(chapter));
+    assert.equal(getChapterBannerManifest(chapter).length, 4);
+  }
+  for (let level = 1; level <= 100; level += 1) assert.equal(getLevelChapterPresentation(level).number, getChapterNumber(level));
+  for (const invalid of [0, 11, 1.5]) assert.throws(() => getChapterPresentation(invalid), RangeError);
+});
+
+test("level select geometry, navigation boundaries, and semantic cards are stable", () => {
+  assert.deepEqual(LEVEL_SELECT_LAYOUT.banner, { x: 24, y: 116, width: 432, height: 176 });
+  assert.deepEqual(LEVEL_SELECT_LAYOUT.previous, { centerX: 48, centerY: 316, width: 48, height: 48 });
+  assert.deepEqual(LEVEL_SELECT_LAYOUT.next, { centerX: 432, centerY: 316, width: 48, height: 48 });
+  assert.deepEqual(LEVEL_SELECT_LAYOUT.back, { x: 24, y: 708, width: 432, height: 56 });
+  const cards = Array.from({ length: 10 }, (_, index) => getLevelCardBounds(index));
+  assert.deepEqual(cards[0], { x: 24, y: 352, width: 72, height: 72 });
+  assert.deepEqual(cards[4], { x: 384, y: 352, width: 72, height: 72 });
+  assert.deepEqual(cards[5], { x: 24, y: 448, width: 72, height: 72 });
+  assert.deepEqual(cards[9], { x: 384, y: 448, width: 72, height: 72 });
+  assert.deepEqual(getLevelCardGeometry(cards[0]), {
+    centerX: 60, centerY: 388, interactiveWidth: 72, interactiveHeight: 72,
+  });
+  assert.deepEqual(canNavigateChapter(1), { previous: false, next: true });
+  assert.deepEqual(canNavigateChapter(10), { previous: true, next: false });
+  assert.deepEqual(["completed", "available", "locked"].map((state) => {
+    const visual = resolveLevelCardVisual(state);
+    return [visual.affordance, visual.selectable, visual.numberSize, visual.borderWidth];
+  }), [["check", true, 22, 2], ["tab", true, 22, 3], ["lock", false, 20, 2]]);
+});
+
+test("debug locale override is gated, valid, non-persistent, and defaults to Russian", () => {
+  assert.equal(parseDebugLocale(""), "ru");
+  assert.equal(parseDebugLocale("?locale=en"), "ru");
+  assert.equal(parseDebugLocale("?debug=1&locale=en"), "en");
+  for (const search of ["?debug=1", "?debug=1&locale=ru", "?debug=1&locale=de", "?debug=0&locale=en"]) {
+    assert.equal(parseDebugLocale(search), "ru");
+  }
+});
 
 test("production visual tokens protect core palette and layout invariants", () => {
   assert.equal(VISUAL_COLORS.bg.app.hex, "#F5EEDF");

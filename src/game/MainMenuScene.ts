@@ -1,39 +1,80 @@
 import type { ProgressStore } from "../progress/ProgressStore.js";
-import { TOTAL_LEVELS } from "./LevelSequence.js";
 import { getPrimaryMenuAction } from "./CampaignNavigation.js";
-import { configureLogicalCamera, setHiDpiTextResolution } from "./Display.js";
+import { createChapterBanner } from "./ChapterBannerVisual.js";
+import { getChapterNumber, TOTAL_LEVELS } from "./LevelSequence.js";
+import { configureLogicalCamera } from "./Display.js";
+import { DEFAULT_LOCALE, getChapterTitle, getUiStrings, type SupportedLocale } from "./Localization.js";
+import { formatPrimaryMenuAction, getMainMenuBrandLayout, MAIN_MENU_LAYOUT, progressRatio } from "./MainMenuVisualPolicy.js";
 import { playStartData } from "./SceneStart.js";
+import { createCard, createPrimaryButton, createSecondaryButton, createUiText } from "./UiPrimitives.js";
+import { BORDERS, COMPONENT_RADII, VISUAL_COLORS } from "./VisualTokens.js";
 
 export class MainMenuScene extends Phaser.Scene {
-  constructor(private readonly progressStore: ProgressStore, private readonly renderScale = 1) {
+  constructor(
+    private readonly progressStore: ProgressStore,
+    private readonly renderScale = 1,
+    private readonly locale: SupportedLocale = DEFAULT_LOCALE,
+  ) {
     super({ key: "MainMenuScene" });
   }
 
   create(): void {
     configureLogicalCamera(this, this.renderScale);
+    this.cameras.main.setBackgroundColor(VISUAL_COLORS.bg.app.phaser);
     const progress = this.progressStore.load();
     const primary = getPrimaryMenuAction(progress);
-    this.text(240, 160, "Pairs & Paths", 38, "#f7fbff", true);
-    this.text(240, 245, `${progress.completedThroughLevel} / ${TOTAL_LEVELS} completed`, 20, "#bcd1ec");
-    this.button(240, 370, 300, 82, 0x3976b9,
-      primary.label === "Play again" ? primary.label : `${primary.label}\nLevel ${primary.levelNumber}`,
-      () => this.scene.start("PlayScene", playStartData(primary.levelNumber)));
-    this.button(240, 490, 240, 62, 0x243c5c, "Levels",
-      () => this.scene.start("LevelSelectScene"));
-    this.button(240, 575, 240, 62, 0x243c5c, "Gallery",
-      () => this.scene.start("ArtworkGalleryScene"));
-  }
+    const strings = getUiStrings(this.locale);
+    const previewChapter = getChapterNumber(primary.levelNumber);
 
-  private text(x: number, y: number, value: string, size: number, color: string, bold = false): Phaser.GameObjects.Text {
-    return setHiDpiTextResolution(this.add.text(x, y, value, {
-      color, fontFamily: "Arial, sans-serif", fontSize: `${size}px`,
-      ...(bold ? { fontStyle: "bold" } : {}), align: "center",
-    }).setOrigin(0.5), this.renderScale);
-  }
+    const brandLayout = getMainMenuBrandLayout(this.locale);
+    const titleLines = this.locale === "ru" ? strings.gameTitle.split(": ") : [strings.gameTitle];
+    titleLines.forEach((line, index) => createUiText(this, this.renderScale, 240, brandLayout.titleTops[index]!, line,
+      brandLayout.titleRole, { align: "center" }).setOrigin(0.5, 0));
+    if (brandLayout.taglineTop !== null) createUiText(this, this.renderScale, 240, brandLayout.taglineTop,
+      strings.tagline, "hudSecondary", { color: VISUAL_COLORS.text.secondary.hex, align: "center" }).setOrigin(0.5, 0);
 
-  private button(x: number, y: number, width: number, height: number, color: number, label: string, action: () => void): void {
-    this.add.rectangle(x, y, width, height, color).setStrokeStyle(2, 0xb9cce2)
-      .setInteractive({ useHandCursor: true }).on("pointerdown", action);
-    this.text(x, y, label, 22, "#ffffff", true);
+    const preview = MAIN_MENU_LAYOUT.preview;
+    createChapterBanner(this, previewChapter, preview);
+    this.add.graphics().fillStyle(VISUAL_COLORS.surface.elevated.phaser, 0.94)
+      .fillRoundedRect(preview.x + 16, preview.y + 16, 112, 38, 12)
+      .fillRoundedRect(preview.x + 16, preview.y + preview.height - 64, 250, 48, 12);
+    createUiText(this, this.renderScale, preview.x + 32, preview.y + 25,
+      strings.chapterLabel(previewChapter), "smallMetadata", { color: VISUAL_COLORS.text.secondary.hex });
+    createUiText(this, this.renderScale, preview.x + 32, preview.y + preview.height - 39,
+      getChapterTitle(this.locale, previewChapter), "levelTitle");
+
+    const button = MAIN_MENU_LAYOUT.primary;
+    createPrimaryButton(this, this.renderScale, {
+      x: button.x + button.width / 2, y: button.y + button.height / 2, width: button.width, height: button.height,
+      label: formatPrimaryMenuAction(primary, strings),
+      onActivate: () => this.scene.start("PlayScene", playStartData(primary.levelNumber)),
+    });
+    for (const [bounds, label, target] of [
+      [MAIN_MENU_LAYOUT.secondaryLeft, strings.levels, "LevelSelectScene"],
+      [MAIN_MENU_LAYOUT.secondaryRight, strings.gallery, "ArtworkGalleryScene"],
+    ] as const) createSecondaryButton(this, this.renderScale, {
+      x: bounds.x + bounds.width / 2, y: bounds.y + bounds.height / 2,
+      width: bounds.width, height: bounds.height, label, onActivate: () => this.scene.start(target),
+    });
+
+    const card = MAIN_MENU_LAYOUT.progress;
+    createCard(this, { x: card.x + card.width / 2, y: card.y + card.height / 2, width: card.width, height: card.height });
+    const completed = progress.completedThroughLevel;
+    createUiText(this, this.renderScale, card.x + 20, card.y + 22,
+      completed === TOTAL_LEVELS
+        ? strings.collectionComplete(completed, TOTAL_LEVELS)
+        : strings.openedProgress(completed, TOTAL_LEVELS), "body");
+    const track = { x: card.x + 20, y: card.y + 68, width: card.width - 40, height: 8 };
+    const graphics = this.add.graphics().fillStyle(VISUAL_COLORS.divider.phaser)
+      .fillRoundedRect(track.x, track.y, track.width, track.height, COMPONENT_RADII.tile);
+    const fillWidth = track.width * progressRatio(completed, TOTAL_LEVELS);
+    if (fillWidth > 0) graphics.fillStyle(VISUAL_COLORS.accent.gold.phaser)
+      .fillRoundedRect(track.x, track.y, fillWidth, track.height, Math.min(4, fillWidth / 2));
+    if (completed === TOTAL_LEVELS) {
+      graphics.lineStyle(BORDERS.structural, VISUAL_COLORS.state.success.phaser)
+        .strokeCircle(card.x + card.width - 28, card.y + 31, 10)
+        .beginPath().moveTo(card.x + card.width - 33, card.y + 31)
+        .lineTo(card.x + card.width - 29, card.y + 35).lineTo(card.x + card.width - 22, card.y + 27).strokePath();
+    }
   }
 }

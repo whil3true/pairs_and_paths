@@ -581,6 +581,11 @@ At `Уровень 100 · Этап 3/3 · Осталось: 22 пары`, the ro
 
 ## 17. Main Menu
 
+Phase 4 implementation note: all user-facing copy in this screen is supplied through the shared typed
+`ru`/`en` localization seam (standalone default `ru`). Its chapter preview is the shared deterministic
+Phaser Graphics banner and requests no artwork; this code-only treatment replaces the deferred banner
+asset recommendation without changing the approved bounds or visual direction.
+
 ### 17.1 Layout at 480×800
 
 | Element | Bounds / rule |
@@ -611,6 +616,9 @@ The Main Menu must request zero artwork. Therefore the “current chapter/art pr
 ---
 
 ## 18. Level / Chapter Select
+
+Phase 4 implementation note: header, progress, indicator, and Back copy use the same injected locale.
+The chapter banner shares Main Menu's static code-only builder and makes no artwork request.
 
 ### 18.1 Layout
 

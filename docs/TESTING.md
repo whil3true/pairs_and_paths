@@ -142,6 +142,32 @@ the later art direction and representative production artwork.
 
 Pure tests cover fresh/in-progress/completed primary actions, all three level states, selection eligibility, chapter ranges/defaults, strict `setProgress` parsing, reset precedence, and normal/gallery/debug-play startup routes. Manual QA should verify the 5×2 chapter grid and non-wrapping arrows, current frontier defaults, fresh progress after a confirmed pause-menu exit, and old-level replay without regression. Complete overlays retain Next/Restart and Replay and add a direct Menu exit. Debug jumps remain persistence-disabled.
 
+### Phase 4 Main Menu / Level Select and locale QA
+
+The locale override is developer-only, requires `debug=1`, is not saved, accepts `en`, and otherwise
+falls back to the standalone Russian default. Check both locales at renderScale 1 and the device's
+normal render scale; labels must remain on one line except the intentional two-line Russian brand.
+
+- `?debug=1&resetProgress=1`: Russian Main Menu shows the localized brand/tagline, `Играть`,
+  `Уровни`, `Галерея`, zero progress, and Chapter 1's procedural banner.
+- `?debug=1&setProgress=29`: it shows `Продолжить · Уровень 30`, `Открыто 29 из 100`, and Chapter 3.
+- `?debug=1&setProgress=100`: it shows `Играть снова · Уровень 1`, the complete collection label,
+  a full track, and does not clear completion.
+- Repeat with `&locale=en`; verify the English title/tagline/actions and Chapter 3 header
+  `Chapter 3 · Flower Shops` have no clipping.
+- Level Select defaults to Chapter 3 at progress 29: Levels 21..29 are completed and selectable,
+  Level 30 is the selectable gold frontier, and later Levels are locked and inert. Verify the same
+  geometry and state meaning in English.
+- Navigate to Chapters 1 and 10 in both locales. The boundary arrow retains its 48×48 disabled box,
+  is non-interactive, and navigation never wraps. Rapid input must not overlap transitions.
+- In DevTools Network, entering and navigating both scenes must request zero `/full/`, `/thumbs/`,
+  reward, or chapter artwork. Their banners are static Phaser Graphics only.
+
+Headless tests protect dictionary shape and formatting, exact bilingual chapter names, all Phase 4
+geometry, progress ratios, primary-action targets, navigation boundaries, semantic non-colour card
+affordances, curated chapter metadata, and deterministic banner manifests. Browser pixel fit, actual
+Manrope/fallback metrics, pointer interaction, transition feel, and network requests remain manual QA.
+
 ## Player artwork Gallery QA
 
 Pure tests cover the three Gallery slot states for pilot Levels 1, 30, and 80, unavailable Level 2,

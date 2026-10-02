@@ -102,6 +102,39 @@ Pre-stage seeds use a documented uint32 namespace: `imul(level, 0x85ebca6b) ^ im
 
 `BootScene` applies the pure startup route through ordinary Phaser scene transitions. Normal startup enters `MainMenuScene`; gated level jumps and the developer-only `SymbolGalleryScene` bypass it. `MainMenuScene`, `LevelSelectScene`, and player-facing `ArtworkGalleryScene` load `ProgressStore` on entry so completed gameplay is immediately reflected. Pure `CampaignNavigation` functions own menu actions, level states, and chapter ranges; pure `ArtworkGallery` functions own collection policy. `ArtworkFullViewScene` receives only a Level and return chapter and returns to that chapter. `PlayScene` is registered once with stable platform/store/render dependencies and receives level, stage, and persistence mode through Phaser start data. Menu and Gallery navigation do not write progress. All player scenes retain the logical `480×800` camera and HiDPI text helpers; no router or navigation manager exists. The existing `?debug=1&symbols=1` route remains exclusively the tile-symbol contact sheet and is separate from the player Gallery.
 
+Phase 4 keeps localization synchronous and platform-independent. `Localization.ts` owns the typed
+Phase 4 strings and chapter names for the current `ru` and `en` foundation; standalone startup uses
+Russian by default. `main.ts` injects an already resolved `SupportedLocale` into Main Menu and Level
+Select, so scenes never inspect an SDK or external-language value. The gated, non-persistent
+`?debug=1&locale=en` override exists only for deterministic layout QA. Future production scenes must
+adopt this same seam incrementally rather than introducing a second localization system.
+
+Future platform startup owns this contract: initialize Yandex Games, read
+`ysdk.environment.i18n.lang`, read the saved locale preference, arbitrate those inputs, normalize the
+external language to `SupportedLocale`, then inject that resolved locale into scenes. Scenes do not
+call `YaGames` or inspect `ysdk`. The future persistence shape is:
+
+```ts
+interface LocalePreference {
+  locale: SupportedLocale;
+  source: "auto" | "manual";
+}
+```
+
+If the saved source is `manual`, its locale always wins. Otherwise startup resolves the current
+platform language and saves `{ locale: resolvedLocale, source: "auto" }`; automatically detected
+language is therefore also stored as the current setting and may be refreshed at later startup.
+Future Settings language selection overwrites it with
+`{ locale: selectedLocale, source: "manual" }`, immediately switches UI, and must never be
+overwritten by automatic detection. Neither that persistence nor Settings nor the Yandex SDK is part
+of Phase 4.
+
+`ChapterPresentation.ts` owns only the ten curated chapter palette identities and localized-title
+keys; campaign grouping remains in `LevelSequence`. `ChapterBannerVisual.ts` projects a deterministic,
+static four-mass paper composition through Phaser Graphics with no randomness, animation, dynamic
+texture, or binary output. Main Menu and Level Select share this builder and request zero thumbnail,
+full, reward, or other artwork assets.
+
 ## Gameplay pause ownership
 
 Pause is presentation state owned directly by `PlayScene`, not a separate `PauseScene`, generic modal manager, or gameplay-state framework. The overlay and its restart/exit confirmation views guard board, Hint, and Pause input while leaving the current board, stage, removed tiles, blockers, and selection intact. Resume only destroys the overlay. Confirmed Restart uses the normal deterministic level reload, resetting the current level to Stage 1; confirmed Exit starts `MainMenuScene` without writing unfinished state. The final-stage Complete overlay disables Pause and keeps its direct Menu action, because campaign completion has already been persisted.

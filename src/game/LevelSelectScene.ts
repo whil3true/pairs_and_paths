@@ -1,71 +1,130 @@
 import type { CampaignProgress } from "../progress/CampaignProgress.js";
 import type { ProgressStore } from "../progress/ProgressStore.js";
 import { getChapterLevelRange, getDefaultChapter, getLevelState } from "./CampaignNavigation.js";
-import { CHAPTER_COUNT } from "./LevelSequence.js";
-import { configureLogicalCamera, setHiDpiTextResolution } from "./Display.js";
+import { createChapterBanner } from "./ChapterBannerVisual.js";
+import { CHAPTER_COUNT, TOTAL_LEVELS } from "./LevelSequence.js";
+import { configureLogicalCamera } from "./Display.js";
+import { DEFAULT_LOCALE, getChapterTitle, getUiStrings, type SupportedLocale } from "./Localization.js";
+import {
+  canNavigateChapter, getLevelCardBounds, getLevelCardGeometry, LEVEL_SELECT_LAYOUT, resolveLevelCardVisual,
+} from "./LevelSelectVisualPolicy.js";
 import { playStartData } from "./SceneStart.js";
+import { createIconButton, createSecondaryButton, createUiText } from "./UiPrimitives.js";
+import { COMPONENT_RADII, MOTION, VISUAL_COLORS } from "./VisualTokens.js";
 
 export class LevelSelectScene extends Phaser.Scene {
   private progress!: CampaignProgress;
   private chapter = 1;
   private content: Phaser.GameObjects.Container | null = null;
+  private transitioning = false;
 
-  constructor(private readonly progressStore: ProgressStore, private readonly renderScale = 1) {
+  constructor(
+    private readonly progressStore: ProgressStore,
+    private readonly renderScale = 1,
+    private readonly locale: SupportedLocale = DEFAULT_LOCALE,
+  ) {
     super({ key: "LevelSelectScene" });
   }
 
   create(): void {
     configureLogicalCamera(this, this.renderScale);
+    this.cameras.main.setBackgroundColor(VISUAL_COLORS.bg.app.phaser);
     this.progress = this.progressStore.load();
     this.chapter = getDefaultChapter(this.progress);
-    this.text(240, 76, "Levels", 34, "#f7fbff", true);
-    this.add.rectangle(70, 744, 105, 44, 0x243c5c).setStrokeStyle(1, 0x91acce)
-      .setInteractive({ useHandCursor: true }).on("pointerdown", () => this.scene.start("MainMenuScene"));
-    this.text(70, 744, "Menu", 18, "#dceaff");
-    this.renderChapter();
+    const back = LEVEL_SELECT_LAYOUT.back;
+    createSecondaryButton(this, this.renderScale, {
+      x: back.x + back.width / 2, y: back.y + back.height / 2, width: back.width, height: back.height,
+      label: getUiStrings(this.locale).backToMenu, onActivate: () => this.scene.start("MainMenuScene"),
+    });
+    this.renderChapter(false);
   }
 
-  private renderChapter(): void {
+  private renderChapter(animate: boolean): void {
     this.content?.destroy(true);
+    const strings = getUiStrings(this.locale);
     const objects: Phaser.GameObjects.GameObject[] = [];
-    const addText = (x: number, y: number, value: string, size: number, color: string, bold = false) => {
-      const item = this.text(x, y, value, size, color, bold);
-      objects.push(item);
-      return item;
-    };
-    addText(240, 155, `Chapter ${this.chapter}`, 26, "#dceaff", true);
-    const previous = this.add.rectangle(72, 155, 72, 46, this.chapter > 1 ? 0x243c5c : 0x171f2d)
-      .setStrokeStyle(1, this.chapter > 1 ? 0x91acce : 0x3b4656);
-    const next = this.add.rectangle(408, 155, 72, 46, this.chapter < CHAPTER_COUNT ? 0x243c5c : 0x171f2d)
-      .setStrokeStyle(1, this.chapter < CHAPTER_COUNT ? 0x91acce : 0x3b4656);
-    objects.push(previous, next);
-    addText(72, 155, "<", 26, this.chapter > 1 ? "#ffffff" : "#59687a");
-    addText(408, 155, ">", 26, this.chapter < CHAPTER_COUNT ? "#ffffff" : "#59687a");
-    if (this.chapter > 1) previous.setInteractive({ useHandCursor: true }).on("pointerdown", () => { this.chapter -= 1; this.renderChapter(); });
-    if (this.chapter < CHAPTER_COUNT) next.setInteractive({ useHandCursor: true }).on("pointerdown", () => { this.chapter += 1; this.renderChapter(); });
+    const add = <T extends Phaser.GameObjects.GameObject>(item: T): T => { objects.push(item); return item; };
+    add(createUiText(this, this.renderScale, 240, 28,
+      strings.chapterHeader(this.chapter, getChapterTitle(this.locale, this.chapter)), "screenTitle", { align: "center" }).setOrigin(0.5, 0));
+    add(createUiText(this, this.renderScale, 240, 78,
+      strings.globalProgress(this.progress.completedThroughLevel, TOTAL_LEVELS), "body", {
+        color: VISUAL_COLORS.text.secondary.hex, align: "center",
+      }).setOrigin(0.5, 0));
+    add(createChapterBanner(this, this.chapter, LEVEL_SELECT_LAYOUT.banner));
+
+    const navigation = canNavigateChapter(this.chapter);
+    this.createChapterArrow(LEVEL_SELECT_LAYOUT.previous.centerX, false, navigation.previous, objects);
+    this.createChapterArrow(LEVEL_SELECT_LAYOUT.next.centerX, true, navigation.next, objects);
+    add(createUiText(this, this.renderScale, 240, 316, strings.chapterLabel(this.chapter), "caption", {
+      color: VISUAL_COLORS.text.secondary.hex, align: "center",
+    }).setOrigin(0.5));
 
     const [first, last] = getChapterLevelRange(this.chapter);
     for (let level = first; level <= last; level += 1) {
-      const index = level - first;
-      const x = 64 + (index % 5) * 88;
-      const y = 300 + Math.floor(index / 5) * 112;
+      const bounds = getLevelCardBounds(level - first);
+      const geometry = getLevelCardGeometry(bounds);
       const state = getLevelState(this.progress, level);
-      const fill = state === "completed" ? 0x285b50 : state === "available" ? 0x3976b9 : 0x171f2d;
-      const stroke = state === "available" ? 0xffd34e : state === "completed" ? 0x83cfb8 : 0x3b4656;
-      const button = this.add.rectangle(x, y, 72, 72, fill).setStrokeStyle(state === "available" ? 3 : 2, stroke);
-      objects.push(button);
-      addText(x, y - (state === "completed" ? 7 : 0), String(level), 21,
-        state === "locked" ? "#657184" : "#ffffff", true);
-      if (state === "completed") addText(x, y + 20, "✓", 15, "#d8fff2", true);
-      if (state !== "locked") button.setInteractive({ useHandCursor: true })
-        .on("pointerdown", () => this.scene.start("PlayScene", playStartData(level)));
+      const visual = resolveLevelCardVisual(state);
+      const card = this.createLevelCard(geometry.centerX, geometry.centerY, level, state, false);
+      add(card);
+      if (visual.selectable) card.setInteractive(
+        new Phaser.Geom.Rectangle(0, 0, geometry.interactiveWidth, geometry.interactiveHeight), Phaser.Geom.Rectangle.Contains,
+      ).input!.cursor = "pointer";
+      if (visual.selectable) card.on("pointerup", () => this.scene.start("PlayScene", playStartData(level)));
     }
     this.content = this.add.container(0, 0, objects);
+    if (animate) {
+      this.content.setAlpha(0);
+      this.tweens.add({ targets: this.content, alpha: 1, duration: 200, onComplete: () => { this.transitioning = false; } });
+    } else this.transitioning = false;
   }
 
-  private text(x: number, y: number, value: string, size: number, color: string, bold = false): Phaser.GameObjects.Text {
-    return setHiDpiTextResolution(this.add.text(x, y, value, {
-      color, fontFamily: "Arial, sans-serif", fontSize: `${size}px`, ...(bold ? { fontStyle: "bold" } : {}),
-    }).setOrigin(0.5), this.renderScale);
+  /** focused is a presentation seam for a later keyboard-navigation owner. */
+  private createLevelCard(centerX: number, centerY: number, level: number, state: ReturnType<typeof getLevelState>, focused: boolean): Phaser.GameObjects.Container {
+    const size = LEVEL_SELECT_LAYOUT.grid.cardSize;
+    const half = size / 2;
+    const visual = resolveLevelCardVisual(state);
+    const graphics = this.add.graphics();
+    if (focused) graphics.lineStyle(3, VISUAL_COLORS.primary.teal.phaser)
+      .strokeRoundedRect(-half - 4, -half - 4, size + 8, size + 8, COMPONENT_RADII.levelCard + 4);
+    graphics.fillStyle(visual.fill).fillRoundedRect(-half, -half, size, size, COMPONENT_RADII.levelCard)
+      .lineStyle(visual.borderWidth, visual.border)
+      .strokeRoundedRect(-half, -half, size, size, COMPONENT_RADII.levelCard);
+    const number = createUiText(this, this.renderScale, 0, 0, String(level), "sectionHeading", {
+      color: state === "locked" ? VISUAL_COLORS.text.tertiary.hex : VISUAL_COLORS.text.primary.hex, align: "center",
+    }).setOrigin(0.5);
+    if (visual.numberSize === 20) number.setFontSize(20);
+    if (visual.affordance === "check") graphics.lineStyle(2, VISUAL_COLORS.state.success.phaser)
+      .beginPath().moveTo(17, -20).lineTo(21, -16).lineTo(28, -25).strokePath();
+    else if (visual.affordance === "tab") graphics.fillStyle(VISUAL_COLORS.accent.gold.phaser)
+      .fillTriangle(-6, 36, 6, 36, 0, 28);
+    else {
+      graphics.lineStyle(2, VISUAL_COLORS.state.locked.phaser).strokeRoundedRect(17, -22, 11, 10, 2)
+        .beginPath().arc(22.5, -22, 4, Math.PI, 0).strokePath();
+    }
+    return this.add.container(centerX, centerY, [graphics, number]).setSize(size, size);
+  }
+
+  private createChapterArrow(x: number, pointsRight: boolean, enabled: boolean, objects: Phaser.GameObjects.GameObject[]): void {
+    const button = createIconButton(this, this.renderScale, {
+      x, y: LEVEL_SELECT_LAYOUT.previous.centerY, width: 48, height: 48, label: "", disabled: !enabled,
+      onActivate: () => this.navigateChapter(pointsRight ? 1 : -1),
+    });
+    objects.push(button.container);
+    const chevron = this.add.graphics().lineStyle(3,
+      enabled ? VISUAL_COLORS.text.primary.phaser : VISUAL_COLORS.state.locked.phaser)
+      .beginPath().moveTo(x + (pointsRight ? -4 : 4), 308)
+      .lineTo(x + (pointsRight ? 4 : -4), 316)
+      .lineTo(x + (pointsRight ? -4 : 4), 324).strokePath();
+    objects.push(chevron);
+  }
+
+  private navigateChapter(delta: -1 | 1): void {
+    if (this.transitioning) return;
+    const next = this.chapter + delta;
+    if (next < 1 || next > CHAPTER_COUNT) return;
+    this.transitioning = true;
+    this.chapter = next;
+    this.renderChapter(true);
   }
 }
