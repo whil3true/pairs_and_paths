@@ -366,7 +366,7 @@ Rectangular pre-stages use the same center and pitch. Do not resize tiles or art
 
 - Outer frame extends `8 px` beyond content bounds.
 - Outer radius `22 px`; the gameplay artwork aperture radius is `20 px`.
-- The physical frame is one continuous procedural `surface.elevated` ring, with a thin `2 px border.strong` structural contour only on its outer boundary. Its transparent aperture is not assembled from independent corner caps, and it has no dark inner bezel.
+- The physical frame uses direct procedural `surface.elevated` cover geometry, with a thin `2 px border.strong` structural contour only on its outer boundary. For artwork, one Graphics overlay owns the four overlap strips and four rounded corner wedges; the production aperture requires neither RenderTexture erase nor an artwork mask. Its `2 px` inset and `20 px` radius are unchanged, and it has no dark inner bezel.
 - Only when artwork exists, its aperture is inset `2 px` from every content edge, so the frame overlaps the underlying artwork by `2 px`. A no-art board retains the full content opening, inset `0`, radius `16 px`, and the full `4 px` outer-tile clearance. This presentation-only artwork overlap does not alter cells, hit zones, routes, blockers, or tiles, which render above the overlay.
 - `shadow.card` only on the frame, never on the artwork itself.
 - Maximum frame at 7×7 is `464×464`, bounds `8..472` × `188..652`.

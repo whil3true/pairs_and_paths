@@ -5,7 +5,7 @@ import type { ProgressStore } from "../progress/ProgressStore.js";
 import { BoardLayout, getVisibleBackingCount } from "./BoardLayout.js";
 import {
   BOARD_SHEET_OFFSET_X, BOARD_SHEET_OFFSET_Y, BOARD_VISUAL_STYLE, getBoardContentBounds, getBoardFrameBounds,
-  getBackingSheetShadeAlpha, getBoardFrameOpening,
+  getBackingSheetShadeAlpha, getBoardArtworkApertureCorners, getBoardFrameOpening,
 } from "./BoardVisualPolicy.js";
 import type { PlayStartData } from "./SceneStart.js";
 import { createLevelStage, getStageClearOutcome, getStageCount, hasNextLevel } from "./LevelSequence.js";
@@ -225,9 +225,47 @@ export class PlayScene extends Phaser.Scene {
 
   private renderFrameOverlay(): void {
     const frame = getBoardFrameBounds(this.layout);
-    const openingPolicy = getBoardFrameOpening(this.layout, this.currentArtworkVisual !== null);
+    const hasArtwork = this.currentArtworkVisual !== null;
+    const openingPolicy = getBoardFrameOpening(this.layout, hasArtwork);
     const openingBounds = openingPolicy.bounds;
     const { outlineInset } = BOARD_VISUAL_STYLE;
+    if (hasArtwork) {
+      const content = getBoardContentBounds(this.layout);
+      const corners = getBoardArtworkApertureCorners(this.layout);
+      const overlay = this.add.graphics().setDepth(1).fillStyle(BOARD_VISUAL_STYLE.frameFill, 1);
+      overlay
+        .fillRect(content.left, content.top, content.width, openingBounds.top - content.top)
+        .fillRect(content.left, openingBounds.bottom, content.width, content.bottom - openingBounds.bottom)
+        .fillRect(content.left, content.top, openingBounds.left - content.left, content.height)
+        .fillRect(openingBounds.right, content.top, content.right - openingBounds.right, content.height);
+
+      overlay.beginPath().moveTo(corners.topLeft.corner.x, corners.topLeft.corner.y)
+        .lineTo(corners.topLeft.horizontalTangent.x, corners.topLeft.horizontalTangent.y)
+        .arc(corners.topLeft.center.x, corners.topLeft.center.y, openingPolicy.radius, -Math.PI / 2, -Math.PI, true)
+        .closePath().fillPath();
+      overlay.beginPath().moveTo(corners.topRight.corner.x, corners.topRight.corner.y)
+        .lineTo(corners.topRight.horizontalTangent.x, corners.topRight.horizontalTangent.y)
+        .arc(corners.topRight.center.x, corners.topRight.center.y, openingPolicy.radius, -Math.PI / 2, 0)
+        .closePath().fillPath();
+      overlay.beginPath().moveTo(corners.bottomRight.corner.x, corners.bottomRight.corner.y)
+        .lineTo(corners.bottomRight.verticalTangent.x, corners.bottomRight.verticalTangent.y)
+        .arc(corners.bottomRight.center.x, corners.bottomRight.center.y, openingPolicy.radius, 0, Math.PI / 2)
+        .closePath().fillPath();
+      overlay.beginPath().moveTo(corners.bottomLeft.corner.x, corners.bottomLeft.corner.y)
+        .lineTo(corners.bottomLeft.horizontalTangent.x, corners.bottomLeft.horizontalTangent.y)
+        .arc(corners.bottomLeft.center.x, corners.bottomLeft.center.y, openingPolicy.radius, Math.PI / 2, Math.PI)
+        .closePath().fillPath();
+      overlay.lineStyle(BOARD_VISUAL_STYLE.borderWidth, BOARD_VISUAL_STYLE.frameBorder, 1)
+        .strokeRoundedRect(
+          frame.left + outlineInset,
+          frame.top + outlineInset,
+          frame.width - BOARD_VISUAL_STYLE.borderWidth,
+          frame.height - BOARD_VISUAL_STYLE.borderWidth,
+          BOARD_VISUAL_STYLE.outlineRadius,
+        );
+      this.currentBoardVisual!.add(overlay);
+      return;
+    }
     const ringSource = this.make.graphics(undefined, false)
       .fillStyle(BOARD_VISUAL_STYLE.frameFill, 1)
       .lineStyle(BOARD_VISUAL_STYLE.borderWidth, BOARD_VISUAL_STYLE.frameBorder, 1)

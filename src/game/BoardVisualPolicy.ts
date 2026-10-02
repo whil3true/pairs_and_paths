@@ -62,6 +62,40 @@ export interface BoardFrameOpening {
   readonly radius: number;
 }
 
+export interface ArtworkApertureCorner {
+  readonly corner: Readonly<{ x: number; y: number }>;
+  readonly center: Readonly<{ x: number; y: number }>;
+  readonly horizontalTangent: Readonly<{ x: number; y: number }>;
+  readonly verticalTangent: Readonly<{ x: number; y: number }>;
+}
+
+export interface ArtworkApertureCorners {
+  readonly topLeft: ArtworkApertureCorner;
+  readonly topRight: ArtworkApertureCorner;
+  readonly bottomRight: ArtworkApertureCorner;
+  readonly bottomLeft: ArtworkApertureCorner;
+}
+
+/** Tangent geometry for the four fixed-radius artwork-aperture cover wedges. */
+export const getBoardArtworkApertureCorners = (layout: BoardLayout): ArtworkApertureCorners => {
+  const aperture = getBoardArtworkApertureBounds(layout);
+  const radius = BOARD_ARTWORK_APERTURE_RADIUS;
+  const corner = (
+    x: number, y: number, centerX: number, centerY: number,
+  ): ArtworkApertureCorner => Object.freeze({
+    corner: Object.freeze({ x, y }),
+    center: Object.freeze({ x: centerX, y: centerY }),
+    horizontalTangent: Object.freeze({ x: centerX, y }),
+    verticalTangent: Object.freeze({ x, y: centerY }),
+  });
+  return Object.freeze({
+    topLeft: corner(aperture.left, aperture.top, aperture.left + radius, aperture.top + radius),
+    topRight: corner(aperture.right, aperture.top, aperture.right - radius, aperture.top + radius),
+    bottomRight: corner(aperture.right, aperture.bottom, aperture.right - radius, aperture.bottom - radius),
+    bottomLeft: corner(aperture.left, aperture.bottom, aperture.left + radius, aperture.bottom - radius),
+  });
+};
+
 export const getBoardFrameOpening = (layout: BoardLayout, hasArtwork: boolean): BoardFrameOpening => Object.freeze({
   bounds: hasArtwork ? getBoardArtworkApertureBounds(layout) : getBoardContentBounds(layout),
   radius: hasArtwork ? BOARD_ARTWORK_APERTURE_RADIUS : COMPONENT_RADII.boardInner,
