@@ -36,10 +36,20 @@ the Complete overlay. Hint does not auto-remove or show a route and remains unli
 not part of this test scope.
 
 Phase 3 pure tests additionally freeze the compact gameplay HUD bounds, Russian pair grammar,
-route widths and 120/40/60 ms phase total, arbitrary-turn physical-length route interpolation,
+production button hit bounds/centre, route widths and 180/40/60 ms (280 ms total) phases,
+precomputed route metrics, arbitrary-turn physical-length route interpolation,
 900 ms Hint pulse policy, 180 ms removal policy, and blocker footprint/token ownership. Renderer
 appearance remains manual QA: use Levels 27 and 30 for HUD rows, a bent legal route, and synchronized
 Hint/removal feedback; use Levels 11 and 30 Stage 3 for opaque procedural blocker terrain.
+
+For the Phase 3A Android corrective pass, open `?debug=1&level=27`. Tap the centre and the inside
+right edge of both Пауза and Подсказка; each must respond. Tap immediately to the right of each visual
+button; neither may respond, and neither button's visual position may have moved. On the same board,
+remove legal pairs that exercise a short straight route, a one-turn route, a long route, and a route
+with several turns. The line must progress smoothly at an apparently constant physical speed without
+giant frame-to-frame jumps, show the complete route for the short hold, fade smoothly, and only then
+run the unchanged tile scale/fade. Finally open `?debug=1&level=30&stage=3` and repeat a legal route
+over the artwork and blockers.
 
 Generator tests check exact pair multiplicity, deterministic regeneration, non-adjacent product pairs, witness replay, solver replay, metrics, and product density. Campaign tests freeze the 100/10/10 constants, chapter boundaries, progression-band coverage, and important early band transitions; reject out-of-range levels; check next-level boundaries; and check all 100 levels for validity, solver replay, non-adjacency, deterministic replay, and distinct consecutive snapshots. Levels 1–4 have at least two initial legal moves; Level 5 has exactly one because its frozen seed and pair count now use the approved 4×4 final geometry; every campaign Level has at least one initial legal move. This Level 5 result is a known deterministic geometry-migration consequence, not a generator failure. `npm run simulate -- --count 10000` retains the deterministic 7×7/20-pair generator quality gate.
 

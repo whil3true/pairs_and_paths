@@ -1,5 +1,5 @@
 import { setHiDpiTextResolution } from "./Display.js";
-import { resolveButtonVisual, type ButtonKind, type ButtonState } from "./UiPolicy.js";
+import { createButtonHitArea, resolveButtonVisual, type ButtonKind, type ButtonState } from "./UiPolicy.js";
 import {
   BORDERS, COMPONENT_RADII, FONT_FAMILY, SPACING, TYPOGRAPHY, VISUAL_COLORS, type TypographyRole,
 } from "./VisualTokens.js";
@@ -86,14 +86,15 @@ const createButton = (
     visualContent.setY(visual.offsetY);
   };
 
-  container.setSize(width, height).setInteractive(
-    new Phaser.Geom.Rectangle(-width / 2, -height / 2, width, height),
-    Phaser.Geom.Rectangle.Contains,
+  const hitArea = createButtonHitArea(width, height);
+  const phaserHitArea = new Phaser.Geom.Rectangle(
+    hitArea.left, hitArea.top, hitArea.width, hitArea.height,
   );
+  container.setSize(width, height);
   const syncInput = (): void => {
     if (disabled) container.disableInteractive();
     else container.setInteractive(
-      new Phaser.Geom.Rectangle(-width / 2, -height / 2, width, height), Phaser.Geom.Rectangle.Contains,
+      phaserHitArea, Phaser.Geom.Rectangle.Contains,
     ).input!.cursor = "pointer";
   };
   container.on("pointerover", () => { if (!disabled) { hovered = true; render(); } });

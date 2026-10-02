@@ -13,6 +13,29 @@ export interface ButtonVisualPolicy {
   readonly focusRing: boolean;
 }
 
+export interface ButtonHitArea {
+  readonly left: number;
+  readonly top: number;
+  readonly right: number;
+  readonly bottom: number;
+  readonly width: number;
+  readonly height: number;
+  readonly centerX: number;
+  readonly centerY: number;
+}
+
+/** Phaser normalizes pointer coordinates by a sized Container's centered display origin. */
+export const createButtonHitArea = (width: number, height: number): ButtonHitArea => Object.freeze({
+  left: 0,
+  top: 0,
+  right: width,
+  bottom: height,
+  width,
+  height,
+  centerX: width / 2,
+  centerY: height / 2,
+});
+
 export const resolveButtonVisual = (kind: ButtonKind, state: ButtonState): ButtonVisualPolicy => {
   const c = VISUAL_COLORS;
   if (state === "disabled") return kind === "primary"
