@@ -255,14 +255,6 @@ export class PlayScene extends Phaser.Scene {
         .lineTo(corners.bottomLeft.horizontalTangent.x, corners.bottomLeft.horizontalTangent.y)
         .arc(corners.bottomLeft.center.x, corners.bottomLeft.center.y, openingPolicy.radius, Math.PI / 2, Math.PI)
         .closePath().fillPath();
-      overlay.lineStyle(BOARD_VISUAL_STYLE.borderWidth, BOARD_VISUAL_STYLE.frameBorder, 1)
-        .strokeRoundedRect(
-          frame.left + outlineInset,
-          frame.top + outlineInset,
-          frame.width - BOARD_VISUAL_STYLE.borderWidth,
-          frame.height - BOARD_VISUAL_STYLE.borderWidth,
-          BOARD_VISUAL_STYLE.outlineRadius,
-        );
       this.currentBoardVisual!.add(overlay);
       return;
     }

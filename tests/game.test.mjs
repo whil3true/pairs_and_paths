@@ -690,7 +690,7 @@ test("production board and tile visual policies protect frozen geometry and toke
   assert.equal(rectangular.pitch, 64);
   assert.equal(BOARD_FRAME_PADDING, 8);
   assert.equal(BOARD_ARTWORK_APERTURE_INSET, 2);
-  assert.equal(BOARD_ARTWORK_APERTURE_RADIUS, 20);
+  assert.equal(BOARD_ARTWORK_APERTURE_RADIUS, 14);
   assert.equal(BOARD_SHEET_OFFSET_X, 0);
   assert.equal(BOARD_SHEET_OFFSET_Y, 7);
   assert.equal("innerEdgeWidth" in BOARD_VISUAL_STYLE, false);
@@ -707,6 +707,12 @@ test("production board and tile visual policies protect frozen geometry and toke
   assert.equal(BOARD_VISUAL_STYLE.frameFill, BOARD_VISUAL_STYLE.backingFill);
   assert.notEqual(BOARD_VISUAL_STYLE.frameFill, VISUAL_COLORS.border.strong.phaser);
   assert.equal(TILE_VISUAL_STYLE.size, 56);
+  const tileClearance = (BoardLayout.CELL_PITCH - BoardLayout.TILE_SIZE) / 2;
+  assert.equal(
+    BOARD_ARTWORK_APERTURE_INSET + BOARD_ARTWORK_APERTURE_RADIUS,
+    tileClearance + TILE_VISUAL_STYLE.radius,
+  );
+  assert.equal(BOARD_VISUAL_STYLE.innerRadius, tileClearance + TILE_VISUAL_STYLE.radius);
   assert.equal(TILE_VISUAL_STYLE.radius, 12);
   assert.equal(TILE_VISUAL_STYLE.fill, VISUAL_COLORS.surface.card.phaser);
   assert.equal(TILE_VISUAL_STYLE.border, VISUAL_COLORS.divider.phaser);
@@ -729,7 +735,7 @@ test("frame opening policy applies overlap only when artwork is present", () => 
   assert.deepEqual(
     [artworkOpening.bounds.left, artworkOpening.bounds.top,
       artworkOpening.bounds.right, artworkOpening.bounds.bottom, artworkOpening.radius],
-    [114, 294, 366, 546, 20],
+    [114, 294, 366, 546, 14],
   );
   const noArtworkOpening = getBoardFrameOpening(square, false);
   assert.deepEqual(
@@ -746,16 +752,16 @@ test("frame opening policy applies overlap only when artwork is present", () => 
 test("artwork aperture corner tangents keep a fixed radius across board sizes", () => {
   for (const [side, expected] of [
     [4, {
-      topLeft: [[114, 294], [134, 314], [134, 294], [114, 314]],
-      topRight: [[366, 294], [346, 314], [346, 294], [366, 314]],
-      bottomRight: [[366, 546], [346, 526], [346, 546], [366, 526]],
-      bottomLeft: [[114, 546], [134, 526], [134, 546], [114, 526]],
+      topLeft: [[114, 294], [128, 308], [128, 294], [114, 308]],
+      topRight: [[366, 294], [352, 308], [352, 294], [366, 308]],
+      bottomRight: [[366, 546], [352, 532], [352, 546], [366, 532]],
+      bottomLeft: [[114, 546], [128, 532], [128, 546], [114, 532]],
     }],
     [7, {
-      topLeft: [[18, 198], [38, 218], [38, 198], [18, 218]],
-      topRight: [[462, 198], [442, 218], [442, 198], [462, 218]],
-      bottomRight: [[462, 642], [442, 622], [442, 642], [462, 622]],
-      bottomLeft: [[18, 642], [38, 622], [38, 642], [18, 622]],
+      topLeft: [[18, 198], [32, 212], [32, 198], [18, 212]],
+      topRight: [[462, 198], [448, 212], [448, 198], [462, 212]],
+      bottomRight: [[462, 642], [448, 628], [448, 642], [462, 628]],
+      bottomLeft: [[18, 642], [32, 628], [32, 642], [18, 628]],
     }],
   ]) {
     const corners = getBoardArtworkApertureCorners(layout(side, side));
@@ -789,9 +795,9 @@ test("stage stack backing count communicates remaining stages", () => {
 });
 
 test("stage sheet shade follows current visual depth rather than stage identity", () => {
-  assert.deepEqual(BOARD_SHEET_SHADE_ALPHA, [0, 0.10, 0.18]);
+  assert.deepEqual(BOARD_SHEET_SHADE_ALPHA, [0, 0.16, 0.28]);
   const shades = [0, 1, 2].map(getBackingSheetShadeAlpha);
-  assert.deepEqual(shades, [0, 0.10, 0.18]);
+  assert.deepEqual(shades, [0, 0.16, 0.28]);
   assert.ok(shades[2] > shades[1] && shades[1] > shades[0]);
   assert.throws(() => getBackingSheetShadeAlpha(3), RangeError);
 
@@ -802,10 +808,10 @@ test("stage sheet shade follows current visual depth rather than stage identity"
       (_, index) => getBackingSheetShadeAlpha(index + 1),
     ),
   ];
-  assert.deepEqual(stageShades(0, 2), [0, 0.10]);
+  assert.deepEqual(stageShades(0, 2), [0, 0.16]);
   assert.deepEqual(stageShades(1, 2), [0]);
-  assert.deepEqual(stageShades(0, 3), [0, 0.10, 0.18]);
-  assert.deepEqual(stageShades(1, 3), [0, 0.10]);
+  assert.deepEqual(stageShades(0, 3), [0, 0.16, 0.28]);
+  assert.deepEqual(stageShades(1, 3), [0, 0.16]);
   assert.deepEqual(stageShades(2, 3), [0]);
 });
 
