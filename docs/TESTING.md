@@ -51,6 +51,15 @@ giant frame-to-frame jumps, show the complete route for the short hold, fade smo
 run the unchanged tile scale/fade. Finally open `?debug=1&level=30&stage=3` and repeat a legal route
 over the artwork and blockers.
 
+For the Phase 3B Android corrective pass, open `?debug=1&level=27` and tap a tile immediately after
+the board becomes interactive. Selected fill and border must appear together, with no brief wrong
+inner colour. Deselect and reselect several tiles: the tactile scale may finish, but semantic colour
+must never lag the border. Reload Level 27, complete the first legal pair soon after interaction is
+enabled, then compare its route with the second and several later routes. Exercise a short straight,
+one-turn, and longer/multi-turn route. Repeat at `?debug=1&level=30&stage=3` over artwork and blockers.
+The initial 80 ms interval is non-visual scene settling and is not part of the unchanged 180/40/60 ms
+route. Record this as real-device QA only when it is actually run on Android.
+
 Generator tests check exact pair multiplicity, deterministic regeneration, non-adjacent product pairs, witness replay, solver replay, metrics, and product density. Campaign tests freeze the 100/10/10 constants, chapter boundaries, progression-band coverage, and important early band transitions; reject out-of-range levels; check next-level boundaries; and check all 100 levels for validity, solver replay, non-adjacency, deterministic replay, and distinct consecutive snapshots. Levels 1–4 have at least two initial legal moves; Level 5 has exactly one because its frozen seed and pair count now use the approved 4×4 final geometry; every campaign Level has at least one initial legal move. This Level 5 result is a known deterministic geometry-migration consequence, not a generator failure. `npm run simulate -- --count 10000` retains the deterministic 7×7/20-pair generator quality gate.
 
 `npm run analyze:progression -- --samples 300` is the heavier manual calibration command. It compiles and invokes production generation, validation, solving, and solution measurement without Phaser or a browser. It prints candidate-profile failure counts and objective solver-path metrics plus exact ten-level chapter aggregates for the campaign. `npm run analyze:progression -- --campaign-only` skips the heavy candidate sweep and reports exact campaign validation, milestones, range/chapter aggregates, cumulative removals, and the longest forced-start run. See `PROGRESSION_REPORT.md` for the recorded calibration run.

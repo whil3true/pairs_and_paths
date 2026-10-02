@@ -21,6 +21,13 @@ export const TILE_VISUAL_STYLE = Object.freeze({
 
 export type TileVisualState = "default" | "selected" | "hint" | "blocked";
 
+/** Resolves semantic tile state before transient tactile press feedback. */
+export const resolveTileFill = (state: TileVisualState, pressed: boolean): number => {
+  if (state === "selected") return TILE_VISUAL_STYLE.selectedFill;
+  if (state !== "default") return TILE_VISUAL_STYLE.fill;
+  return pressed ? TILE_VISUAL_STYLE.pressedFill : TILE_VISUAL_STYLE.fill;
+};
+
 /** A tile's visual content; interaction remains owned by the stable board cell Zone. */
 export class TileVisual {
   readonly root: Phaser.GameObjects.Container;
@@ -75,8 +82,7 @@ export class TileVisual {
 
   private draw(): void {
     const half = TILE_VISUAL_STYLE.size / 2;
-    const fill = this.pressed ? TILE_VISUAL_STYLE.pressedFill
-      : this.state === "selected" ? TILE_VISUAL_STYLE.selectedFill : TILE_VISUAL_STYLE.fill;
+    const fill = resolveTileFill(this.state, this.pressed);
     const border = this.state === "selected" ? TILE_VISUAL_STYLE.selectedBorder
       : this.state === "hint" ? TILE_VISUAL_STYLE.hintBorder
         : this.state === "blocked" ? TILE_VISUAL_STYLE.blockedBorder : TILE_VISUAL_STYLE.border;

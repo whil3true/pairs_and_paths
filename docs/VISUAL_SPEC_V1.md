@@ -408,7 +408,7 @@ States:
 
 - Default: base specification.
 - Pressed: scale to `0.96` around center for 70–90 ms; fill `#F4EEE2`.
-- Selected: full `state.selectedFill`, `3 px primary.teal` border, unchanged symbol, no marker/check/notch, and no scale.
+- Selected: full `state.selectedFill`, `3 px primary.teal` border, unchanged symbol, and no marker/check/notch. The semantic fill and border appear together in the same frame; a tactile press scale may finish independently, but its transient pressed surface never delays or replaces Selected appearance.
 - Hint: `3 px state.hint` outer ring plus a second `1 px` inner ring; optional `state.hintFill` wash up to 35%. No teal marker.
 - Removed: do not leave a card ghost. Route completes, then card/symbol scale to `0.88` and fade to zero; resulting cell is fully empty.
 - Disabled is not a normal tile state. Input locks must not visually grey the board during 900 ms Hint or route animation.
@@ -504,6 +504,10 @@ Phase 3 fixes the production implementation at an `11 px` cream halo and `5 px` 
 `280 ms` presentation progressively draws by physical polyline length for `180 ms`, holds for
 `40 ms`, then fades for `60 ms`; route metrics are computed once per move, and reinforced circular
 caps/corners do not alter logical vertices.
+
+The initial board holds gameplay input for a short, non-visual `80 ms` renderer/scene settle before
+first interaction. This settle is not route animation time and is not added after the existing
+animated multi-stage transition.
 
 - Core: `route.core`.
 - Halo: `route.halo`.
@@ -1157,7 +1161,7 @@ Screenshots must come from an actual implemented build or be reconstructed from 
 | Event | Default duration | Easing / intent | Reduced motion |
 |---|---:|---|---|
 | Button press | 80 ms down + 100 ms up | ease-out, tactile 2 px | colour change only |
-| Tile selection | 120 ms | ease-out, 0.97→1.00 + border | instant border |
+| Tile selection | semantic colour instant; 80 ms tactile scale | Selected fill + border in one frame; press scale 0.96→1.00 may finish independently | instant semantic state |
 | Pair route | 280 ms total | 180 ms linear draw, 40 ms hold, 60 ms linear fade | 180 ms static line + fade |
 | Pair removal | 160–200 ms | ease-in scale 1→0.88 + fade | 100 ms fade |
 | Hint | 900 ms semantic duration | two gentle synchronized pulses | static double ring |
