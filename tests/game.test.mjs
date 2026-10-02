@@ -23,7 +23,11 @@ import {
 import {
   getTileSymbol, LEGACY_SYMBOL_DISPLAY_SIZE, PRODUCTION_SYMBOL_DISPLAY_SIZE, TILE_SYMBOLS,
 } from "../.test-dist/game/TileSymbols.js";
-import { resolveTileFill, TILE_VISUAL_STYLE } from "../.test-dist/game/TileVisual.js";
+import { resolveTileCardFrame, TILE_VISUAL_STYLE } from "../.test-dist/game/TileVisual.js";
+import {
+  BOARD_CARD_FRAMES, BOARD_RUNTIME_ATLAS_COLUMNS, BOARD_RUNTIME_ATLAS_ROWS, BOARD_SYMBOL_FRAMES,
+  computeBoardRuntimeAtlasLayout, getBoardSymbolFrameName,
+} from "../.test-dist/game/BoardRuntimeAtlas.js";
 import {
   computeContainedSquarePlacement, getLevelArtwork, isArtworkRevealStage, isArtworkUnlocked, LEVEL_ARTWORK,
 } from "../.test-dist/game/LevelArtwork.js";
@@ -157,15 +161,66 @@ test("gameplay feedback policy freezes route, Hint, removal, and blocker values"
   assert.equal(BLOCKER_VISUAL_STYLE.edge, VISUAL_COLORS.blocker.dark.phaser);
 });
 
-test("semantic tile states take precedence over transient pressed fill", () => {
-  assert.equal(resolveTileFill("default", false), TILE_VISUAL_STYLE.fill);
-  assert.equal(resolveTileFill("default", true), TILE_VISUAL_STYLE.pressedFill);
-  assert.equal(resolveTileFill("selected", false), TILE_VISUAL_STYLE.selectedFill);
-  assert.equal(resolveTileFill("selected", true), TILE_VISUAL_STYLE.selectedFill);
-  for (const state of ["hint", "blocked"]) {
-    assert.equal(resolveTileFill(state, false), TILE_VISUAL_STYLE.fill);
-    assert.equal(resolveTileFill(state, true), TILE_VISUAL_STYLE.fill);
+test("semantic tile states take precedence over transient pressed frame", () => {
+  assert.equal(resolveTileCardFrame("default", false), "default");
+  assert.equal(resolveTileCardFrame("default", true), "pressed");
+  for (const state of ["selected", "hint", "blocked"]) {
+    assert.equal(resolveTileCardFrame(state, false), state);
+    assert.equal(resolveTileCardFrame(state, true), state);
   }
+});
+
+test("board runtime atlas manifest covers five cards and all thirty symbols exactly once", () => {
+  assert.equal(BOARD_CARD_FRAMES.length, 5);
+  assert.equal(BOARD_SYMBOL_FRAMES.length, 30);
+  assert.deepEqual(BOARD_CARD_FRAMES.map(({ frameName }) => frameName), [
+    "tile/default", "tile/pressed", "tile/selected", "tile/hint", "tile/blocked",
+  ]);
+  assert.deepEqual(BOARD_SYMBOL_FRAMES.map(({ definition }) => definition.assetKey),
+    TILE_SYMBOLS.map(({ assetKey }) => assetKey));
+  assert.deepEqual(BOARD_SYMBOL_FRAMES.map(({ frameName }) => frameName),
+    TILE_SYMBOLS.map(({ assetKey }) => getBoardSymbolFrameName(assetKey)));
+  const names = [...BOARD_CARD_FRAMES, ...BOARD_SYMBOL_FRAMES].map(({ frameName }) => frameName);
+  assert.equal(new Set(names).size, 35);
+  assert.ok(names.length <= BOARD_RUNTIME_ATLAS_COLUMNS * BOARD_RUNTIME_ATLAS_ROWS);
+});
+
+test("board runtime atlas layout is guarded, deterministic, integral, non-overlapping, and mobile-safe", () => {
+  for (const renderScale of [1, 1.5, 2]) {
+    const layout = computeBoardRuntimeAtlasLayout(renderScale);
+    assert.deepEqual(layout, computeBoardRuntimeAtlasLayout(renderScale));
+    for (const value of [layout.guardPx, layout.visualContentPx, layout.slotPx,
+      layout.atlasWidthPx, layout.atlasHeightPx]) assert.equal(Number.isInteger(value), true);
+    assert.ok(layout.guardPx > 0);
+    assert.ok(layout.atlasWidthPx <= 2048 && layout.atlasHeightPx <= 2048);
+    assert.equal(layout.placements.length, 35);
+    for (const [index, frame] of layout.placements.entries()) {
+      assert.ok(frame.x >= 0 && frame.y >= 0);
+      assert.ok(frame.x + frame.width <= layout.atlasWidthPx);
+      assert.ok(frame.y + frame.height <= layout.atlasHeightPx);
+      for (const other of layout.placements.slice(index + 1)) {
+        assert.ok(frame.x + frame.width <= other.x || other.x + other.width <= frame.x
+          || frame.y + frame.height <= other.y || other.y + other.height <= frame.y);
+      }
+    }
+  }
+});
+
+test("board runtime atlas protects tile and symbol visual geometry", () => {
+  assert.equal(TILE_VISUAL_STYLE.size, 56);
+  assert.equal(TILE_VISUAL_STYLE.radius, 12);
+  assert.equal(TILE_VISUAL_STYLE.borderWidth, 1);
+  assert.equal(TILE_VISUAL_STYLE.emphasizedBorderWidth, 3);
+  assert.equal(PRODUCTION_SYMBOL_DISPLAY_SIZE, 56);
+  assert.equal(LEGACY_SYMBOL_DISPLAY_SIZE, 38);
+  const hint = BOARD_CARD_FRAMES.find(({ state }) => state === "hint");
+  const selected = BOARD_CARD_FRAMES.find(({ state }) => state === "selected");
+  assert.equal(hint.borderWidth, 3);
+  assert.equal(hint.innerBorderWidth, 1);
+  assert.equal(TILE_VISUAL_STYLE.hintInnerInset, 5);
+  assert.equal(TILE_VISUAL_STYLE.hintInnerRadius, 9);
+  assert.equal(selected.innerBorderWidth, 0);
+  assert.equal(TILE_VISUAL_STYLE.selectedMarker, false);
 });
 
 const validatePilotWebp = (webp, path, expectedSize) => {

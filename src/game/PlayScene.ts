@@ -17,6 +17,7 @@ import { getHintMove } from "./Hint.js";
 import { computeContainedSquarePlacement, getLevelArtwork, isArtworkRevealStage } from "./LevelArtwork.js";
 import { TileVisual } from "./TileVisual.js";
 import { createBlockerVisual } from "./BlockerVisual.js";
+import { ensureBoardRuntimeAtlas } from "./BoardRuntimeAtlas.js";
 import { GAMEPLAY_HUD, formatRemainingPairs } from "./GameplayHudPolicy.js";
 import {
   createPolylineMetrics, GAMEPLAY_FEEDBACK, partialPolylineFromMetrics,
@@ -91,6 +92,7 @@ export class PlayScene extends Phaser.Scene {
 
   create(): void {
     configureLogicalCamera(this, this.renderScale);
+    ensureBoardRuntimeAtlas(this, this.renderScale);
     this.pauseControl = createSecondaryButton(this, this.renderScale, {
       x: GAMEPLAY_HUD.pause.centerX, y: GAMEPLAY_HUD.pause.centerY,
       width: GAMEPLAY_HUD.pause.width, height: GAMEPLAY_HUD.pause.height,
@@ -364,9 +366,7 @@ export class PlayScene extends Phaser.Scene {
   private createTile(point: GridPoint, tileId: number): void {
     const { x, y } = this.layout.cellCenter(point);
     const definition = getTileSymbol(tileId);
-    const visual = new TileVisual(
-      this, x, y, this.add.image(0, 0, definition.assetKey), definition.displaySize,
-    );
+    const visual = new TileVisual(this, x, y, definition, this.renderScale);
     this.currentBoardVisual!.add(visual.root);
     this.tiles.set(keyOf(point), visual);
   }

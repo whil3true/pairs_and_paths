@@ -4,6 +4,7 @@ import { FONT_FAMILY, VISUAL_COLORS } from "./VisualTokens.js";
 import {
   configureLogicalCamera, LOGICAL_GAME_HEIGHT, LOGICAL_GAME_WIDTH, setHiDpiTextResolution,
 } from "./Display.js";
+import { ensureBoardRuntimeAtlas } from "./BoardRuntimeAtlas.js";
 
 /** Developer-only contact sheet using the same textures and card treatment as gameplay. */
 export class SymbolGalleryScene extends Phaser.Scene {
@@ -17,6 +18,7 @@ export class SymbolGalleryScene extends Phaser.Scene {
 
   create(): void {
     configureLogicalCamera(this, this.renderScale);
+    ensureBoardRuntimeAtlas(this, this.renderScale);
     this.cameras.main.setBackgroundColor(VISUAL_COLORS.bg.app.phaser);
     setHiDpiTextResolution(this.add.text(240, 28, "Tile symbol gallery", {
       color: VISUAL_COLORS.text.primary.hex, fontFamily: FONT_FAMILY, fontSize: "26px", fontStyle: "bold",
@@ -30,7 +32,7 @@ export class SymbolGalleryScene extends Phaser.Scene {
     TILE_SYMBOLS.forEach((definition, index) => {
       const x = startX + (index % columns) * columnPitch;
       const y = startY + Math.floor(index / columns) * rowPitch;
-      new TileVisual(this, x, y, this.add.image(0, 0, definition.assetKey), definition.displaySize);
+      new TileVisual(this, x, y, definition, this.renderScale);
       setHiDpiTextResolution(this.add.text(x, y + 45, `${index + 1}. ${definition.name}`, {
         color: VISUAL_COLORS.text.secondary.hex, fontFamily: FONT_FAMILY, fontSize: "11px",
       }).setOrigin(0.5), this.renderScale);
