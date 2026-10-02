@@ -283,6 +283,8 @@ No glow, coloured neon shadow, stacked material-elevation ladder, or shadow on e
 ## 8. Buttons
 
 All button states change both geometry/position and colour. Hover is an enhancement for mouse; it must never expose a control unavailable on touch.
+The production button hit area is exactly its visual width × height rectangle: the clickable and visual
+centres coincide, and input does not extend beyond any visual edge.
 
 ### 8.1 Primary
 
@@ -499,8 +501,9 @@ QA: at 7×7, a user must identify blocker vs tile in grayscale, with peripheral 
 ## 14. Route
 
 Phase 3 fixes the production implementation at an `11 px` cream halo and `5 px` teal core. The
-`220 ms` presentation progressively draws by physical polyline length for `120 ms`, holds for
-`40 ms`, then fades for `60 ms`; reinforced circular caps/corners do not alter logical vertices.
+`280 ms` presentation progressively draws by physical polyline length for `180 ms`, holds for
+`40 ms`, then fades for `60 ms`; route metrics are computed once per move, and reinforced circular
+caps/corners do not alter logical vertices.
 
 - Core: `route.core`.
 - Halo: `route.halo`.
@@ -508,8 +511,8 @@ Phase 3 fixes the production implementation at an `11 px` cream halo and `5 px` 
 - Halo total width: `11 px` (3 px visible each side around core).
 - Joins: round; caps: round; polyline corners use `6 px` visual corner radius where rendering permits without changing logical vertices.
 - Z-order: artwork → empty-cell plane → halo → core → blockers → tile cards/symbols → HUD/modals. Route may terminate visually at selected tile centers but must not paint over symbols.
-- Successful route display: `220 ms` default; acceptable `180–280 ms`.
-- Entry: draw from first endpoint to second over `120 ms`; hold `40 ms`; fade `60 ms`.
+- Successful route display: `280 ms` default; acceptable `180–280 ms`.
+- Entry: draw from first endpoint to second over `180 ms`; hold `40 ms`; fade `60 ms`.
 - Use no particles, sparks, moving dots, or gold.
 - A route is only successful path feedback. Hint never draws it. Blocked-pair/error feedback uses `state.danger`, no cream halo, and a shorter `160 ms` treatment.
 - Route appearance does not imply any turn limit.
@@ -1155,7 +1158,7 @@ Screenshots must come from an actual implemented build or be reconstructed from 
 |---|---:|---|---|
 | Button press | 80 ms down + 100 ms up | ease-out, tactile 2 px | colour change only |
 | Tile selection | 120 ms | ease-out, 0.97→1.00 + border | instant border |
-| Pair route | 220 ms total | linear draw, brief hold, ease-out fade | 180 ms static line + fade |
+| Pair route | 280 ms total | 180 ms linear draw, 40 ms hold, 60 ms linear fade | 180 ms static line + fade |
 | Pair removal | 160–200 ms | ease-in scale 1→0.88 + fade | 100 ms fade |
 | Hint | 900 ms semantic duration | two gentle synchronized pulses | static double ring |
 | Artwork reveal after last pair | 450–650 ms hold | quiet, allow recognition | 250 ms hold |

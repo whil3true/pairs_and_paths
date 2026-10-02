@@ -33,10 +33,11 @@ import {
 import {
   BORDERS, COMPONENT_RADII, MOTION, RADII, SPACING, TYPOGRAPHY, VISUAL_COLORS,
 } from "../.test-dist/game/VisualTokens.js";
-import { resolveButtonVisual } from "../.test-dist/game/UiPolicy.js";
+import { createButtonHitArea, resolveButtonVisual } from "../.test-dist/game/UiPolicy.js";
 import { GAMEPLAY_HUD, formatRemainingPairs } from "../.test-dist/game/GameplayHudPolicy.js";
 import {
-  BLOCKER_VISUAL_STYLE, GAMEPLAY_FEEDBACK, partialPolyline,
+  BLOCKER_VISUAL_STYLE, createPolylineMetrics, GAMEPLAY_FEEDBACK, partialPolyline,
+  partialPolylineFromMetrics,
 } from "../.test-dist/game/GameplayFeedbackPolicy.js";
 
 const progressAt = (completedThroughLevel) => ({ version: 1, completedThroughLevel });
@@ -84,6 +85,16 @@ test("button visual policy is deterministic and exposes disabled and focus state
   assert.equal(resolveButtonVisual("secondary", "focus").focusRing, true);
 });
 
+test("button hit area matches the sized Container's local visual rectangle", () => {
+  const hitArea = createButtonHitArea(104, 48);
+  assert.deepEqual(hitArea, {
+    left: 0, top: 0, right: 104, bottom: 48,
+    width: 104, height: 48, centerX: 52, centerY: 24,
+  });
+  assert.equal(hitArea.centerX, (hitArea.left + hitArea.right) / 2);
+  assert.equal(hitArea.centerY, (hitArea.top + hitArea.bottom) / 2);
+});
+
 test("gameplay HUD policy freezes compact production bounds and Russian pair grammar", () => {
   assert.deepEqual(GAMEPLAY_HUD.pause, { left: 24, top: 20, width: 104, height: 48, centerX: 76, centerY: 44 });
   assert.deepEqual(GAMEPLAY_HUD.hint, { left: 352, top: 20, width: 104, height: 48, centerX: 404, centerY: 44 });
@@ -99,18 +110,37 @@ test("gameplay HUD policy freezes compact production bounds and Russian pair gra
 
 test("partial route progression follows physical length for arbitrary polylines", () => {
   const route = [{ x: 0, y: 0 }, { x: 10, y: 0 }, { x: 10, y: 10 }];
-  assert.deepEqual(partialPolyline(route, 0), [{ x: 0, y: 0 }]);
-  assert.deepEqual(partialPolyline(route, 0.25), [{ x: 0, y: 0 }, { x: 5, y: 0 }]);
-  assert.deepEqual(partialPolyline(route, 0.5), [{ x: 0, y: 0 }, { x: 10, y: 0 }]);
-  assert.deepEqual(partialPolyline(route, 0.75), [{ x: 0, y: 0 }, { x: 10, y: 0 }, { x: 10, y: 5 }]);
-  assert.deepEqual(partialPolyline(route, 1), route);
-  assert.deepEqual(partialPolyline([{ x: 0, y: 0 }, { x: 3, y: 0 }, { x: 3, y: 4 }, { x: 1, y: 4 }], 8 / 9),
+  const metrics = createPolylineMetrics(route);
+  assert.deepEqual(metrics.cumulativeLengths, [0, 10, 20]);
+  assert.equal(metrics.totalLength, 20);
+  assert.deepEqual(partialPolylineFromMetrics(metrics, 0), [{ x: 0, y: 0 }]);
+  assert.deepEqual(partialPolylineFromMetrics(metrics, 0.25), [{ x: 0, y: 0 }, { x: 5, y: 0 }]);
+  assert.deepEqual(partialPolylineFromMetrics(metrics, 0.5), [{ x: 0, y: 0 }, { x: 10, y: 0 }]);
+  assert.deepEqual(partialPolylineFromMetrics(metrics, 0.75), [{ x: 0, y: 0 }, { x: 10, y: 0 }, { x: 10, y: 5 }]);
+  assert.deepEqual(partialPolylineFromMetrics(metrics, 1), route);
+  const multiSegmentRoute = [{ x: 0, y: 0 }, { x: 3, y: 0 }, { x: 3, y: 4 }, { x: 1, y: 4 }];
+  const multiSegmentMetrics = createPolylineMetrics(multiSegmentRoute);
+  assert.deepEqual(multiSegmentMetrics.cumulativeLengths, [0, 3, 7, 9]);
+  assert.equal(multiSegmentMetrics.totalLength, 9);
+  assert.deepEqual(partialPolyline(multiSegmentRoute, 8 / 9),
     [{ x: 0, y: 0 }, { x: 3, y: 0 }, { x: 3, y: 4 }, { x: 2, y: 4 }]);
+  const duplicateMetrics = createPolylineMetrics([{ x: 2, y: 3 }, { x: 2, y: 3 }, { x: 6, y: 3 }]);
+  assert.deepEqual(duplicateMetrics.cumulativeLengths, [0, 0, 4]);
+  assert.equal(duplicateMetrics.totalLength, 4);
+  assert.deepEqual(partialPolylineFromMetrics(duplicateMetrics, 0.5), [{ x: 2, y: 3 }, { x: 4, y: 3 }]);
+  const zeroLengthMetrics = createPolylineMetrics([{ x: 2, y: 3 }, { x: 2, y: 3 }]);
+  assert.equal(zeroLengthMetrics.totalLength, 0);
+  assert.deepEqual(partialPolylineFromMetrics(zeroLengthMetrics, 0.5), [{ x: 2, y: 3 }]);
 });
 
 test("gameplay feedback policy freezes route, Hint, removal, and blocker values", () => {
   assert.equal(GAMEPLAY_FEEDBACK.route.haloWidth, 11);
   assert.equal(GAMEPLAY_FEEDBACK.route.coreWidth, 5);
+  assert.deepEqual([
+    GAMEPLAY_FEEDBACK.route.entryDuration,
+    GAMEPLAY_FEEDBACK.route.holdDuration,
+    GAMEPLAY_FEEDBACK.route.fadeDuration,
+  ], [180, 40, 60]);
   assert.equal(GAMEPLAY_FEEDBACK.route.entryDuration + GAMEPLAY_FEEDBACK.route.holdDuration
     + GAMEPLAY_FEEDBACK.route.fadeDuration, MOTION.pairRoute);
   assert.equal(GAMEPLAY_FEEDBACK.hint.duration, 900);

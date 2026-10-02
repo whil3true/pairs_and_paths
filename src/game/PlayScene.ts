@@ -18,7 +18,9 @@ import { computeContainedSquarePlacement, getLevelArtwork, isArtworkRevealStage 
 import { TileVisual } from "./TileVisual.js";
 import { createBlockerVisual } from "./BlockerVisual.js";
 import { GAMEPLAY_HUD, formatRemainingPairs } from "./GameplayHudPolicy.js";
-import { GAMEPLAY_FEEDBACK, partialPolyline } from "./GameplayFeedbackPolicy.js";
+import {
+  createPolylineMetrics, GAMEPLAY_FEEDBACK, partialPolylineFromMetrics,
+} from "./GameplayFeedbackPolicy.js";
 import { createSecondaryButton, createUiText, type UiButton } from "./UiPrimitives.js";
 import { MOTION, VISUAL_COLORS } from "./VisualTokens.js";
 
@@ -459,8 +461,9 @@ export class PlayScene extends Phaser.Scene {
 
   private animateRoute(points: readonly GridPoint[], onComplete: () => void): void {
     const mapped = points.map((point) => this.layout.cellCenter(point));
+    const metrics = createPolylineMetrics(mapped);
     const state = { progress: 0 };
-    const draw = (): void => this.drawRoute(partialPolyline(mapped, state.progress));
+    const draw = (): void => this.drawRoute(partialPolylineFromMetrics(metrics, state.progress));
     draw();
     this.routeTween = this.tweens.add({
       targets: state, progress: 1, duration: GAMEPLAY_FEEDBACK.route.entryDuration, ease: "Linear",
@@ -487,7 +490,10 @@ export class PlayScene extends Phaser.Scene {
     if (points.length === 0) return;
     const stroke = (width: number, color: number): void => {
       this.route.lineStyle(width, color, 1).beginPath().moveTo(points[0]!.x, points[0]!.y);
-      points.slice(1).forEach(({ x, y }) => this.route.lineTo(x, y));
+      for (let index = 1; index < points.length; index += 1) {
+        const point = points[index]!;
+        this.route.lineTo(point.x, point.y);
+      }
       this.route.strokePath();
       for (const point of points) this.route.fillStyle(color, 1).fillCircle(point.x, point.y, width / 2);
     };

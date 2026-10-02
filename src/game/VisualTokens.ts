@@ -71,7 +71,7 @@ export const SHADOWS = Object.freeze({
 });
 
 export const MOTION = Object.freeze({
-  buttonPressDown: 80, buttonPressUp: 100, tilePress: 80, tileSelection: 120, pairRoute: 220,
+  buttonPressDown: 80, buttonPressUp: 100, tilePress: 80, tileSelection: 120, pairRoute: 280,
   pairRemovalMin: 160, pairRemovalMax: 200, hint: 900,
   artworkRevealMin: 450, artworkRevealMax: 650,
   rewardEntryMin: 280, rewardEntryMax: 360,

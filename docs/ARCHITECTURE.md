@@ -6,14 +6,15 @@
 
 `src/game` owns Phaser projection and campaign selection. `LevelSequence` accepts only levels 1..100, maps each level through a deterministic progression-band table and combines that profile with a deterministic seed. Chapters remain organizational groups of ten and may contain several profiles. Every profile requests non-adjacent matching pairs. The seed is `Math.imul((levelNumber - 1) >>> 0, 0x9e3779b9) >>> 0`: Level 1 keeps seed 0, while the odd multiplier keeps the 100 base seeds distinct. This is stable content sequencing, not a cryptographic uniqueness claim.
 
-`VisualTokens` is the immutable production palette, typography, spacing, shape, shadow, and motion source for redesign work. Each colour carries both its canonical CSS HEX and derived Phaser integer so renderers cannot maintain independent palettes. `UiPolicy` resolves pure button states; `UiPrimitives` projects that policy into small Phaser text, button, icon-button, card, and modal helpers. Its explicit focus seam does not introduce global keyboard navigation. Existing scenes remain on their current presentation until their scoped redesign phases; only the global page and Phaser fallback backgrounds use the production foundation in Phase 1.
+`VisualTokens` is the immutable production palette, typography, spacing, shape, shadow, and motion source for redesign work. Each colour carries both its canonical CSS HEX and derived Phaser integer so renderers cannot maintain independent palettes. `UiPolicy` resolves pure button states and sized-Container hit geometry; `UiPrimitives` projects that policy into small Phaser text, button, icon-button, card, and modal helpers. Phaser normalizes input coordinates by a Container's centered display origin, so the shared button primitive uses the resulting `0..width × 0..height` local rectangle for both initial and re-enabled input. Its explicit focus seam does not introduce global keyboard navigation. Existing scenes remain on their current presentation until their scoped redesign phases; only the global page and Phaser fallback backgrounds use the production foundation in Phase 1.
 
 `PlayScene` owns the current session level number. Next increments it before regeneration; Replay regenerates without changing it. Level 100 instead reports campaign completion and can restart the session at Level 1, never requesting Level 101. `BoardLayout` maps only real cells; route graphics consume arbitrary-length compact polylines. A blocked matching pair receives a brief red stroke before the second tile becomes selection. `src/platform` remains the existing small platform boundary. The project retains plain `tsc`, no bundler, and Phaser 4.2.1.
 
 `PlayScene` also owns the compact gameplay HUD and the lifecycle of route, Hint, blocked-pair, and
 pair-removal feedback. `GameplayHudPolicy` contains only fixed HUD geometry and Russian pair-count
 formatting; `GameplayFeedbackPolicy` contains presentation timing/style constants and physical-length
-partial-polyline math. `BlockerVisual` is a procedural presentation of the existing immutable terrain
+partial-polyline math whose segment and cumulative lengths are computed once per animated move.
+`PlayScene` samples those metrics during each linear draw frame. `BlockerVisual` is a procedural presentation of the existing immutable terrain
 mask. None of these presentation owners changes blocker, path, move, campaign, or Hint-selection semantics.
 
 `BoardLayout` also owns the single campaign-wide presentation scale: a 64 logical px cell pitch and
