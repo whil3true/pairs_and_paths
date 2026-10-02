@@ -259,7 +259,7 @@ Rules:
 
 Assignments:
 
-- button `16`; icon button `14`; tile card `12`; level card `16`; chapter banner `20`; artwork/thumbnail `16`; modal `24`; board outer frame `22`; no-art interior `16`; gameplay artwork aperture `14`.
+- button `16`; icon button `14`; tile card `12`; level card `16`; chapter banner `20`; artwork/thumbnail `16`; modal `24`; board outer frame `24`; no-art interior `16`; gameplay artwork aperture `14`.
 - Do not create pill buttons unless the content is a small status chip. Rounded does not mean capsule everywhere.
 
 ### 7.2 Borders
@@ -365,9 +365,9 @@ Rectangular pre-stages use the same center and pitch. Do not resize tiles or art
 ### 10.2 Frame
 
 - Outer frame extends `8 px` beyond content bounds.
-- Outer radius `22 px`; the gameplay artwork aperture radius is `14 px`.
+- Outer radius `24 px`; the gameplay artwork aperture radius is `14 px`.
 - For artwork, one Graphics overlay owns only the procedural `surface.elevated` overlap strips and four rounded corner wedges. It has no dark external structural outline or dark inner bezel, and requires neither RenderTexture erase nor an artwork mask.
-- Only when artwork exists, its aperture is inset `2 px` from every content edge, so the frame overlaps the underlying artwork by `2 px`. Its curve center aligns with the edge-tile corner curve center: `2 + 14 = 4 + 12 = 16 px` from the content corner, where `4 px` is the outer tile clearance. A no-art board retains the full content opening, inset `0`, radius `16 px`, and the full `4 px` outer-tile clearance; it obeys the same alignment because `0 + 16 = 4 + 12 = 16 px`. This presentation-only artwork overlap does not alter cells, hit zones, routes, blockers, or tiles, which render above the overlay.
+- All board and tile corner curves share a center `16 px` from the content corner: outer frame `-8 + 24`, no-art opening `0 + 16`, artwork aperture `2 + 14`, and corner tile `4 + 12`. The no-art frame therefore has constant straight and curved thickness `24 - 16 = 8 px`; the artwork frame has thickness `24 - 14 = 10 px`, matching its `8 px` frame padding plus intentional `2 px` artwork overlap. This presentation-only overlap does not alter cells, hit zones, routes, blockers, or tiles, which render above the overlay.
 - `shadow.card` only on the frame, never on the artwork itself.
 - Maximum frame at 7×7 is `464×464`, bounds `8..472` × `188..652`.
 

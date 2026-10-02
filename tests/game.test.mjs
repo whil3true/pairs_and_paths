@@ -48,7 +48,7 @@ test("production visual tokens protect core palette and layout invariants", () =
   for (const value of [SPACING.screenMargin, SPACING.boardMargin, SPACING.cardPadding,
     SPACING.buttonPadding, SPACING.buttonStackGap, SPACING.iconLabelGap]) assert.equal(value % 4, 0);
   assert.deepEqual(RADII, { s: 8, m: 12, l: 16, xl: 20, modal: 24 });
-  assert.equal(COMPONENT_RADII.boardOuter, 22);
+  assert.equal(COMPONENT_RADII.boardOuter, 24);
   assert.deepEqual(BORDERS, { divider: 1, structural: 2, emphasized: 3 });
   assert.equal(MOTION.hint, 900);
   assert.deepEqual([MOTION.stageLift, MOTION.stageSettle], [220, 140]);
@@ -695,11 +695,11 @@ test("production board and tile visual policies protect frozen geometry and toke
   assert.equal(BOARD_SHEET_OFFSET_Y, 7);
   assert.equal("innerEdgeWidth" in BOARD_VISUAL_STYLE, false);
   assert.equal((BoardLayout.CELL_PITCH - BoardLayout.TILE_SIZE) / 2, 4);
-  assert.equal(BOARD_VISUAL_STYLE.outerRadius, 22);
+  assert.equal(BOARD_VISUAL_STYLE.outerRadius, 24);
   assert.equal(BOARD_VISUAL_STYLE.innerRadius, 16);
   assert.equal(BOARD_VISUAL_STYLE.borderWidth, 2);
   assert.equal(BOARD_VISUAL_STYLE.outlineInset, 1);
-  assert.equal(BOARD_VISUAL_STYLE.outlineRadius + BOARD_VISUAL_STYLE.outlineInset, 22);
+  assert.equal(BOARD_VISUAL_STYLE.outlineRadius + BOARD_VISUAL_STYLE.outlineInset, 24);
   assert.equal(BOARD_VISUAL_STYLE.frameFill, VISUAL_COLORS.surface.elevated.phaser);
   assert.equal(BOARD_VISUAL_STYLE.frameBorder, VISUAL_COLORS.border.strong.phaser);
   assert.equal(BOARD_VISUAL_STYLE.backingFill, VISUAL_COLORS.surface.elevated.phaser);
@@ -708,11 +708,22 @@ test("production board and tile visual policies protect frozen geometry and toke
   assert.notEqual(BOARD_VISUAL_STYLE.frameFill, VISUAL_COLORS.border.strong.phaser);
   assert.equal(TILE_VISUAL_STYLE.size, 56);
   const tileClearance = (BoardLayout.CELL_PITCH - BoardLayout.TILE_SIZE) / 2;
+  const curveCenter = tileClearance + TILE_VISUAL_STYLE.radius;
+  assert.equal(curveCenter, 16);
+  assert.equal(BOARD_VISUAL_STYLE.outerRadius - BOARD_FRAME_PADDING, curveCenter);
+  assert.equal(BOARD_VISUAL_STYLE.innerRadius, curveCenter);
   assert.equal(
     BOARD_ARTWORK_APERTURE_INSET + BOARD_ARTWORK_APERTURE_RADIUS,
-    tileClearance + TILE_VISUAL_STYLE.radius,
+    curveCenter,
   );
-  assert.equal(BOARD_VISUAL_STYLE.innerRadius, tileClearance + TILE_VISUAL_STYLE.radius);
+  assert.equal(
+    BOARD_VISUAL_STYLE.outerRadius - BOARD_VISUAL_STYLE.innerRadius,
+    BOARD_FRAME_PADDING,
+  );
+  assert.equal(
+    BOARD_VISUAL_STYLE.outerRadius - BOARD_ARTWORK_APERTURE_RADIUS,
+    BOARD_FRAME_PADDING + BOARD_ARTWORK_APERTURE_INSET,
+  );
   assert.equal(TILE_VISUAL_STYLE.radius, 12);
   assert.equal(TILE_VISUAL_STYLE.fill, VISUAL_COLORS.surface.card.phaser);
   assert.equal(TILE_VISUAL_STYLE.border, VISUAL_COLORS.divider.phaser);

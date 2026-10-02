@@ -61,7 +61,7 @@ export const SPACING = Object.freeze({
 export const RADII = Object.freeze({ s: 8, m: 12, l: 16, xl: 20, modal: 24 });
 export const COMPONENT_RADII = Object.freeze({
   button: 16, iconButton: 14, tile: 12, levelCard: 16, chapterBanner: 20,
-  artwork: 16, modal: 24, boardOuter: 22, boardInner: 16,
+  artwork: 16, modal: 24, boardOuter: 24, boardInner: 16,
 });
 export const BORDERS = Object.freeze({ divider: 1, structural: 2, emphasized: 3 });
 export const SHADOWS = Object.freeze({
