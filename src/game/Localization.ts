@@ -16,6 +16,14 @@ export interface UiStrings {
   readonly chapterHeader: (chapter: number, title: string) => string;
   readonly globalProgress: (completed: number, total: number) => string;
   readonly backToMenu: string;
+  readonly rewardHeading: string;
+  readonly rewardContinue: string;
+  readonly levelComplete: string;
+  readonly campaignComplete: string;
+  readonly nextLevel: string;
+  readonly restartFromLevelOne: string;
+  readonly replayLevel: string;
+  readonly menu: string;
   readonly chapterTitles: readonly [string, string, string, string, string, string, string, string, string, string];
 }
 
@@ -33,6 +41,14 @@ const ru = Object.freeze<UiStrings>({
     chapterHeader: (chapter, title) => `Глава ${chapter} · ${title}`,
     globalProgress: (completed, total) => `${completed} / ${total} · 10 уровней`,
     backToMenu: "Назад в меню",
+    rewardHeading: "Картина открыта",
+    rewardContinue: "Продолжить",
+    levelComplete: "Уровень пройден",
+    campaignComplete: "Кампания пройдена",
+    nextLevel: "Следующий уровень",
+    restartFromLevelOne: "Начать с уровня 1",
+    replayLevel: "Переиграть уровень",
+    menu: "Меню",
     chapterTitles: [
       "Утро дома", "Чай и выпечка", "Цветочные лавки", "Книги и письма", "Сады и дворики",
       "У моря", "Дороги и станции", "Осенние огни", "Зимние окна", "Тихая магия",
@@ -52,6 +68,14 @@ const en = Object.freeze<UiStrings>({
     chapterHeader: (chapter, title) => `Chapter ${chapter} · ${title}`,
     globalProgress: (completed, total) => `${completed} / ${total} · 10 levels`,
     backToMenu: "Back to Menu",
+    rewardHeading: "Artwork unlocked",
+    rewardContinue: "Continue",
+    levelComplete: "Level complete",
+    campaignComplete: "Campaign complete",
+    nextLevel: "Next level",
+    restartFromLevelOne: "Restart from Level 1",
+    replayLevel: "Replay level",
+    menu: "Menu",
     chapterTitles: [
       "Morning at Home", "Tea & Baking", "Flower Shops", "Books & Letters", "Gardens & Courtyards",
       "By the Sea", "Roads & Stations", "Autumn Lights", "Winter Windows", "Quiet Magic",

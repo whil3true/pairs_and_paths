@@ -22,8 +22,13 @@ import { GAMEPLAY_HUD, formatRemainingPairs } from "./GameplayHudPolicy.js";
 import {
   createPolylineMetrics, GAMEPLAY_FEEDBACK, partialPolylineFromMetrics,
 } from "./GameplayFeedbackPolicy.js";
-import { createSecondaryButton, createUiText, type UiButton } from "./UiPrimitives.js";
-import { MOTION, VISUAL_COLORS } from "./VisualTokens.js";
+import {
+  createModalShell, createPrimaryButton, createSecondaryButton, createUiText, type UiButton,
+} from "./UiPrimitives.js";
+import { BORDERS, COMPONENT_RADII, MOTION, VISUAL_COLORS } from "./VisualTokens.js";
+import { DEFAULT_LOCALE, getChapterTitle, getUiStrings, type SupportedLocale } from "./Localization.js";
+import { getLevelChapterPresentation } from "./ChapterPresentation.js";
+import { COMPLETE_LAYOUT, getRewardMotionPolicy, REWARD_LAYOUT } from "./RewardVisualPolicy.js";
 
 const keyOf = ({ col, row }: GridPoint): string => `${col},${row}`;
 const samePoint = (left: GridPoint, right: GridPoint): boolean =>
@@ -58,6 +63,10 @@ export class PlayScene extends Phaser.Scene {
   private stageText!: Phaser.GameObjects.Text;
   private completeOverlay: Phaser.GameObjects.Container | null = null;
   private artworkPresentation: Phaser.GameObjects.Container | null = null;
+  private rewardTimer: Phaser.Time.TimerEvent | null = null;
+  private rewardTween: Phaser.Tweens.Tween | null = null;
+  private rewardTransitionImage: Phaser.GameObjects.Image | null = null;
+  private rewardTransitionMaskShape: Phaser.GameObjects.Graphics | null = null;
   private currentArtworkVisual: Phaser.GameObjects.Image | null = null;
   private pauseOverlay: Phaser.GameObjects.Container | null = null;
   private pauseControl!: UiButton;
@@ -71,6 +80,7 @@ export class PlayScene extends Phaser.Scene {
     private readonly platform: PlatformService,
     private readonly progressStore: ProgressStore,
     private readonly renderScale = 1,
+    private readonly locale: SupportedLocale = DEFAULT_LOCALE,
   ) {
     super({ key: "PlayScene" });
   }
@@ -115,7 +125,7 @@ export class PlayScene extends Phaser.Scene {
       this.clearInitialStageSettle();
       this.clearHintFeedback();
       this.hidePause();
-      this.artworkPresentation?.destroy(true);
+      this.cleanupRewardPresentation();
     });
     this.loadStage();
   }
@@ -145,8 +155,7 @@ export class PlayScene extends Phaser.Scene {
     this.hidePause();
     this.completeOverlay?.destroy(true);
     this.completeOverlay = null;
-    this.artworkPresentation?.destroy(true);
-    this.artworkPresentation = null;
+    this.cleanupRewardPresentation();
     this.destroyBoardVisuals();
     this.setGameplayHudVisible(true);
     this.selected = null;
@@ -590,62 +599,158 @@ export class PlayScene extends Phaser.Scene {
 
   private showArtworkPresentation(): void {
     const artwork = getLevelArtwork(this.currentLevelNumber);
-    if (artwork === undefined || !this.textures.exists(artwork.fullAssetKey)) {
+    const sourceArtwork = this.currentArtworkVisual;
+    if (artwork === undefined || sourceArtwork === null || !this.textures.exists(artwork.fullAssetKey)) {
       this.showComplete();
       return;
     }
     this.hidePause();
     this.clearHintFeedback();
-    this.destroyBoardVisuals();
     this.setGameplayHudVisible(false);
-    const backdrop = this.add.rectangle(240, 400, 480, 800, 0x07101d, 1).setInteractive();
-    const image = this.add.image(240, 382, artwork.fullAssetKey)
-      .setDisplaySize(400, 400);
-    const title = setHiDpiTextResolution(this.add.text(240, 690, "Image unlocked", {
-      color: "#ffffff", fontFamily: "Arial, sans-serif", fontSize: "30px", fontStyle: "bold",
-    }).setOrigin(0.5), this.renderScale);
-    const button = this.add.rectangle(240, 746, 190, 48, 0x3976b9).setStrokeStyle(2, 0xd6eaff)
-      .setInteractive({ useHandCursor: true }).on("pointerdown", () => {
-        this.artworkPresentation?.destroy(true);
-        this.artworkPresentation = null;
-        this.showComplete();
+    this.inputLocked = true;
+    const sourceBounds = sourceArtwork.getBounds();
+    const motion = getRewardMotionPolicy(this.prefersReducedMotion());
+    this.rewardTimer = this.time.delayedCall(motion.holdDuration, () => {
+      this.rewardTimer = null;
+      if (!this.sys.isActive() || this.artworkPresentation !== null) return;
+      const backdrop = this.add.rectangle(
+        240, 400, 480, 800, VISUAL_COLORS.bg.app.phaser,
+      ).setAlpha(0).setInteractive();
+      this.artworkPresentation = this.add.container(0, 0, [backdrop]).setDepth(40);
+      const transitionImage = this.add.image(
+        motion.spatialTravel ? sourceBounds.centerX : REWARD_LAYOUT.artwork.centerX,
+        motion.spatialTravel ? sourceBounds.centerY : REWARD_LAYOUT.artwork.centerY,
+        artwork.fullAssetKey,
+      ).setDisplaySize(
+        motion.spatialTravel ? sourceBounds.width : REWARD_LAYOUT.artwork.width,
+        motion.spatialTravel ? sourceBounds.height : REWARD_LAYOUT.artwork.height,
+      ).setDepth(42).setAlpha(motion.spatialTravel ? 1 : 0);
+      const maskSize = motion.spatialTravel ? sourceBounds.width : REWARD_LAYOUT.artwork.width;
+      const maskShape = this.add.graphics().fillStyle(0xffffff)
+        .fillRoundedRect(-maskSize / 2, -maskSize / 2, maskSize, maskSize, maskSize * 0.05)
+        .setPosition(transitionImage.x, transitionImage.y).setDepth(41).setVisible(false);
+      transitionImage.setMask(maskShape.createGeometryMask());
+      this.rewardTransitionImage = transitionImage;
+      this.rewardTransitionMaskShape = maskShape;
+      sourceArtwork.setVisible(false);
+      const targetScale = REWARD_LAYOUT.artwork.width / transitionImage.width;
+      this.rewardTween = this.tweens.add({
+        targets: transitionImage,
+        x: REWARD_LAYOUT.artwork.centerX, y: REWARD_LAYOUT.artwork.centerY,
+        scaleX: targetScale, scaleY: targetScale, alpha: 1,
+        duration: motion.transitionDuration, ease: "Quad.Out",
+        onUpdate: () => maskShape.setPosition(transitionImage.x, transitionImage.y)
+          .setScale(transitionImage.displayWidth / maskSize),
+        onComplete: () => {
+          this.rewardTween = null;
+          this.destroyBoardVisuals();
+          transitionImage.clearMask(true).destroy();
+          maskShape.destroy();
+          this.rewardTransitionImage = null;
+          this.rewardTransitionMaskShape = null;
+          this.populateRewardPresentation(artwork.fullAssetKey);
+        },
       });
-    const buttonText = setHiDpiTextResolution(this.add.text(240, 746, "Continue", {
-      color: "#ffffff", fontFamily: "Arial, sans-serif", fontSize: "20px", fontStyle: "bold",
-    }).setOrigin(0.5), this.renderScale);
-    this.artworkPresentation = this.add.container(0, 0, [backdrop, image, title, button, buttonText]).setDepth(40);
+      this.tweens.add({
+        targets: [this.currentBoardVisual, this.stageStackVisual], alpha: 0,
+        duration: motion.transitionDuration, ease: "Quad.Out",
+      });
+      this.tweens.add({ targets: backdrop, alpha: 1, duration: motion.transitionDuration, ease: "Linear" });
+    });
+  }
+
+  private populateRewardPresentation(textureKey: string): void {
+    if (this.artworkPresentation === null) return;
+    const { artwork } = REWARD_LAYOUT;
+    const image = this.add.image(artwork.centerX, artwork.centerY, textureKey)
+      .setDisplaySize(artwork.width, artwork.height);
+    const corners = this.createRewardArtworkCorners();
+    const border = this.add.graphics().lineStyle(BORDERS.emphasized, VISUAL_COLORS.accent.gold.phaser, 1)
+      .strokeRoundedRect(artwork.x, artwork.y, artwork.width, artwork.height, COMPONENT_RADII.chapterBanner);
+    const strings = getUiStrings(this.locale);
+    const chapter = getLevelChapterPresentation(this.currentLevelNumber).number;
+    const heading = createUiText(this, this.renderScale, REWARD_LAYOUT.heading.centerX,
+      REWARD_LAYOUT.heading.top, strings.rewardHeading, "screenTitle", { align: "center" }).setOrigin(0.5, 0);
+    const chapterLabel = createUiText(this, this.renderScale, REWARD_LAYOUT.chapter.centerX,
+      REWARD_LAYOUT.chapter.top, strings.chapterHeader(chapter, getChapterTitle(this.locale, chapter)),
+      "body", { color: VISUAL_COLORS.text.secondary.hex, align: "center" }).setOrigin(0.5, 0);
+    const continueButton = createPrimaryButton(this, this.renderScale, {
+      x: REWARD_LAYOUT.continueButton.centerX, y: REWARD_LAYOUT.continueButton.centerY,
+      width: REWARD_LAYOUT.continueButton.width, height: REWARD_LAYOUT.continueButton.height,
+      label: strings.rewardContinue, onActivate: () => {
+        this.cleanupRewardPresentation();
+        this.showComplete();
+      },
+    });
+    this.artworkPresentation.add([image, corners, border, heading, chapterLabel, continueButton.container]);
+  }
+
+  private createRewardArtworkCorners(): Phaser.GameObjects.Graphics {
+    const { x, y, width, height } = REWARD_LAYOUT.artwork;
+    const radius = COMPONENT_RADII.chapterBanner;
+    const graphics = this.add.graphics().fillStyle(VISUAL_COLORS.bg.app.phaser);
+    const corner = (startX: number, startY: number, lineX: number, lineY: number,
+      centerX: number, centerY: number, startAngle: number, endAngle: number, anticlockwise = false): void => {
+      graphics.beginPath().moveTo(startX, startY).lineTo(lineX, lineY)
+        .arc(centerX, centerY, radius, startAngle, endAngle, anticlockwise).closePath().fillPath();
+    };
+    corner(x, y, x + radius, y, x + radius, y + radius, -Math.PI / 2, -Math.PI, true);
+    corner(x + width, y, x + width - radius, y,
+      x + width - radius, y + radius, -Math.PI / 2, 0);
+    corner(x + width, y + height, x + width, y + height - radius,
+      x + width - radius, y + height - radius, 0, Math.PI / 2);
+    corner(x, y + height, x + radius, y + height,
+      x + radius, y + height - radius, Math.PI / 2, Math.PI);
+    return graphics;
+  }
+
+  private cleanupRewardPresentation(): void {
+    this.rewardTimer?.remove(false);
+    this.rewardTimer = null;
+    this.rewardTween?.stop();
+    this.rewardTween = null;
+    this.rewardTransitionImage?.clearMask(true).destroy();
+    this.rewardTransitionImage = null;
+    this.rewardTransitionMaskShape?.destroy();
+    this.rewardTransitionMaskShape = null;
+    this.artworkPresentation?.destroy(true);
+    this.artworkPresentation = null;
   }
 
   private showComplete(): void {
     this.hidePause();
     this.clearHintFeedback();
     this.setGameplayHudVisible(false);
-    const shade = this.add.rectangle(240, 420, 440, 330, 0x0b1220, 0.96).setStrokeStyle(2, 0x7fa8d8);
     const campaignComplete = !hasNextLevel(this.currentLevelNumber);
-    const title = setHiDpiTextResolution(this.add.text(240, 315, campaignComplete ? "Campaign complete" : "Complete", {
-      color: "#ffffff", fontFamily: "Arial, sans-serif", fontSize: "36px", fontStyle: "bold",
-    }).setOrigin(0.5), this.renderScale);
-    const nextButton = this.add.rectangle(240, 418, 210, 58, 0x3976b9).setStrokeStyle(2, 0xd6eaff)
-      .setInteractive({ useHandCursor: true }).on("pointerdown", () => {
+    const strings = getUiStrings(this.locale);
+    const shell = createModalShell(this, {
+      x: COMPLETE_LAYOUT.panel.centerX, y: COMPLETE_LAYOUT.panel.centerY,
+      width: COMPLETE_LAYOUT.panel.width, height: COMPLETE_LAYOUT.panel.height,
+    });
+    const title = createUiText(this, this.renderScale, 240, COMPLETE_LAYOUT.titleY,
+      campaignComplete ? strings.campaignComplete : strings.levelComplete,
+      "sectionHeading", { align: "center" }).setOrigin(0.5);
+    const nextButton = createPrimaryButton(this, this.renderScale, {
+      x: 240, y: COMPLETE_LAYOUT.primaryY, width: COMPLETE_LAYOUT.buttonWidth,
+      height: COMPLETE_LAYOUT.buttonHeight,
+      label: campaignComplete ? strings.restartFromLevelOne : strings.nextLevel,
+      onActivate: () => {
         this.currentLevelNumber = campaignComplete ? 1 : this.currentLevelNumber + 1;
         this.startLevel();
-      });
-    const nextText = setHiDpiTextResolution(this.add.text(240, 418, campaignComplete ? "Restart from Level 1" : "Next level", {
-      color: "#ffffff", fontFamily: "Arial, sans-serif", fontSize: "22px", fontStyle: "bold",
-    }).setOrigin(0.5), this.renderScale);
-    const replayButton = this.add.rectangle(240, 489, 180, 46, 0x243c5c).setStrokeStyle(1, 0x91acce)
-      .setInteractive({ useHandCursor: true }).on("pointerdown", () => this.startLevel());
-    const replayText = setHiDpiTextResolution(this.add.text(240, 489, "Replay level", {
-      color: "#dceaff", fontFamily: "Arial, sans-serif", fontSize: "18px",
-    }).setOrigin(0.5), this.renderScale);
-    const menuButton = this.add.rectangle(240, 550, 180, 46, 0x243c5c).setStrokeStyle(1, 0x91acce)
-      .setInteractive({ useHandCursor: true }).on("pointerdown", () => this.scene.start("MainMenuScene"));
-    const menuText = setHiDpiTextResolution(this.add.text(240, 550, "Menu", {
-      color: "#dceaff", fontFamily: "Arial, sans-serif", fontSize: "18px",
-    }).setOrigin(0.5), this.renderScale);
-    this.completeOverlay = this.add.container(
-      0, 0, [shade, title, nextButton, nextText, replayButton, replayText, menuButton, menuText],
-    ).setDepth(40);
+      },
+    });
+    const replayButton = createSecondaryButton(this, this.renderScale, {
+      x: 240, y: COMPLETE_LAYOUT.replayY, width: COMPLETE_LAYOUT.buttonWidth,
+      height: COMPLETE_LAYOUT.buttonHeight, label: strings.replayLevel, onActivate: () => this.startLevel(),
+    });
+    const menuButton = createSecondaryButton(this, this.renderScale, {
+      x: 240, y: COMPLETE_LAYOUT.menuY, width: COMPLETE_LAYOUT.buttonWidth,
+      height: COMPLETE_LAYOUT.buttonHeight, label: strings.menu,
+      onActivate: () => this.scene.start("MainMenuScene"),
+    });
+    this.completeOverlay = this.add.container(0, 0, [
+      shell, title, nextButton.container, replayButton.container, menuButton.container,
+    ]).setDepth(40);
   }
 
   private showPause(): void {

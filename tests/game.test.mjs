@@ -52,6 +52,7 @@ import {
 import { formatPrimaryMenuAction, getMainMenuBrandLayout, MAIN_MENU_LAYOUT, progressRatio } from "../.test-dist/game/MainMenuVisualPolicy.js";
 import { canNavigateChapter, getLevelCardBounds, getLevelCardGeometry, LEVEL_SELECT_LAYOUT, resolveLevelCardVisual } from "../.test-dist/game/LevelSelectVisualPolicy.js";
 import { getPrimaryMenuAction } from "../.test-dist/game/CampaignNavigation.js";
+import { COMPLETE_LAYOUT, getRewardMotionPolicy, REWARD_LAYOUT } from "../.test-dist/game/RewardVisualPolicy.js";
 
 const progressAt = (completedThroughLevel) => ({ version: 1, completedThroughLevel });
 
@@ -59,7 +60,9 @@ test("Phase 4 localization dictionaries have equivalent complete shapes", () => 
   assert.deepEqual(Object.keys(UI_STRINGS).sort(), ["en", "ru"]);
   assert.deepEqual(Object.keys(UI_STRINGS.ru).sort(), Object.keys(UI_STRINGS.en).sort());
   const required = ["gameTitle", "tagline", "play", "continueLevel", "playAgainLevel", "levels", "gallery",
-    "openedProgress", "collectionComplete", "chapterLabel", "chapterHeader", "globalProgress", "backToMenu", "chapterTitles"];
+    "openedProgress", "collectionComplete", "chapterLabel", "chapterHeader", "globalProgress", "backToMenu",
+    "rewardHeading", "rewardContinue", "levelComplete", "campaignComplete", "nextLevel", "restartFromLevelOne",
+    "replayLevel", "menu", "chapterTitles"];
   assert.deepEqual(Object.keys(UI_STRINGS.ru).sort(), required.sort());
   assert.equal(UI_STRINGS.ru.chapterTitles.length, 10);
   assert.equal(UI_STRINGS.en.chapterTitles.length, 10);
@@ -67,6 +70,41 @@ test("Phase 4 localization dictionaries have equivalent complete shapes", () => 
   assert.equal(getUiStrings("en").continueLevel(30), "Continue · Level 30");
   assert.equal(getUiStrings("ru").openedProgress(29, 100), "Открыто 29 из 100");
   assert.equal(getUiStrings("en").openedProgress(29, 100), "Unlocked 29 of 100");
+});
+
+test("Reward and Complete presentation policy freezes layout, motion, and localization", () => {
+  assert.deepEqual(REWARD_LAYOUT.artwork,
+    { x: 40, y: 124, width: 400, height: 400, centerX: 240, centerY: 324 });
+  assert.deepEqual(REWARD_LAYOUT.continueButton,
+    { x: 24, y: 620, width: 432, height: 56, centerX: 240, centerY: 648 });
+  assert.deepEqual(COMPLETE_LAYOUT.panel, { centerX: 240, centerY: 410, width: 416, height: 360 });
+  const normal = getRewardMotionPolicy(false);
+  const reduced = getRewardMotionPolicy(true);
+  assert.ok(normal.holdDuration >= 450 && normal.holdDuration <= 650);
+  assert.ok(normal.transitionDuration >= 280 && normal.transitionDuration <= 360);
+  assert.deepEqual(normal, { holdDuration: 500, transitionDuration: 320, spatialTravel: true });
+  assert.deepEqual(reduced, { holdDuration: 250, transitionDuration: 150, spatialTravel: false });
+  assert.ok(reduced.holdDuration < normal.holdDuration);
+  assert.ok(reduced.transitionDuration < normal.transitionDuration);
+  assert.equal(getUiStrings("ru").rewardHeading, "Картина открыта");
+  assert.equal(getUiStrings("en").rewardHeading, "Artwork unlocked");
+  assert.equal(getUiStrings("ru").rewardContinue, "Продолжить");
+  assert.equal(getUiStrings("en").rewardContinue, "Continue");
+  assert.deepEqual(
+    [getUiStrings("ru").levelComplete, getUiStrings("ru").campaignComplete,
+      getUiStrings("ru").nextLevel, getUiStrings("ru").restartFromLevelOne,
+      getUiStrings("ru").replayLevel, getUiStrings("ru").menu],
+    ["Уровень пройден", "Кампания пройдена", "Следующий уровень", "Начать с уровня 1",
+      "Переиграть уровень", "Меню"],
+  );
+  assert.deepEqual(
+    [getUiStrings("en").levelComplete, getUiStrings("en").campaignComplete,
+      getUiStrings("en").nextLevel, getUiStrings("en").restartFromLevelOne,
+      getUiStrings("en").replayLevel, getUiStrings("en").menu],
+    ["Level complete", "Campaign complete", "Next level", "Restart from Level 1", "Replay level", "Menu"],
+  );
+  assert.equal(getUiStrings("ru").chapterHeader(3, getChapterTitle("ru", 3)), "Глава 3 · Цветочные лавки");
+  assert.equal(getUiStrings("en").chapterHeader(3, getChapterTitle("en", 3)), "Chapter 3 · Flower Shops");
 });
 
 test("localized chapter names are exact and numbered one through ten", () => {
