@@ -38,7 +38,7 @@ new Phaser.Game({
     new LevelSelectScene(progressStore, renderScale, locale),
     new ArtworkGalleryScene(progressStore, renderScale),
     new ArtworkFullViewScene(progressStore, renderScale),
-    new PlayScene(platform, progressStore, renderScale),
+    new PlayScene(platform, progressStore, renderScale, locale),
     new SymbolGalleryScene(renderScale),
   ],
   scale: {
