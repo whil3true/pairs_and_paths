@@ -2,7 +2,11 @@ import type { LevelState } from "./CampaignNavigation.js";
 import { BORDERS, VISUAL_COLORS } from "./VisualTokens.js";
 
 export const LEVEL_SELECT_LAYOUT = Object.freeze({
-  banner: Object.freeze({ x: 24, y: 116, width: 432, height: 176 }),
+  header: Object.freeze({
+    chapterLabelTop: 22, chapterTitleTop: 46, progressTop: 82,
+    chapterLabelLineHeight: 20, chapterTitleLineHeight: 30, progressLineHeight: 24,
+  }),
+  banner: Object.freeze({ x: 24, y: 116, width: 432, height: 164 }),
   previous: Object.freeze({ centerX: 48, centerY: 316, width: 48, height: 48 }),
   next: Object.freeze({ centerX: 432, centerY: 316, width: 48, height: 48 }),
   grid: Object.freeze({ x: 24, y: 352, columns: 5, rows: 2, cardSize: 72, columnGap: 18, rowGap: 24 }),
