@@ -2,6 +2,7 @@ import type { CampaignProgress } from "../progress/CampaignProgress.js";
 import type { ProgressStore } from "../progress/ProgressStore.js";
 import { getChapterLevelRange, getDefaultChapter, getLevelState } from "./CampaignNavigation.js";
 import { createChapterBanner } from "./ChapterBannerVisual.js";
+import { CHAPTER_BANNER_ASSETS } from "./ChapterBannerAssets.js";
 import { CHAPTER_COUNT, TOTAL_LEVELS } from "./LevelSequence.js";
 import { configureLogicalCamera } from "./Display.js";
 import { DEFAULT_LOCALE, getChapterTitle, getUiStrings, type SupportedLocale } from "./Localization.js";
@@ -24,6 +25,12 @@ export class LevelSelectScene extends Phaser.Scene {
     private readonly locale: SupportedLocale = DEFAULT_LOCALE,
   ) {
     super({ key: "LevelSelectScene" });
+  }
+
+  preload(): void {
+    for (const asset of CHAPTER_BANNER_ASSETS) {
+      if (!this.textures.exists(asset.assetKey)) this.load.image(asset.assetKey, asset.path);
+    }
   }
 
   create(): void {

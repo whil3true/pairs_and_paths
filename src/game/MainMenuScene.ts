@@ -1,6 +1,7 @@
 import type { ProgressStore } from "../progress/ProgressStore.js";
 import { getPrimaryMenuAction } from "./CampaignNavigation.js";
 import { createChapterBanner } from "./ChapterBannerVisual.js";
+import { getChapterBannerAsset } from "./ChapterBannerAssets.js";
 import { getChapterNumber, TOTAL_LEVELS } from "./LevelSequence.js";
 import { configureLogicalCamera } from "./Display.js";
 import { DEFAULT_LOCALE, getChapterTitle, getUiStrings, type SupportedLocale } from "./Localization.js";
@@ -16,6 +17,12 @@ export class MainMenuScene extends Phaser.Scene {
     private readonly locale: SupportedLocale = DEFAULT_LOCALE,
   ) {
     super({ key: "MainMenuScene" });
+  }
+
+  preload(): void {
+    const primary = getPrimaryMenuAction(this.progressStore.load());
+    const asset = getChapterBannerAsset(getChapterNumber(primary.levelNumber));
+    if (!this.textures.exists(asset.assetKey)) this.load.image(asset.assetKey, asset.path);
   }
 
   create(): void {

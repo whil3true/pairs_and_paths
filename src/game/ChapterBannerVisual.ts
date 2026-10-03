@@ -1,15 +1,37 @@
 import { getChapterPresentation } from "./ChapterPresentation.js";
+import { getChapterBannerAsset } from "./ChapterBannerAssets.js";
 import { BORDERS, COMPONENT_RADII, VISUAL_COLORS } from "./VisualTokens.js";
 
 export interface ChapterBannerBounds { readonly x: number; readonly y: number; readonly width: number; readonly height: number; }
+export const CHAPTER_BANNER_ASPECT_RATIO = 432 / 164;
+
+/** Returns the largest centered chapter-banner rectangle contained by the destination. */
+export const computeContainedChapterBannerPlacement = (destination: ChapterBannerBounds): ChapterBannerBounds => {
+  if ([destination.x, destination.y, destination.width, destination.height]
+    .some((value) => !Number.isFinite(value))) {
+    throw new RangeError("Chapter banner destination values must be finite numbers");
+  }
+  if (destination.width <= 0 || destination.height <= 0) {
+    throw new RangeError("Chapter banner destination dimensions must be positive finite numbers");
+  }
+  const width = Math.min(destination.width, destination.height * CHAPTER_BANNER_ASPECT_RATIO);
+  const height = width / CHAPTER_BANNER_ASPECT_RATIO;
+  return {
+    x: destination.x + (destination.width - width) / 2,
+    y: destination.y + (destination.height - height) / 2,
+    width,
+    height,
+  };
+};
+
 export type ChapterBannerElement =
   | Readonly<{ kind: "innerTint"; inset: number; radius: number; colorRole: "primary"; alpha: number }>
   | Readonly<{ kind: "leftRail"; inset: number; width: number; radius: number; colorRole: "primary"; alpha: number }>
   | Readonly<{ kind: "bottomRail"; inset: number; height: number; radius: number; colorRole: "accent"; alpha: number }>
   | Readonly<{ kind: "cornerChip"; top: number; right: number; width: number; height: number; radius: number; colorRole: "secondary"; alpha: number }>;
 
-/** Semantic, deterministic identity-card geometry consumed by the Phaser renderer and pure tests. */
-export const getChapterBannerManifest = (chapterNumber: number): readonly ChapterBannerElement[] => {
+/** Deterministic procedural geometry used only when a production banner texture is unavailable. */
+export const getChapterBannerFallbackManifest = (chapterNumber: number): readonly ChapterBannerElement[] => {
   getChapterPresentation(chapterNumber);
   return Object.freeze([
     { kind: "innerTint", inset: 16, radius: 16, colorRole: "primary", alpha: 0.10 },
@@ -21,13 +43,19 @@ export const getChapterBannerManifest = (chapterNumber: number): readonly Chapte
 
 export const createChapterBanner = (
   scene: Phaser.Scene, chapterNumber: number, bounds: ChapterBannerBounds,
-): Phaser.GameObjects.Graphics => {
+): Phaser.GameObjects.Image | Phaser.GameObjects.Graphics => {
+  const asset = getChapterBannerAsset(chapterNumber);
+  if (scene.textures.exists(asset.assetKey)) {
+    const placement = computeContainedChapterBannerPlacement(bounds);
+    return scene.add.image(placement.x, placement.y, asset.assetKey).setOrigin(0)
+      .setDisplaySize(placement.width, placement.height);
+  }
   const presentation = getChapterPresentation(chapterNumber);
   const colors = presentation;
   const graphics = scene.add.graphics()
     .fillStyle(VISUAL_COLORS.surface.card.phaser)
     .fillRoundedRect(bounds.x, bounds.y, bounds.width, bounds.height, COMPONENT_RADII.chapterBanner);
-  for (const element of getChapterBannerManifest(chapterNumber)) {
+  for (const element of getChapterBannerFallbackManifest(chapterNumber)) {
     graphics.fillStyle(colors[`${element.colorRole}Color`], element.alpha);
     if (element.kind === "innerTint") graphics.fillRoundedRect(
       bounds.x + element.inset, bounds.y + element.inset,
