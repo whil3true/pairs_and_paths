@@ -43,12 +43,17 @@ export const getChapterBannerFallbackManifest = (chapterNumber: number): readonl
 
 export const createChapterBanner = (
   scene: Phaser.Scene, chapterNumber: number, bounds: ChapterBannerBounds,
-): Phaser.GameObjects.Image | Phaser.GameObjects.Graphics => {
+): Phaser.GameObjects.Container | Phaser.GameObjects.Graphics => {
   const asset = getChapterBannerAsset(chapterNumber);
   if (scene.textures.exists(asset.assetKey)) {
     const placement = computeContainedChapterBannerPlacement(bounds);
-    return scene.add.image(placement.x, placement.y, asset.assetKey).setOrigin(0)
+    const shell = scene.add.graphics().fillStyle(VISUAL_COLORS.surface.card.phaser)
+      .fillRoundedRect(bounds.x, bounds.y, bounds.width, bounds.height, COMPONENT_RADII.chapterBanner);
+    const image = scene.add.image(placement.x, placement.y, asset.assetKey).setOrigin(0)
       .setDisplaySize(placement.width, placement.height);
+    const border = scene.add.graphics().lineStyle(BORDERS.structural, VISUAL_COLORS.border.soft.phaser)
+      .strokeRoundedRect(bounds.x, bounds.y, bounds.width, bounds.height, COMPONENT_RADII.chapterBanner);
+    return scene.add.container(0, 0, [shell, image, border]);
   }
   const presentation = getChapterPresentation(chapterNumber);
   const colors = presentation;
