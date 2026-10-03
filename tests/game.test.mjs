@@ -47,7 +47,7 @@ import { getChapterTitle, getUiStrings, UI_STRINGS } from "../.test-dist/game/Lo
 import { CHAPTER_PRESENTATIONS, getChapterPresentation, getLevelChapterPresentation } from "../.test-dist/game/ChapterPresentation.js";
 import { CHAPTER_BANNER_ASSETS, getChapterBannerAsset } from "../.test-dist/game/ChapterBannerAssets.js";
 import {
-  computeContainedChapterBannerPlacement, getChapterBannerFallbackManifest,
+  computeContainedChapterBannerPlacement, getChapterBannerFallbackManifest, shouldOccludeChapterBannerCorners,
 } from "../.test-dist/game/ChapterBannerVisual.js";
 import { formatPrimaryMenuAction, getMainMenuBrandLayout, MAIN_MENU_LAYOUT, progressRatio } from "../.test-dist/game/MainMenuVisualPolicy.js";
 import { canNavigateChapter, getLevelCardBounds, getLevelCardGeometry, LEVEL_SELECT_LAYOUT, resolveLevelCardVisual } from "../.test-dist/game/LevelSelectVisualPolicy.js";
@@ -145,6 +145,17 @@ test("chapter banner contain geometry preserves the production aspect ratio", ()
     { x: 0, y: 0, width: 0, height: 164 }, { x: 0, y: 0, width: 432, height: -1 },
     { x: 0, y: 0, width: Number.POSITIVE_INFINITY, height: 164 },
   ]) assert.throws(() => computeContainedChapterBannerPlacement(bounds), RangeError);
+});
+
+test("chapter banner corner occlusion is limited to images that fill their destination", () => {
+  const levelSelectBounds = { x: 24, y: 116, width: 432, height: 164 };
+  const mainMenuBounds = { x: 24, y: 124, width: 432, height: 232 };
+  assert.equal(shouldOccludeChapterBannerCorners(
+    levelSelectBounds, computeContainedChapterBannerPlacement(levelSelectBounds),
+  ), true);
+  assert.equal(shouldOccludeChapterBannerCorners(
+    mainMenuBounds, computeContainedChapterBannerPlacement(mainMenuBounds),
+  ), false);
 });
 
 test("chapter presentation and fallback-only manifests remain restrained and deterministic campaign-wide", () => {
