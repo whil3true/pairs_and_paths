@@ -24,6 +24,34 @@ export const computeContainedChapterBannerPlacement = (destination: ChapterBanne
   };
 };
 
+const PLACEMENT_EPSILON = 0.001;
+
+/** Whether a production image reaches every edge of its rounded destination shell. */
+export const shouldOccludeChapterBannerCorners = (
+  destination: ChapterBannerBounds, placement: ChapterBannerBounds,
+): boolean => Math.abs(placement.x - destination.x) <= PLACEMENT_EPSILON
+  && Math.abs(placement.y - destination.y) <= PLACEMENT_EPSILON
+  && Math.abs(placement.x + placement.width - destination.x - destination.width) <= PLACEMENT_EPSILON
+  && Math.abs(placement.y + placement.height - destination.y - destination.height) <= PLACEMENT_EPSILON;
+
+const drawChapterBannerCornerOcclusion = (
+  graphics: Phaser.GameObjects.Graphics, bounds: ChapterBannerBounds, radius: number,
+): void => {
+  const left = bounds.x;
+  const top = bounds.y;
+  const right = left + bounds.width;
+  const bottom = top + bounds.height;
+
+  graphics.beginPath().moveTo(left, top).lineTo(left + radius, top)
+    .arc(left + radius, top + radius, radius, -Math.PI / 2, -Math.PI, true).closePath().fillPath();
+  graphics.beginPath().moveTo(right, top).lineTo(right - radius, top)
+    .arc(right - radius, top + radius, radius, -Math.PI / 2, 0).closePath().fillPath();
+  graphics.beginPath().moveTo(right, bottom).lineTo(right, bottom - radius)
+    .arc(right - radius, bottom - radius, radius, 0, Math.PI / 2).closePath().fillPath();
+  graphics.beginPath().moveTo(left, bottom).lineTo(left + radius, bottom)
+    .arc(left + radius, bottom - radius, radius, Math.PI / 2, Math.PI).closePath().fillPath();
+};
+
 export type ChapterBannerElement =
   | Readonly<{ kind: "innerTint"; inset: number; radius: number; colorRole: "primary"; alpha: number }>
   | Readonly<{ kind: "leftRail"; inset: number; width: number; radius: number; colorRole: "primary"; alpha: number }>
@@ -51,9 +79,15 @@ export const createChapterBanner = (
       .fillRoundedRect(bounds.x, bounds.y, bounds.width, bounds.height, COMPONENT_RADII.chapterBanner);
     const image = scene.add.image(placement.x, placement.y, asset.assetKey).setOrigin(0)
       .setDisplaySize(placement.width, placement.height);
+    const cornerOcclusion = shouldOccludeChapterBannerCorners(bounds, placement)
+      ? scene.add.graphics().fillStyle(VISUAL_COLORS.bg.app.phaser)
+      : null;
+    if (cornerOcclusion) drawChapterBannerCornerOcclusion(
+      cornerOcclusion, bounds, COMPONENT_RADII.chapterBanner,
+    );
     const border = scene.add.graphics().lineStyle(BORDERS.structural, VISUAL_COLORS.border.soft.phaser)
       .strokeRoundedRect(bounds.x, bounds.y, bounds.width, bounds.height, COMPONENT_RADII.chapterBanner);
-    return scene.add.container(0, 0, [shell, image, border]);
+    return scene.add.container(0, 0, cornerOcclusion ? [shell, image, cornerOcclusion, border] : [shell, image, border]);
   }
   const presentation = getChapterPresentation(chapterNumber);
   const colors = presentation;
