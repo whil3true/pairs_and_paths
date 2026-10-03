@@ -17,7 +17,6 @@ export class LevelSelectScene extends Phaser.Scene {
   private progress!: CampaignProgress;
   private chapter = 1;
   private content: Phaser.GameObjects.Container | null = null;
-  private transitioning = false;
 
   constructor(
     private readonly progressStore: ProgressStore,
@@ -43,10 +42,10 @@ export class LevelSelectScene extends Phaser.Scene {
       x: back.x + back.width / 2, y: back.y + back.height / 2, width: back.width, height: back.height,
       label: getUiStrings(this.locale).backToMenu, onActivate: () => this.scene.start("MainMenuScene"),
     });
-    this.renderChapter(false);
+    this.renderChapter();
   }
 
-  private renderChapter(animate: boolean): void {
+  private renderChapter(): void {
     this.content?.destroy(true);
     const strings = getUiStrings(this.locale);
     const objects: Phaser.GameObjects.GameObject[] = [];
@@ -85,10 +84,6 @@ export class LevelSelectScene extends Phaser.Scene {
       if (visual.selectable) card.on("pointerup", () => this.scene.start("PlayScene", playStartData(level)));
     }
     this.content = this.add.container(0, 0, objects);
-    if (animate) {
-      this.content.setAlpha(0);
-      this.tweens.add({ targets: this.content, alpha: 1, duration: 200, onComplete: () => { this.transitioning = false; } });
-    } else this.transitioning = false;
   }
 
   /** focused is a presentation seam for a later keyboard-navigation owner. */
@@ -132,11 +127,9 @@ export class LevelSelectScene extends Phaser.Scene {
   }
 
   private navigateChapter(delta: -1 | 1): void {
-    if (this.transitioning) return;
     const next = this.chapter + delta;
     if (next < 1 || next > CHAPTER_COUNT) return;
-    this.transitioning = true;
     this.chapter = next;
-    this.renderChapter(true);
+    this.renderChapter();
   }
 }
