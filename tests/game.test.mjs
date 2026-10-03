@@ -45,7 +45,10 @@ import {
 } from "../.test-dist/game/GameplayFeedbackPolicy.js";
 import { getChapterTitle, getUiStrings, UI_STRINGS } from "../.test-dist/game/Localization.js";
 import { CHAPTER_PRESENTATIONS, getChapterPresentation, getLevelChapterPresentation } from "../.test-dist/game/ChapterPresentation.js";
-import { getChapterBannerManifest } from "../.test-dist/game/ChapterBannerVisual.js";
+import { CHAPTER_BANNER_ASSETS, getChapterBannerAsset } from "../.test-dist/game/ChapterBannerAssets.js";
+import {
+  computeContainedChapterBannerPlacement, getChapterBannerFallbackManifest,
+} from "../.test-dist/game/ChapterBannerVisual.js";
 import { formatPrimaryMenuAction, getMainMenuBrandLayout, MAIN_MENU_LAYOUT, progressRatio } from "../.test-dist/game/MainMenuVisualPolicy.js";
 import { canNavigateChapter, getLevelCardBounds, getLevelCardGeometry, LEVEL_SELECT_LAYOUT, resolveLevelCardVisual } from "../.test-dist/game/LevelSelectVisualPolicy.js";
 import { getPrimaryMenuAction } from "../.test-dist/game/CampaignNavigation.js";
@@ -109,17 +112,52 @@ test("main menu bilingual brand composition cannot overlap tagline or preview", 
   assert.equal(getMainMenuBrandLayout("en").titleRole, "displayBrand");
 });
 
-test("chapter presentation and identity-card manifests are restrained and deterministic campaign-wide", () => {
+test("production chapter banner mapping is complete, explicit, and deterministic", () => {
+  const expectedPaths = [
+    "chapter-banner-01-morning-home.webp", "chapter-banner-02-tea-baking.webp",
+    "chapter-banner-03-flower-shops.webp", "chapter-banner-04-books-letters.webp",
+    "chapter-banner-05-gardens-courtyards.webp", "chapter-banner-06-by-the-sea.webp",
+    "chapter-banner-07-roads-stations.webp", "chapter-banner-08-autumn-lights.webp",
+    "chapter-banner-09-winter-windows.webp", "chapter-banner-10-quiet-magic.webp",
+  ].map((name) => `assets/chapter-banners/${name}`);
+  assert.equal(CHAPTER_BANNER_ASSETS.length, 10);
+  assert.deepEqual(CHAPTER_BANNER_ASSETS.map(({ chapterNumber }) => chapterNumber), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+  assert.deepEqual(CHAPTER_BANNER_ASSETS.map(({ assetKey }) => assetKey),
+    ["chapter-banner-01", "chapter-banner-02", "chapter-banner-03", "chapter-banner-04", "chapter-banner-05",
+      "chapter-banner-06", "chapter-banner-07", "chapter-banner-08", "chapter-banner-09", "chapter-banner-10"]);
+  assert.deepEqual(CHAPTER_BANNER_ASSETS.map(({ path }) => path), expectedPaths);
+  assert.equal(new Set(CHAPTER_BANNER_ASSETS.map(({ assetKey }) => assetKey)).size, 10);
+  assert.equal(new Set(CHAPTER_BANNER_ASSETS.map(({ path }) => path)).size, 10);
+  for (let chapter = 1; chapter <= 10; chapter += 1) {
+    assert.equal(getChapterBannerAsset(chapter), CHAPTER_BANNER_ASSETS[chapter - 1]);
+  }
+  for (const invalid of [0, 11, 1.5, Number.NaN]) assert.throws(() => getChapterBannerAsset(invalid), RangeError);
+});
+
+test("chapter banner contain geometry preserves the production aspect ratio", () => {
+  assert.deepEqual(computeContainedChapterBannerPlacement({ x: 24, y: 124, width: 432, height: 232 }),
+    { x: 24, y: 158, width: 432, height: 164 });
+  assert.deepEqual(computeContainedChapterBannerPlacement({ x: 24, y: 116, width: 432, height: 164 }),
+    { x: 24, y: 116, width: 432, height: 164 });
+  assert.deepEqual(computeContainedChapterBannerPlacement({ x: 10, y: 20, width: 216, height: 200 }),
+    { x: 10, y: 79, width: 216, height: 82 });
+  for (const bounds of [
+    { x: 0, y: 0, width: 0, height: 164 }, { x: 0, y: 0, width: 432, height: -1 },
+    { x: 0, y: 0, width: Number.POSITIVE_INFINITY, height: 164 },
+  ]) assert.throws(() => computeContainedChapterBannerPlacement(bounds), RangeError);
+});
+
+test("chapter presentation and fallback-only manifests remain restrained and deterministic campaign-wide", () => {
   assert.equal(CHAPTER_PRESENTATIONS.length, 10);
   assert.deepEqual(CHAPTER_PRESENTATIONS.map(({ number }) => number), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
   for (let chapter = 1; chapter <= 10; chapter += 1) {
     assert.equal(getChapterPresentation(chapter).number, chapter);
-    assert.deepEqual(getChapterBannerManifest(chapter), getChapterBannerManifest(chapter));
-    assert.equal(getChapterBannerManifest(chapter).length, 4);
-    assert.deepEqual(getChapterBannerManifest(chapter).map(({ kind }) => kind),
+    assert.deepEqual(getChapterBannerFallbackManifest(chapter), getChapterBannerFallbackManifest(chapter));
+    assert.equal(getChapterBannerFallbackManifest(chapter).length, 4);
+    assert.deepEqual(getChapterBannerFallbackManifest(chapter).map(({ kind }) => kind),
       ["innerTint", "leftRail", "bottomRail", "cornerChip"]);
   }
-  assert.deepEqual(getChapterBannerManifest(1), [
+  assert.deepEqual(getChapterBannerFallbackManifest(1), [
     { kind: "innerTint", inset: 16, radius: 16, colorRole: "primary", alpha: 0.10 },
     { kind: "leftRail", inset: 16, width: 10, radius: 5, colorRole: "primary", alpha: 0.84 },
     { kind: "bottomRail", inset: 16, height: 10, radius: 5, colorRole: "accent", alpha: 0.84 },
