@@ -583,8 +583,9 @@ At `Уровень 100 · Этап 3/3 · Осталось: 22 пары`, the ro
 
 Phase 4 implementation note: all user-facing copy in this screen is supplied through the shared typed
 `ru`/`en` localization seam (standalone default `ru`). Its chapter preview is the shared deterministic
-Phaser Graphics banner and requests no artwork; this code-only treatment replaces the deferred banner
-asset recommendation without changing the approved bounds or visual direction.
+Phaser Graphics chapter identity card and requests no artwork; this code-only treatment replaces the
+deferred banner asset recommendation. It is deliberately UI, not pseudo-art: a subtle inset tint,
+left identity rail, bottom accent rail, and small corner chip replace abstract overlapping masses.
 
 ### 17.1 Layout at 480×800
 
@@ -622,13 +623,19 @@ The chapter banner shares Main Menu's static code-only builder and makes no artw
 
 ### 18.1 Layout
 
-- Header x `24..456`, y `24..72`: `Глава N · Название`, screen title.
-- Supporting progress y `76..98`: `N / 100 · 10 уровней`, body/secondary.
-- Chapter banner x `24`, y `116`, `432×176`, radius 20. Use chapter banner/approved contained derivative; title scrim at bottom ≤40% height.
+- Header x `24..456` is three intentionally split lines: chapter label at y `22` in HUD secondary,
+  localized chapter title at y `46` in dedicated `24/30`, weight 750 chapter heading, then global
+  progress at y `82` in body/secondary. Long localized titles must remain comfortably inside the
+  screen margins and must not be recombined into a 30 px screen title.
+- Chapter banner x `24`, y `116`, `432×164`, radius 20. It is a deterministic chapter identity card,
+  not procedural pseudo-art or a substitute artwork preview.
 - Chapter arrows: `48×48`, centers x `48` and `432`, y `316`; centered chapter indicator between.
 - Level grid: x `24..456`, y `352..532`, five columns × two rows.
 - Card: `72×72`, radius 16; horizontal gap `18 px`; vertical gap `24 px`.
 - Back button: x `24`, y `708`, `432×56`.
+
+The banner ends at y `280`; the arrow row spans y `292..340`; and the grid starts at y `352`.
+The resulting 12 px banner-to-navigation and navigation-to-grid gaps are intentionally symmetric.
 
 ### 18.2 States
 

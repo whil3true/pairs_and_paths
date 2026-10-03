@@ -109,23 +109,46 @@ test("main menu bilingual brand composition cannot overlap tagline or preview", 
   assert.equal(getMainMenuBrandLayout("en").titleRole, "displayBrand");
 });
 
-test("chapter presentation and banner manifests are deterministic campaign-wide", () => {
+test("chapter presentation and identity-card manifests are restrained and deterministic campaign-wide", () => {
   assert.equal(CHAPTER_PRESENTATIONS.length, 10);
   assert.deepEqual(CHAPTER_PRESENTATIONS.map(({ number }) => number), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
   for (let chapter = 1; chapter <= 10; chapter += 1) {
     assert.equal(getChapterPresentation(chapter).number, chapter);
     assert.deepEqual(getChapterBannerManifest(chapter), getChapterBannerManifest(chapter));
     assert.equal(getChapterBannerManifest(chapter).length, 4);
+    assert.deepEqual(getChapterBannerManifest(chapter).map(({ kind }) => kind),
+      ["innerTint", "leftRail", "bottomRail", "cornerChip"]);
   }
+  assert.deepEqual(getChapterBannerManifest(1), [
+    { kind: "innerTint", inset: 16, radius: 16, colorRole: "primary", alpha: 0.10 },
+    { kind: "leftRail", inset: 16, width: 10, radius: 5, colorRole: "primary", alpha: 0.84 },
+    { kind: "bottomRail", inset: 16, height: 10, radius: 5, colorRole: "accent", alpha: 0.84 },
+    { kind: "cornerChip", top: 16, right: 16, width: 72, height: 26, radius: 10, colorRole: "secondary", alpha: 0.78 },
+  ]);
   for (let level = 1; level <= 100; level += 1) assert.equal(getLevelChapterPresentation(level).number, getChapterNumber(level));
   for (const invalid of [0, 11, 1.5]) assert.throws(() => getChapterPresentation(invalid), RangeError);
 });
 
 test("level select geometry, navigation boundaries, and semantic cards are stable", () => {
-  assert.deepEqual(LEVEL_SELECT_LAYOUT.banner, { x: 24, y: 116, width: 432, height: 176 });
+  assert.deepEqual(LEVEL_SELECT_LAYOUT.header, {
+    chapterLabelTop: 22, chapterTitleTop: 46, progressTop: 82,
+    chapterLabelLineHeight: 20, chapterTitleLineHeight: 30, progressLineHeight: 24,
+  });
+  assert.deepEqual(LEVEL_SELECT_LAYOUT.banner, { x: 24, y: 116, width: 432, height: 164 });
   assert.deepEqual(LEVEL_SELECT_LAYOUT.previous, { centerX: 48, centerY: 316, width: 48, height: 48 });
   assert.deepEqual(LEVEL_SELECT_LAYOUT.next, { centerX: 432, centerY: 316, width: 48, height: 48 });
   assert.deepEqual(LEVEL_SELECT_LAYOUT.back, { x: 24, y: 708, width: 432, height: 56 });
+  const header = LEVEL_SELECT_LAYOUT.header;
+  assert.ok(header.chapterLabelTop + header.chapterLabelLineHeight <= header.chapterTitleTop);
+  assert.ok(header.chapterTitleTop + header.chapterTitleLineHeight <= header.progressTop);
+  assert.ok(header.progressTop + header.progressLineHeight < LEVEL_SELECT_LAYOUT.banner.y);
+  const bannerBottom = LEVEL_SELECT_LAYOUT.banner.y + LEVEL_SELECT_LAYOUT.banner.height;
+  const navigationTop = LEVEL_SELECT_LAYOUT.previous.centerY - LEVEL_SELECT_LAYOUT.previous.height / 2;
+  const navigationBottom = LEVEL_SELECT_LAYOUT.previous.centerY + LEVEL_SELECT_LAYOUT.previous.height / 2;
+  assert.deepEqual({ bannerBottom, navigationTop, navigationBottom, gridTop: LEVEL_SELECT_LAYOUT.grid.y },
+    { bannerBottom: 280, navigationTop: 292, navigationBottom: 340, gridTop: 352 });
+  assert.equal(navigationTop - bannerBottom, 12);
+  assert.equal(LEVEL_SELECT_LAYOUT.grid.y - navigationBottom, 12);
   const cards = Array.from({ length: 10 }, (_, index) => getLevelCardBounds(index));
   assert.deepEqual(cards[0], { x: 24, y: 352, width: 72, height: 72 });
   assert.deepEqual(cards[4], { x: 384, y: 352, width: 72, height: 72 });
@@ -169,13 +192,14 @@ test("production visual tokens protect core palette and layout invariants", () =
 });
 
 test("typography roles preserve production floors and valid metrics", () => {
-  assert.equal(Object.keys(TYPOGRAPHY).length, 11);
+  assert.equal(Object.keys(TYPOGRAPHY).length, 12);
   for (const role of Object.values(TYPOGRAPHY)) {
     assert.ok(role.weight > 0);
     assert.ok(role.size >= 14);
     assert.ok(role.lineHeight >= role.size);
   }
   assert.equal(TYPOGRAPHY.hudSecondary.size, 16);
+  assert.deepEqual(TYPOGRAPHY.chapterHeading, { weight: 750, size: 24, lineHeight: 30, tracking: -0.2, align: "center" });
   assert.equal(TYPOGRAPHY.buttonPrimary.size, 19);
 });
 

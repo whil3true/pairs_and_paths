@@ -44,9 +44,14 @@ export class LevelSelectScene extends Phaser.Scene {
     const strings = getUiStrings(this.locale);
     const objects: Phaser.GameObjects.GameObject[] = [];
     const add = <T extends Phaser.GameObjects.GameObject>(item: T): T => { objects.push(item); return item; };
-    add(createUiText(this, this.renderScale, 240, 28,
-      strings.chapterHeader(this.chapter, getChapterTitle(this.locale, this.chapter)), "screenTitle", { align: "center" }).setOrigin(0.5, 0));
-    add(createUiText(this, this.renderScale, 240, 78,
+    const header = LEVEL_SELECT_LAYOUT.header;
+    add(createUiText(this, this.renderScale, 240, header.chapterLabelTop,
+      strings.chapterLabel(this.chapter), "hudSecondary", {
+        color: VISUAL_COLORS.text.secondary.hex, align: "center",
+      }).setOrigin(0.5, 0));
+    add(createUiText(this, this.renderScale, 240, header.chapterTitleTop,
+      getChapterTitle(this.locale, this.chapter), "chapterHeading", { align: "center" }).setOrigin(0.5, 0));
+    add(createUiText(this, this.renderScale, 240, header.progressTop,
       strings.globalProgress(this.progress.completedThroughLevel, TOTAL_LEVELS), "body", {
         color: VISUAL_COLORS.text.secondary.hex, align: "center",
       }).setOrigin(0.5, 0));

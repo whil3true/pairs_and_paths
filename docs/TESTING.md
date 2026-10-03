@@ -149,12 +149,19 @@ falls back to the standalone Russian default. Check both locales at renderScale 
 normal render scale; labels must remain on one line except the intentional two-line Russian brand.
 
 - `?debug=1&resetProgress=1`: Russian Main Menu shows the localized brand/tagline, `Играть`,
-  `Уровни`, `Галерея`, zero progress, and Chapter 1's procedural banner.
+  `Уровни`, `Галерея`, zero progress, and Chapter 1's deliberate identity card. Confirm its inset
+  tint, left rail, bottom rail, and corner chip read as UI rather than artwork, debug rectangles, or
+  broken layout.
 - `?debug=1&setProgress=29`: it shows `Продолжить · Уровень 30`, `Открыто 29 из 100`, and Chapter 3.
 - `?debug=1&setProgress=100`: it shows `Играть снова · Уровень 1`, the complete collection label,
   a full track, and does not clear completion.
-- Repeat with `&locale=en`; verify the English title/tagline/actions and Chapter 3 header
-  `Chapter 3 · Flower Shops` have no clipping.
+- Repeat with `&locale=en`; at `?debug=1&setProgress=29&locale=en`, navigate to Chapter 5 and verify
+  the compact `Chapter 5` label, separate `Gardens & Courtyards` title, and global progress have no
+  clipping or near-edge red-zone effect. The title must not use the former combined 30 px header.
+- At `?debug=1&locale=en`, inspect Chapter 1 and verify a visible 12 px gap from the banner bottom to
+  the arrow row and another 12 px gap from the arrow row to the grid.
+- At `?debug=1&setProgress=29`, inspect Russian Chapter 3 and verify the same clean three-line header
+  hierarchy and spacing.
 - Level Select defaults to Chapter 3 at progress 29: Levels 21..29 are completed and selectable,
   Level 30 is the selectable gold frontier, and later Levels are locked and inert. Verify the same
   geometry and state meaning in English.

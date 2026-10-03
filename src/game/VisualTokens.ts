@@ -37,6 +37,7 @@ const typeRole = (weight: number, size: number, lineHeight: number, tracking = 0
 export const TYPOGRAPHY = Object.freeze({
   displayBrand: typeRole(800, 36, 42, -0.5, "center"),
   screenTitle: typeRole(800, 30, 36, -0.3, "center"),
+  chapterHeading: typeRole(750, 24, 30, -0.2, "center"),
   sectionHeading: typeRole(700, 22, 28),
   levelTitle: typeRole(700, 20, 26),
   hudPrimary: typeRole(750, 20, 24),

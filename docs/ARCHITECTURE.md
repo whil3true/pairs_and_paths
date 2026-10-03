@@ -131,8 +131,9 @@ of Phase 4.
 
 `ChapterPresentation.ts` owns only the ten curated chapter palette identities and localized-title
 keys; campaign grouping remains in `LevelSequence`. `ChapterBannerVisual.ts` projects a deterministic,
-static four-mass paper composition through Phaser Graphics with no randomness, animation, dynamic
-texture, or binary output. Main Menu and Level Select share this builder and request zero thumbnail,
+static chapter identity card through Phaser Graphics: one inset tint, two identity rails, and one
+corner chip, with no randomness, animation, dynamic texture, or binary output. Main Menu and Level
+Select share this presentation-only builder and request zero thumbnail,
 full, reward, or other artwork assets.
 
 ## Gameplay pause ownership
