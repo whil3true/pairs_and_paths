@@ -52,7 +52,9 @@ import {
 import { formatPrimaryMenuAction, getMainMenuBrandLayout, MAIN_MENU_LAYOUT, progressRatio } from "../.test-dist/game/MainMenuVisualPolicy.js";
 import { canNavigateChapter, getLevelCardBounds, getLevelCardGeometry, LEVEL_SELECT_LAYOUT, resolveLevelCardVisual } from "../.test-dist/game/LevelSelectVisualPolicy.js";
 import { getPrimaryMenuAction } from "../.test-dist/game/CampaignNavigation.js";
-import { COMPLETE_LAYOUT, getRewardMotionPolicy, REWARD_LAYOUT } from "../.test-dist/game/RewardVisualPolicy.js";
+import {
+  COMPLETE_LAYOUT, getRewardMotionPolicy, REWARD_LAYOUT, REWARD_TRANSITION_DIM_ALPHA,
+} from "../.test-dist/game/RewardVisualPolicy.js";
 
 const progressAt = (completedThroughLevel) => ({ version: 1, completedThroughLevel });
 
@@ -76,7 +78,9 @@ test("Reward and Complete presentation policy freezes layout, motion, and locali
   assert.deepEqual(REWARD_LAYOUT.artwork,
     { x: 40, y: 124, width: 400, height: 400, centerX: 240, centerY: 324 });
   assert.deepEqual(REWARD_LAYOUT.continueButton,
-    { x: 24, y: 620, width: 432, height: 56, centerX: 240, centerY: 648 });
+    { x: 72, y: 620, width: 336, height: 56, centerX: 240, centerY: 648 });
+  assert.equal(REWARD_TRANSITION_DIM_ALPHA, 0.18);
+  assert.ok(REWARD_TRANSITION_DIM_ALPHA > 0 && REWARD_TRANSITION_DIM_ALPHA <= 0.2);
   assert.deepEqual(COMPLETE_LAYOUT.panel, { centerX: 240, centerY: 410, width: 416, height: 360 });
   const normal = getRewardMotionPolicy(false);
   const reduced = getRewardMotionPolicy(true);
