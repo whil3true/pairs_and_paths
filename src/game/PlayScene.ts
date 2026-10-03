@@ -25,10 +25,12 @@ import {
 import {
   createModalShell, createPrimaryButton, createSecondaryButton, createUiText, type UiButton,
 } from "./UiPrimitives.js";
-import { BORDERS, COMPONENT_RADII, MOTION, VISUAL_COLORS } from "./VisualTokens.js";
+import { BORDERS, MOTION, VISUAL_COLORS } from "./VisualTokens.js";
 import { DEFAULT_LOCALE, getChapterTitle, getUiStrings, type SupportedLocale } from "./Localization.js";
 import { getLevelChapterPresentation } from "./ChapterPresentation.js";
-import { COMPLETE_LAYOUT, getRewardMotionPolicy, REWARD_LAYOUT } from "./RewardVisualPolicy.js";
+import {
+  COMPLETE_LAYOUT, getRewardMotionPolicy, REWARD_LAYOUT, REWARD_TRANSITION_DIM_ALPHA,
+} from "./RewardVisualPolicy.js";
 
 const keyOf = ({ col, row }: GridPoint): string => `${col},${row}`;
 const samePoint = (left: GridPoint, right: GridPoint): boolean =>
@@ -65,8 +67,9 @@ export class PlayScene extends Phaser.Scene {
   private artworkPresentation: Phaser.GameObjects.Container | null = null;
   private rewardTimer: Phaser.Time.TimerEvent | null = null;
   private rewardTween: Phaser.Tweens.Tween | null = null;
+  private rewardDimTween: Phaser.Tweens.Tween | null = null;
   private rewardTransitionImage: Phaser.GameObjects.Image | null = null;
-  private rewardTransitionMaskShape: Phaser.GameObjects.Graphics | null = null;
+  private rewardTransitionDim: Phaser.GameObjects.Rectangle | null = null;
   private currentArtworkVisual: Phaser.GameObjects.Image | null = null;
   private pauseOverlay: Phaser.GameObjects.Container | null = null;
   private pauseControl!: UiButton;
@@ -617,6 +620,9 @@ export class PlayScene extends Phaser.Scene {
         240, 400, 480, 800, VISUAL_COLORS.bg.app.phaser,
       ).setAlpha(0).setInteractive();
       this.artworkPresentation = this.add.container(0, 0, [backdrop]).setDepth(40);
+      const transitionDim = this.add.rectangle(
+        240, 400, 480, 800, VISUAL_COLORS.overlay.modal.phaser,
+      ).setAlpha(0).setDepth(39).setInteractive();
       const transitionImage = this.add.image(
         motion.spatialTravel ? sourceBounds.centerX : REWARD_LAYOUT.artwork.centerX,
         motion.spatialTravel ? sourceBounds.centerY : REWARD_LAYOUT.artwork.centerY,
@@ -625,13 +631,8 @@ export class PlayScene extends Phaser.Scene {
         motion.spatialTravel ? sourceBounds.width : REWARD_LAYOUT.artwork.width,
         motion.spatialTravel ? sourceBounds.height : REWARD_LAYOUT.artwork.height,
       ).setDepth(42).setAlpha(motion.spatialTravel ? 1 : 0);
-      const maskSize = motion.spatialTravel ? sourceBounds.width : REWARD_LAYOUT.artwork.width;
-      const maskShape = this.add.graphics().fillStyle(0xffffff)
-        .fillRoundedRect(-maskSize / 2, -maskSize / 2, maskSize, maskSize, maskSize * 0.05)
-        .setPosition(transitionImage.x, transitionImage.y).setDepth(41).setVisible(false);
-      transitionImage.setMask(maskShape.createGeometryMask());
       this.rewardTransitionImage = transitionImage;
-      this.rewardTransitionMaskShape = maskShape;
+      this.rewardTransitionDim = transitionDim;
       sourceArtwork.setVisible(false);
       const targetScale = REWARD_LAYOUT.artwork.width / transitionImage.width;
       this.rewardTween = this.tweens.add({
@@ -639,17 +640,22 @@ export class PlayScene extends Phaser.Scene {
         x: REWARD_LAYOUT.artwork.centerX, y: REWARD_LAYOUT.artwork.centerY,
         scaleX: targetScale, scaleY: targetScale, alpha: 1,
         duration: motion.transitionDuration, ease: "Quad.Out",
-        onUpdate: () => maskShape.setPosition(transitionImage.x, transitionImage.y)
-          .setScale(transitionImage.displayWidth / maskSize),
         onComplete: () => {
           this.rewardTween = null;
+          this.rewardDimTween?.stop();
+          this.rewardDimTween = null;
+          backdrop.setAlpha(1);
+          transitionDim.destroy();
+          this.rewardTransitionDim = null;
           this.destroyBoardVisuals();
-          transitionImage.clearMask(true).destroy();
-          maskShape.destroy();
+          transitionImage.destroy();
           this.rewardTransitionImage = null;
-          this.rewardTransitionMaskShape = null;
           this.populateRewardPresentation(artwork.fullAssetKey);
         },
+      });
+      this.rewardDimTween = this.tweens.add({
+        targets: transitionDim, alpha: REWARD_TRANSITION_DIM_ALPHA,
+        duration: motion.transitionDuration, ease: "Linear",
       });
       this.tweens.add({
         targets: [this.currentBoardVisual, this.stageStackVisual], alpha: 0,
@@ -664,9 +670,8 @@ export class PlayScene extends Phaser.Scene {
     const { artwork } = REWARD_LAYOUT;
     const image = this.add.image(artwork.centerX, artwork.centerY, textureKey)
       .setDisplaySize(artwork.width, artwork.height);
-    const corners = this.createRewardArtworkCorners();
     const border = this.add.graphics().lineStyle(BORDERS.emphasized, VISUAL_COLORS.accent.gold.phaser, 1)
-      .strokeRoundedRect(artwork.x, artwork.y, artwork.width, artwork.height, COMPONENT_RADII.chapterBanner);
+      .strokeRect(artwork.x, artwork.y, artwork.width, artwork.height);
     const strings = getUiStrings(this.locale);
     const chapter = getLevelChapterPresentation(this.currentLevelNumber).number;
     const heading = createUiText(this, this.renderScale, REWARD_LAYOUT.heading.centerX,
@@ -682,26 +687,7 @@ export class PlayScene extends Phaser.Scene {
         this.showComplete();
       },
     });
-    this.artworkPresentation.add([image, corners, border, heading, chapterLabel, continueButton.container]);
-  }
-
-  private createRewardArtworkCorners(): Phaser.GameObjects.Graphics {
-    const { x, y, width, height } = REWARD_LAYOUT.artwork;
-    const radius = COMPONENT_RADII.chapterBanner;
-    const graphics = this.add.graphics().fillStyle(VISUAL_COLORS.bg.app.phaser);
-    const corner = (startX: number, startY: number, lineX: number, lineY: number,
-      centerX: number, centerY: number, startAngle: number, endAngle: number, anticlockwise = false): void => {
-      graphics.beginPath().moveTo(startX, startY).lineTo(lineX, lineY)
-        .arc(centerX, centerY, radius, startAngle, endAngle, anticlockwise).closePath().fillPath();
-    };
-    corner(x, y, x + radius, y, x + radius, y + radius, -Math.PI / 2, -Math.PI, true);
-    corner(x + width, y, x + width - radius, y,
-      x + width - radius, y + radius, -Math.PI / 2, 0);
-    corner(x + width, y + height, x + width, y + height - radius,
-      x + width - radius, y + height - radius, 0, Math.PI / 2);
-    corner(x, y + height, x + radius, y + height,
-      x + radius, y + height - radius, Math.PI / 2, Math.PI);
-    return graphics;
+    this.artworkPresentation.add([image, border, heading, chapterLabel, continueButton.container]);
   }
 
   private cleanupRewardPresentation(): void {
@@ -709,10 +695,12 @@ export class PlayScene extends Phaser.Scene {
     this.rewardTimer = null;
     this.rewardTween?.stop();
     this.rewardTween = null;
-    this.rewardTransitionImage?.clearMask(true).destroy();
+    this.rewardDimTween?.stop();
+    this.rewardDimTween = null;
+    this.rewardTransitionImage?.destroy();
     this.rewardTransitionImage = null;
-    this.rewardTransitionMaskShape?.destroy();
-    this.rewardTransitionMaskShape = null;
+    this.rewardTransitionDim?.destroy();
+    this.rewardTransitionDim = null;
     this.artworkPresentation?.destroy(true);
     this.artworkPresentation = null;
   }

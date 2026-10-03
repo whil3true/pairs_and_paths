@@ -2,8 +2,10 @@ export const REWARD_LAYOUT = Object.freeze({
   heading: Object.freeze({ centerX: 240, top: 32 }),
   chapter: Object.freeze({ centerX: 240, top: 76 }),
   artwork: Object.freeze({ x: 40, y: 124, width: 400, height: 400, centerX: 240, centerY: 324 }),
-  continueButton: Object.freeze({ x: 24, y: 620, width: 432, height: 56, centerX: 240, centerY: 648 }),
+  continueButton: Object.freeze({ x: 72, y: 620, width: 336, height: 56, centerX: 240, centerY: 648 }),
 });
+
+export const REWARD_TRANSITION_DIM_ALPHA = 0.18;
 
 export const COMPLETE_LAYOUT = Object.freeze({
   panel: Object.freeze({ centerX: 240, centerY: 410, width: 416, height: 360 }),
