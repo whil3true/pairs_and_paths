@@ -1,23 +1,33 @@
 :root {
-  --page-background: #F5EEDF;
-  --page-background-transition: 0ms;
+  --page-dim-opacity: 0;
+  --page-dim-transition: 0ms;
   color-scheme: light;
   font-family: "Manrope", system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
-  background-color: var(--page-background);
-  transition: background-color var(--page-background-transition) linear;
+  background-color: #F5EEDF;
 }
 * { box-sizing: border-box; }
 html, body { width: 100%; min-height: 100%; margin: 0; }
 body {
   min-height: 100dvh;
   overflow: hidden;
-  background-color: var(--page-background);
-  transition: background-color var(--page-background-transition) linear;
+  background-color: #F5EEDF;
+  isolation: isolate;
 }
-/* The body owns the full-viewport background; Phaser fits only inside this safe-area frame. */
+/* Mirrors VISUAL_COLORS.overlay.modal.hex behind the Phaser safe-area frame. */
+#page-dim {
+  position: fixed;
+  inset: 0;
+  background: #1C2323;
+  opacity: var(--page-dim-opacity);
+  transition: opacity var(--page-dim-transition) linear;
+  pointer-events: none;
+  z-index: 0;
+}
+/* Phaser fits only inside this safe-area frame, above the page-only dim layer. */
 #game {
   position: fixed;
   inset: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px)
     env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
+  z-index: 1;
 }
 #game canvas { display: block; }
