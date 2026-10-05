@@ -100,14 +100,14 @@ export class ArtworkGalleryScene extends Phaser.Scene {
       graphics.fillStyle(VISUAL_COLORS.state.lockedFill.phaser).fillRoundedRect(bounds.x, bounds.y, 72, 72, COMPONENT_RADII.levelCard)
         .lineStyle(BORDERS.structural, VISUAL_COLORS.state.locked.phaser).strokeRoundedRect(bounds.x, bounds.y, 72, 72, COMPONENT_RADII.levelCard);
       this.drawLock(graphics, x, y);
-    } else {
+    } else if (!loaded) {
       graphics.fillStyle(VISUAL_COLORS.surface.card.phaser).fillRoundedRect(bounds.x, bounds.y, 72, 72, COMPONENT_RADII.levelCard);
       if (state === "unavailable") this.drawDashedBorder(graphics, bounds.x, bounds.y, 72, 72);
-      else if (!loaded) graphics.lineStyle(BORDERS.structural, VISUAL_COLORS.border.soft.phaser)
+      else graphics.lineStyle(BORDERS.structural, VISUAL_COLORS.border.soft.phaser)
         .strokeRoundedRect(bounds.x, bounds.y, 72, 72, COMPONENT_RADII.levelCard);
       if (state === "unavailable") this.drawImageGlyph(graphics, x, y - 8, false);
       else if (failed) this.drawImageGlyph(graphics, x, y - 8, true);
-      else if (!loaded) graphics.lineStyle(3, VISUAL_COLORS.accent.gold.phaser).beginPath().arc(x, y - 7, 8, -1.2, 1.8).strokePath();
+      else graphics.lineStyle(3, VISUAL_COLORS.accent.gold.phaser).beginPath().arc(x, y - 7, 8, -1.2, 1.8).strokePath();
     }
     if (loaded && artwork !== undefined) {
       const thumbnail = ARTWORK_GALLERY_THUMBNAIL;

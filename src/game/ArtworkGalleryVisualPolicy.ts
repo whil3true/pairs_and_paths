@@ -15,7 +15,7 @@ export const ARTWORK_GALLERY_LAYOUT = Object.freeze({
   back: Object.freeze({ x: 24, y: 708, width: 432, height: 56 }),
 });
 
-export const ARTWORK_GALLERY_THUMBNAIL = Object.freeze({ size: 64, radius: 12 });
+export const ARTWORK_GALLERY_THUMBNAIL = Object.freeze({ size: 72, radius: 16 });
 
 export const ARTWORK_FULL_VIEW_LAYOUT = Object.freeze({
   back: Object.freeze({ x: 24, y: 20, width: 48, height: 48 }),
