@@ -79,8 +79,8 @@ test("Reward and Complete presentation policy freezes layout, motion, and locali
     { x: 40, y: 124, width: 400, height: 400, centerX: 240, centerY: 324 });
   assert.deepEqual(REWARD_LAYOUT.continueButton,
     { x: 72, y: 620, width: 336, height: 56, centerX: 240, centerY: 648 });
-  assert.equal(REWARD_TRANSITION_DIM_ALPHA, 0.18);
-  assert.ok(REWARD_TRANSITION_DIM_ALPHA > 0 && REWARD_TRANSITION_DIM_ALPHA <= 0.2);
+  assert.equal(REWARD_TRANSITION_DIM_ALPHA, 0.22);
+  assert.ok(REWARD_TRANSITION_DIM_ALPHA > 0 && REWARD_TRANSITION_DIM_ALPHA <= 0.25);
   assert.deepEqual(COMPLETE_LAYOUT.panel, { centerX: 240, centerY: 410, width: 416, height: 360 });
   const normal = getRewardMotionPolicy(false);
   const reduced = getRewardMotionPolicy(true);

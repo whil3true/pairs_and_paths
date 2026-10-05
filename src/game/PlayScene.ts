@@ -661,7 +661,6 @@ export class PlayScene extends Phaser.Scene {
         targets: [this.currentBoardVisual, this.stageStackVisual], alpha: 0,
         duration: motion.transitionDuration, ease: "Quad.Out",
       });
-      this.tweens.add({ targets: backdrop, alpha: 1, duration: motion.transitionDuration, ease: "Linear" });
     });
   }
 
