@@ -5,7 +5,7 @@ import {
   getUnlockedArtworkCountInChapter,
 } from "./ArtworkGallery.js";
 import {
-  ARTWORK_GALLERY_LAYOUT, ARTWORK_GALLERY_THUMBNAIL, getArtworkGallerySlotBounds,
+  ARTWORK_GALLERY_LAYOUT, ARTWORK_GALLERY_THUMBNAIL, getArtworkGallerySlotBounds, type VisualBounds,
 } from "./ArtworkGalleryVisualPolicy.js";
 import { getChapterLevelRange } from "./CampaignNavigation.js";
 import { configureLogicalCamera } from "./Display.js";
@@ -17,11 +17,28 @@ import { BORDERS, COMPONENT_RADII, VISUAL_COLORS } from "./VisualTokens.js";
 
 export interface ArtworkGalleryStartData { readonly chapter?: number; }
 
+const drawThumbnailCornerOcclusion = (
+  graphics: Phaser.GameObjects.Graphics, bounds: VisualBounds, radius: number,
+): void => {
+  const left = bounds.x;
+  const top = bounds.y;
+  const right = left + bounds.width;
+  const bottom = top + bounds.height;
+
+  graphics.beginPath().moveTo(left, top).lineTo(left + radius, top)
+    .arc(left + radius, top + radius, radius, -Math.PI / 2, -Math.PI, true).closePath().fillPath();
+  graphics.beginPath().moveTo(right, top).lineTo(right - radius, top)
+    .arc(right - radius, top + radius, radius, -Math.PI / 2, 0).closePath().fillPath();
+  graphics.beginPath().moveTo(right, bottom).lineTo(right, bottom - radius)
+    .arc(right - radius, bottom - radius, radius, 0, Math.PI / 2).closePath().fillPath();
+  graphics.beginPath().moveTo(left, bottom).lineTo(left + radius, bottom)
+    .arc(left + radius, bottom - radius, radius, Math.PI / 2, Math.PI).closePath().fillPath();
+};
+
 export class ArtworkGalleryScene extends Phaser.Scene {
   private progress!: CampaignProgress;
   private chapter = 1;
   private content: Phaser.GameObjects.Container | null = null;
-  private readonly maskedThumbnails: Phaser.GameObjects.Image[] = [];
   private readonly pendingThumbnails = new Set<string>();
   private readonly failedThumbnails = new Set<string>();
 
@@ -95,29 +112,28 @@ export class ArtworkGalleryScene extends Phaser.Scene {
     const artwork = state === "unlocked" ? getLevelArtwork(level) : undefined;
     const loaded = artwork !== undefined && this.textures.exists(artwork.thumbnailAssetKey);
     const failed = artwork !== undefined && this.failedThumbnails.has(artwork.thumbnailAssetKey);
-    const graphics = this.add.graphics(); objects.push(graphics);
-    if (state === "locked") {
-      graphics.fillStyle(VISUAL_COLORS.state.lockedFill.phaser).fillRoundedRect(bounds.x, bounds.y, 72, 72, COMPONENT_RADII.levelCard)
-        .lineStyle(BORDERS.structural, VISUAL_COLORS.state.locked.phaser).strokeRoundedRect(bounds.x, bounds.y, 72, 72, COMPONENT_RADII.levelCard);
-      this.drawLock(graphics, x, y);
-    } else if (!loaded) {
-      graphics.fillStyle(VISUAL_COLORS.surface.card.phaser).fillRoundedRect(bounds.x, bounds.y, 72, 72, COMPONENT_RADII.levelCard);
-      if (state === "unavailable") this.drawDashedBorder(graphics, bounds.x, bounds.y, 72, 72);
-      else graphics.lineStyle(BORDERS.structural, VISUAL_COLORS.border.soft.phaser)
-        .strokeRoundedRect(bounds.x, bounds.y, 72, 72, COMPONENT_RADII.levelCard);
-      if (state === "unavailable") this.drawImageGlyph(graphics, x, y - 8, false);
-      else if (failed) this.drawImageGlyph(graphics, x, y - 8, true);
-      else graphics.lineStyle(3, VISUAL_COLORS.accent.gold.phaser).beginPath().arc(x, y - 7, 8, -1.2, 1.8).strokePath();
+    if (state === "locked" || !loaded) {
+      const graphics = this.add.graphics(); objects.push(graphics);
+      if (state === "locked") {
+        graphics.fillStyle(VISUAL_COLORS.state.lockedFill.phaser).fillRoundedRect(bounds.x, bounds.y, 72, 72, COMPONENT_RADII.levelCard)
+          .lineStyle(BORDERS.structural, VISUAL_COLORS.state.locked.phaser).strokeRoundedRect(bounds.x, bounds.y, 72, 72, COMPONENT_RADII.levelCard);
+        this.drawLock(graphics, x, y);
+      } else {
+        graphics.fillStyle(VISUAL_COLORS.surface.card.phaser).fillRoundedRect(bounds.x, bounds.y, 72, 72, COMPONENT_RADII.levelCard);
+        if (state === "unavailable") this.drawDashedBorder(graphics, bounds.x, bounds.y, 72, 72);
+        else graphics.lineStyle(BORDERS.structural, VISUAL_COLORS.border.soft.phaser)
+          .strokeRoundedRect(bounds.x, bounds.y, 72, 72, COMPONENT_RADII.levelCard);
+        if (state === "unavailable") this.drawImageGlyph(graphics, x, y - 8, false);
+        else if (failed) this.drawImageGlyph(graphics, x, y - 8, true);
+        else graphics.lineStyle(3, VISUAL_COLORS.accent.gold.phaser).beginPath().arc(x, y - 7, 8, -1.2, 1.8).strokePath();
+      }
     }
     if (loaded && artwork !== undefined) {
       const thumbnail = ARTWORK_GALLERY_THUMBNAIL;
-      const maskShape = this.add.graphics().fillStyle(0xffffff).fillRoundedRect(
-        x - thumbnail.size / 2, y - thumbnail.size / 2, thumbnail.size, thumbnail.size, thumbnail.radius,
-      ).setVisible(false);
       const image = this.add.image(x, y, artwork.thumbnailAssetKey).setDisplaySize(thumbnail.size, thumbnail.size);
-      image.setMask(maskShape.createGeometryMask());
-      this.maskedThumbnails.push(image);
-      objects.push(maskShape, image, this.add.graphics()
+      const cornerOcclusion = this.add.graphics().fillStyle(VISUAL_COLORS.bg.app.phaser);
+      drawThumbnailCornerOcclusion(cornerOcclusion, bounds, thumbnail.radius);
+      objects.push(image, cornerOcclusion, this.add.graphics()
         .lineStyle(BORDERS.structural, VISUAL_COLORS.border.strong.phaser)
         .strokeRoundedRect(bounds.x, bounds.y, 72, 72, COMPONENT_RADII.levelCard));
     }
@@ -134,8 +150,6 @@ export class ArtworkGalleryScene extends Phaser.Scene {
   }
 
   private destroyChapterContent(): void {
-    for (const image of this.maskedThumbnails) image.clearMask(true);
-    this.maskedThumbnails.length = 0;
     this.content?.destroy(true);
     this.content = null;
   }
