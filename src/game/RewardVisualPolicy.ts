@@ -5,7 +5,7 @@ export const REWARD_LAYOUT = Object.freeze({
   continueButton: Object.freeze({ x: 72, y: 620, width: 336, height: 56, centerX: 240, centerY: 648 }),
 });
 
-export const REWARD_TRANSITION_DIM_ALPHA = 0.18;
+export const REWARD_TRANSITION_DIM_ALPHA = 0.22;
 
 export const COMPLETE_LAYOUT = Object.freeze({
   panel: Object.freeze({ centerX: 240, centerY: 410, width: 416, height: 360 }),
