@@ -12,7 +12,7 @@ import type { PlayStartData } from "./SceneStart.js";
 import { createLevelStage, getStageClearOutcome, getStageCount, hasNextLevel } from "./LevelSequence.js";
 import { getTileSymbol, preloadTileSymbols } from "./TileSymbols.js";
 import {
-  configureLogicalCamera, LOGICAL_GAME_HEIGHT, LOGICAL_GAME_WIDTH, setHiDpiTextResolution,
+  configureLogicalCamera, LOGICAL_GAME_HEIGHT, LOGICAL_GAME_WIDTH,
 } from "./Display.js";
 import { getHintMove } from "./Hint.js";
 import { computeContainedSquarePlacement, getLevelArtwork, isArtworkRevealStage } from "./LevelArtwork.js";
@@ -24,14 +24,15 @@ import {
   createPolylineMetrics, GAMEPLAY_FEEDBACK, partialPolylineFromMetrics,
 } from "./GameplayFeedbackPolicy.js";
 import {
-  createModalShell, createPrimaryButton, createSecondaryButton, createUiText, type UiButton,
+  createDangerButton, createModalShell, createPrimaryButton, createSecondaryButton, createUiText, type UiButton,
 } from "./UiPrimitives.js";
-import { BORDERS, MOTION, VISUAL_COLORS } from "./VisualTokens.js";
+import { BORDERS, VISUAL_COLORS } from "./VisualTokens.js";
 import { DEFAULT_LOCALE, getChapterTitle, getUiStrings, type SupportedLocale } from "./Localization.js";
 import { getLevelChapterPresentation } from "./ChapterPresentation.js";
 import {
   COMPLETE_LAYOUT, getRewardMotionPolicy, REWARD_LAYOUT, REWARD_TRANSITION_DIM_ALPHA,
 } from "./RewardVisualPolicy.js";
+import { getPauseMotionPolicy, PAUSE_LAYOUT } from "./PauseVisualPolicy.js";
 
 const keyOf = ({ col, row }: GridPoint): string => `${col},${row}`;
 const samePoint = (left: GridPoint, right: GridPoint): boolean =>
@@ -73,6 +74,8 @@ export class PlayScene extends Phaser.Scene {
   private rewardTransitionDim: Phaser.GameObjects.Rectangle | null = null;
   private currentArtworkVisual: Phaser.GameObjects.Image | null = null;
   private pauseOverlay: Phaser.GameObjects.Container | null = null;
+  private pauseTween: Phaser.Tweens.Tween | null = null;
+  private pauseClosing = false;
   private pauseControl!: UiButton;
   private hintControl!: UiButton;
   private currentLevelNumber = 1;
@@ -128,7 +131,7 @@ export class PlayScene extends Phaser.Scene {
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.clearInitialStageSettle();
       this.clearHintFeedback();
-      this.hidePause();
+      this.clearPauseOverlayImmediately();
       this.cleanupRewardPresentation();
     });
     this.loadStage();
@@ -156,7 +159,7 @@ export class PlayScene extends Phaser.Scene {
   }
 
   private loadStage(animateIn = false): void {
-    this.hidePause();
+    this.clearPauseOverlayImmediately();
     this.completeOverlay?.destroy(true);
     this.completeOverlay = null;
     this.cleanupRewardPresentation();
@@ -608,7 +611,7 @@ export class PlayScene extends Phaser.Scene {
       this.showComplete();
       return;
     }
-    this.hidePause();
+    this.clearPauseOverlayImmediately();
     this.clearHintFeedback();
     this.setGameplayHudVisible(false);
     this.inputLocked = true;
@@ -712,8 +715,8 @@ export class PlayScene extends Phaser.Scene {
   }
 
   private showComplete(): void {
+    this.clearPauseOverlayImmediately();
     setPageDim(VISUAL_COLORS.overlay.modal.alpha, 0);
-    this.hidePause();
     this.clearHintFeedback();
     this.setGameplayHudVisible(false);
     const campaignComplete = !hasNextLevel(this.currentLevelNumber);
@@ -751,39 +754,43 @@ export class PlayScene extends Phaser.Scene {
   private showPause(): void {
     if (this.inputLocked || this.hintActive || this.completeOverlay !== null
       || this.artworkPresentation !== null || this.pauseOverlay !== null) return;
-    this.showPauseMenu();
+    this.showPauseMenu(true);
   }
 
-  private showPauseMenu(): void {
+  private showPauseMenu(animateEntry = false): void {
+    const strings = getUiStrings(this.locale);
     this.replacePauseOverlay(
-      "PAUSED",
+      strings.pauseTitle,
       undefined,
       [
-        { label: "Resume", action: () => this.hidePause() },
-        { label: "Restart level", action: () => this.showRestartConfirmation() },
-        { label: "Exit to menu", action: () => this.showExitConfirmation() },
+        { label: strings.pauseResume, kind: "primary", action: () => this.dismissPauseOverlay() },
+        { label: strings.pauseRestart, kind: "secondary", action: () => this.showRestartConfirmation() },
+        { label: strings.pauseExit, kind: "secondary", action: () => this.showExitConfirmation() },
       ],
+      animateEntry,
     );
   }
 
   private showRestartConfirmation(): void {
+    const strings = getUiStrings(this.locale);
     this.replacePauseOverlay(
-      "Restart level?",
-      "Current level progress will be lost.",
+      strings.restartConfirmTitle,
+      strings.restartConfirmBody,
       [
-        { label: "Restart", action: () => { this.hidePause(); this.startLevel(); } },
-        { label: "Cancel", action: () => this.showPauseMenu() },
+        { label: strings.cancel, kind: "primary", action: () => this.showPauseMenu() },
+        { label: strings.restartConfirmAction, kind: "danger", action: () => this.dismissPauseOverlay(() => this.startLevel()) },
       ],
     );
   }
 
   private showExitConfirmation(): void {
+    const strings = getUiStrings(this.locale);
     this.replacePauseOverlay(
-      "Exit to menu?",
-      "Current level progress will be lost.",
+      strings.exitConfirmTitle,
+      strings.exitConfirmBody,
       [
-        { label: "Exit", action: () => { this.hidePause(); this.scene.start("MainMenuScene"); } },
-        { label: "Cancel", action: () => this.showPauseMenu() },
+        { label: strings.cancel, kind: "primary", action: () => this.showPauseMenu() },
+        { label: strings.exitConfirmAction, kind: "danger", action: () => this.dismissPauseOverlay(() => this.scene.start("MainMenuScene")) },
       ],
     );
   }
@@ -791,41 +798,77 @@ export class PlayScene extends Phaser.Scene {
   private replacePauseOverlay(
     titleCopy: string,
     message: string | undefined,
-    actions: readonly { readonly label: string; readonly action: () => void }[],
+    actions: readonly { readonly label: string; readonly kind: "primary" | "secondary" | "danger"; readonly action: () => void }[],
+    animateEntry = false,
   ): void {
+    if (this.pauseClosing) return;
     this.pauseOverlay?.destroy(true);
-    const objects: Phaser.GameObjects.GameObject[] = [];
-    const backdrop = this.add.rectangle(240, 400, 480, 800, 0x07101d, 0.72).setInteractive();
-    const panelHeight = message === undefined ? 350 : 300;
-    const panel = this.add.rectangle(240, 410, 420, panelHeight, 0x0b1220, 0.98)
-      .setStrokeStyle(2, 0x7fa8d8);
-    const titleY = message === undefined ? 280 : 320;
-    const title = setHiDpiTextResolution(this.add.text(240, titleY, titleCopy, {
-      color: "#ffffff", fontFamily: "Arial, sans-serif", fontSize: "34px", fontStyle: "bold",
-    }).setOrigin(0.5), this.renderScale);
-    objects.push(backdrop, panel, title);
+    const shell = createModalShell(this, {
+      x: PAUSE_LAYOUT.panel.centerX, y: PAUSE_LAYOUT.panel.centerY,
+      width: PAUSE_LAYOUT.panel.width, height: PAUSE_LAYOUT.panel.height, borderRole: "soft",
+    });
+    const title = createUiText(this, this.renderScale, PAUSE_LAYOUT.title.centerX,
+      PAUSE_LAYOUT.title.centerY, titleCopy, "sectionHeading", { align: "center" }).setOrigin(0.5);
+    const objects: Phaser.GameObjects.GameObject[] = [shell, title];
     if (message !== undefined) {
-      objects.push(setHiDpiTextResolution(this.add.text(240, 370, message, {
-        color: "#bcd1ec", fontFamily: "Arial, sans-serif", fontSize: "17px",
-      }).setOrigin(0.5), this.renderScale));
+      objects.push(createUiText(this, this.renderScale, PAUSE_LAYOUT.body.centerX,
+        PAUSE_LAYOUT.body.centerY, message, "body", {
+          color: VISUAL_COLORS.text.secondary.hex, align: "center",
+        }).setOrigin(0.5));
     }
-    const firstButtonY = message === undefined ? 365 : 440;
-    actions.forEach(({ label, action }, index) => {
-      const y = firstButtonY + index * 68;
-      const button = this.add.rectangle(240, y, 220, 50, index === 0 ? 0x3976b9 : 0x243c5c)
-        .setStrokeStyle(index === 0 ? 2 : 1, index === 0 ? 0xd6eaff : 0x91acce)
-        .setInteractive({ useHandCursor: true }).on("pointerdown", action);
-      const text = setHiDpiTextResolution(this.add.text(240, y, label, {
-        color: "#ffffff", fontFamily: "Arial, sans-serif", fontSize: "19px",
-        fontStyle: index === 0 ? "bold" : "normal",
-      }).setOrigin(0.5), this.renderScale);
-      objects.push(button, text);
+    actions.forEach(({ label, kind, action }, index) => {
+      const y = message === undefined
+        ? PAUSE_LAYOUT.pauseButtonCenters[index]!
+        : index === 0 ? PAUSE_LAYOUT.confirmationButtonCenters.safe : PAUSE_LAYOUT.confirmationButtonCenters.danger;
+      const factory = kind === "primary" ? createPrimaryButton
+        : kind === "danger" ? createDangerButton : createSecondaryButton;
+      const button = factory(this, this.renderScale, {
+        x: PAUSE_LAYOUT.button.centerX, y, width: PAUSE_LAYOUT.button.width,
+        height: PAUSE_LAYOUT.button.height, label,
+        onActivate: () => { if (!this.pauseClosing) action(); },
+      });
+      objects.push(button.container);
     });
     this.pauseOverlay = this.add.container(0, 0, objects).setDepth(50);
+    if (animateEntry) {
+      const motion = getPauseMotionPolicy(this.prefersReducedMotion());
+      this.pauseOverlay.setAlpha(0);
+      setPageDim(VISUAL_COLORS.overlay.modal.alpha, motion.enterDuration);
+      this.pauseTween = this.tweens.add({
+        targets: this.pauseOverlay, alpha: 1, duration: motion.enterDuration, ease: "Quad.Out",
+        onComplete: () => { this.pauseTween = null; },
+      });
+    }
   }
 
-  private hidePause(): void {
+  private dismissPauseOverlay(afterDismiss?: () => void): void {
+    if (this.pauseOverlay === null || this.pauseClosing) return;
+    this.pauseClosing = true;
+    const overlay = this.pauseOverlay;
+    const motion = getPauseMotionPolicy(this.prefersReducedMotion());
+    setPageDim(0, motion.exitDuration);
+    this.pauseTween?.stop();
+    this.pauseTween = this.tweens.add({
+      targets: overlay, alpha: 0, duration: motion.exitDuration, ease: "Quad.Out",
+      onComplete: () => {
+        this.pauseTween = null;
+        if (this.pauseOverlay === overlay) {
+          overlay.destroy(true);
+          this.pauseOverlay = null;
+        }
+        this.pauseClosing = false;
+        afterDismiss?.();
+      },
+    });
+  }
+
+  private clearPauseOverlayImmediately(): void {
+    const ownedPageDim = this.pauseOverlay !== null;
+    this.pauseTween?.stop();
+    this.pauseTween = null;
     this.pauseOverlay?.destroy(true);
     this.pauseOverlay = null;
+    this.pauseClosing = false;
+    if (ownedPageDim) resetPageDim();
   }
 }

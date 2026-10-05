@@ -32,6 +32,17 @@ export interface UiStrings {
   readonly restartFromLevelOne: string;
   readonly replayLevel: string;
   readonly menu: string;
+  readonly pauseTitle: string;
+  readonly pauseResume: string;
+  readonly pauseRestart: string;
+  readonly pauseExit: string;
+  readonly restartConfirmTitle: string;
+  readonly restartConfirmBody: string;
+  readonly restartConfirmAction: string;
+  readonly exitConfirmTitle: string;
+  readonly exitConfirmBody: string;
+  readonly exitConfirmAction: string;
+  readonly cancel: string;
   readonly chapterTitles: readonly [string, string, string, string, string, string, string, string, string, string];
 }
 
@@ -65,6 +76,17 @@ const ru = Object.freeze<UiStrings>({
     restartFromLevelOne: "Начать с уровня 1",
     replayLevel: "Переиграть уровень",
     menu: "Меню",
+    pauseTitle: "Пауза",
+    pauseResume: "Продолжить",
+    pauseRestart: "Начать уровень заново",
+    pauseExit: "Выйти в меню",
+    restartConfirmTitle: "Начать заново?",
+    restartConfirmBody: "Текущий уровень начнётся с первого этапа.",
+    restartConfirmAction: "Начать заново",
+    exitConfirmTitle: "Выйти в меню?",
+    exitConfirmBody: "Незавершённый уровень не сохранится.",
+    exitConfirmAction: "Выйти",
+    cancel: "Отмена",
     chapterTitles: [
       "Утро дома", "Чай и выпечка", "Цветочные лавки", "Книги и письма", "Сады и дворики",
       "У моря", "Дороги и станции", "Осенние огни", "Зимние окна", "Тихая магия",
@@ -100,6 +122,17 @@ const en = Object.freeze<UiStrings>({
     restartFromLevelOne: "Restart from Level 1",
     replayLevel: "Replay level",
     menu: "Menu",
+    pauseTitle: "Paused",
+    pauseResume: "Resume",
+    pauseRestart: "Restart level",
+    pauseExit: "Exit to menu",
+    restartConfirmTitle: "Restart level?",
+    restartConfirmBody: "The current level will restart from Stage 1.",
+    restartConfirmAction: "Restart",
+    exitConfirmTitle: "Exit to menu?",
+    exitConfirmBody: "Unfinished level progress will not be saved.",
+    exitConfirmAction: "Exit",
+    cancel: "Cancel",
     chapterTitles: [
       "Morning at Home", "Tea & Baking", "Flower Shops", "Books & Letters", "Gardens & Courtyards",
       "By the Sea", "Roads & Stations", "Autumn Lights", "Winter Windows", "Quiet Magic",
