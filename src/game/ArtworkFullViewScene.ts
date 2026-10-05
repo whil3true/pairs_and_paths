@@ -5,7 +5,7 @@ import { CHAPTER_COUNT, getChapterNumber } from "./LevelSequence.js";
 import { getLevelArtwork, isArtworkUnlocked, type LevelArtworkDefinition } from "./LevelArtwork.js";
 import { DEFAULT_LOCALE, getChapterTitle, getUiStrings, type SupportedLocale } from "./Localization.js";
 import { createIconButton, createUiText } from "./UiPrimitives.js";
-import { BORDERS, COMPONENT_RADII, VISUAL_COLORS } from "./VisualTokens.js";
+import { BORDERS, VISUAL_COLORS } from "./VisualTokens.js";
 
 interface ArtworkFullViewStartData { readonly levelNumber?: number; readonly returnChapter?: number; }
 
@@ -70,18 +70,15 @@ export class ArtworkFullViewScene extends Phaser.Scene {
     }
     const frame = ARTWORK_FULL_VIEW_LAYOUT.artwork;
     const graphics = add(this.add.graphics().fillStyle(VISUAL_COLORS.surface.card.phaser)
-      .fillRoundedRect(frame.x, frame.y, frame.width, frame.height, COMPONENT_RADII.chapterBanner));
+      .fillRect(frame.x, frame.y, frame.width, frame.height));
     if (state === "artwork" && this.artwork !== undefined) {
-      const maskShape = add(this.add.graphics().fillStyle(0xffffff).fillRoundedRect(
-        frame.x, frame.y, frame.width, frame.height, COMPONENT_RADII.chapterBanner).setVisible(false));
-      const image = add(this.add.image(frame.x + frame.width / 2, frame.y + frame.height / 2, this.artwork.fullAssetKey)
+      add(this.add.image(frame.x + frame.width / 2, frame.y + frame.height / 2, this.artwork.fullAssetKey)
         .setDisplaySize(frame.width, frame.height));
-      image.setMask(maskShape.createGeometryMask());
       add(this.add.graphics().lineStyle(BORDERS.emphasized, VISUAL_COLORS.accent.gold.phaser)
-        .strokeRoundedRect(frame.x, frame.y, frame.width, frame.height, COMPONENT_RADII.chapterBanner));
+        .strokeRect(frame.x, frame.y, frame.width, frame.height));
     } else {
       graphics.lineStyle(BORDERS.structural, VISUAL_COLORS.border.soft.phaser)
-        .strokeRoundedRect(frame.x, frame.y, frame.width, frame.height, COMPONENT_RADII.chapterBanner);
+        .strokeRect(frame.x, frame.y, frame.width, frame.height);
       if (state === "loading") graphics.lineStyle(4, VISUAL_COLORS.accent.gold.phaser).beginPath()
         .arc(240, 338, 18, -1.2, 1.8).strokePath();
       else this.drawUnavailableGlyph(graphics, 240, 330);

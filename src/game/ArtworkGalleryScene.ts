@@ -4,7 +4,9 @@ import {
   getArtworkGallerySlotState, getDefaultArtworkGalleryChapter, getUnlockedArtworkCount,
   getUnlockedArtworkCountInChapter,
 } from "./ArtworkGallery.js";
-import { ARTWORK_GALLERY_LAYOUT, getArtworkGallerySlotBounds } from "./ArtworkGalleryVisualPolicy.js";
+import {
+  ARTWORK_GALLERY_LAYOUT, ARTWORK_GALLERY_THUMBNAIL, getArtworkGallerySlotBounds,
+} from "./ArtworkGalleryVisualPolicy.js";
 import { getChapterLevelRange } from "./CampaignNavigation.js";
 import { configureLogicalCamera } from "./Display.js";
 import { CHAPTER_COUNT, LEVELS_PER_CHAPTER, TOTAL_LEVELS } from "./LevelSequence.js";
@@ -19,6 +21,7 @@ export class ArtworkGalleryScene extends Phaser.Scene {
   private progress!: CampaignProgress;
   private chapter = 1;
   private content: Phaser.GameObjects.Container | null = null;
+  private readonly maskedThumbnails: Phaser.GameObjects.Image[] = [];
   private readonly pendingThumbnails = new Set<string>();
   private readonly failedThumbnails = new Set<string>();
 
@@ -33,6 +36,7 @@ export class ArtworkGalleryScene extends Phaser.Scene {
     this.cameras.main.setBackgroundColor(VISUAL_COLORS.bg.app.phaser);
     this.pendingThumbnails.clear();
     this.failedThumbnails.clear();
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.destroyChapterContent());
     this.progress = this.progressStore.load();
     this.chapter = Number.isSafeInteger(data.chapter) && data.chapter! >= 1 && data.chapter! <= CHAPTER_COUNT
       ? data.chapter! : getDefaultArtworkGalleryChapter(this.progress);
@@ -52,7 +56,7 @@ export class ArtworkGalleryScene extends Phaser.Scene {
   }
 
   private renderChapter(): void {
-    this.content?.destroy(true);
+    this.destroyChapterContent();
     const strings = getUiStrings(this.locale);
     const objects: Phaser.GameObjects.GameObject[] = [];
     const add = <T extends Phaser.GameObjects.GameObject>(item: T): T => { objects.push(item); return item; };
@@ -99,13 +103,24 @@ export class ArtworkGalleryScene extends Phaser.Scene {
     } else {
       graphics.fillStyle(VISUAL_COLORS.surface.card.phaser).fillRoundedRect(bounds.x, bounds.y, 72, 72, COMPONENT_RADII.levelCard);
       if (state === "unavailable") this.drawDashedBorder(graphics, bounds.x, bounds.y, 72, 72);
-      else graphics.lineStyle(BORDERS.structural, loaded ? VISUAL_COLORS.border.strong.phaser : VISUAL_COLORS.border.soft.phaser)
+      else if (!loaded) graphics.lineStyle(BORDERS.structural, VISUAL_COLORS.border.soft.phaser)
         .strokeRoundedRect(bounds.x, bounds.y, 72, 72, COMPONENT_RADII.levelCard);
       if (state === "unavailable") this.drawImageGlyph(graphics, x, y - 8, false);
       else if (failed) this.drawImageGlyph(graphics, x, y - 8, true);
       else if (!loaded) graphics.lineStyle(3, VISUAL_COLORS.accent.gold.phaser).beginPath().arc(x, y - 7, 8, -1.2, 1.8).strokePath();
     }
-    if (loaded && artwork !== undefined) objects.push(this.add.image(x, y, artwork.thumbnailAssetKey).setDisplaySize(64, 64));
+    if (loaded && artwork !== undefined) {
+      const thumbnail = ARTWORK_GALLERY_THUMBNAIL;
+      const maskShape = this.add.graphics().fillStyle(0xffffff).fillRoundedRect(
+        x - thumbnail.size / 2, y - thumbnail.size / 2, thumbnail.size, thumbnail.size, thumbnail.radius,
+      ).setVisible(false);
+      const image = this.add.image(x, y, artwork.thumbnailAssetKey).setDisplaySize(thumbnail.size, thumbnail.size);
+      image.setMask(maskShape.createGeometryMask());
+      this.maskedThumbnails.push(image);
+      objects.push(maskShape, image, this.add.graphics()
+        .lineStyle(BORDERS.structural, VISUAL_COLORS.border.strong.phaser)
+        .strokeRoundedRect(bounds.x, bounds.y, 72, 72, COMPONENT_RADII.levelCard));
+    }
     if (!loaded && state !== "locked") objects.push(createUiText(this, this.renderScale, x, y + 17,
       state === "unavailable" ? strings.gallerySoon : failed ? strings.galleryUnavailable : strings.galleryLoading,
       "smallMetadata", { color: VISUAL_COLORS.text.secondary.hex, align: "center" }).setOrigin(0.5));
@@ -116,6 +131,13 @@ export class ArtworkGalleryScene extends Phaser.Scene {
         .on("pointerup", () => this.scene.start("ArtworkFullViewScene", { levelNumber: level, returnChapter: this.chapter }));
       objects.push(hit);
     }
+  }
+
+  private destroyChapterContent(): void {
+    for (const image of this.maskedThumbnails) image.clearMask(true);
+    this.maskedThumbnails.length = 0;
+    this.content?.destroy(true);
+    this.content = null;
   }
 
   private createArrow(right: boolean, enabled: boolean, objects: Phaser.GameObjects.GameObject[]): void {
