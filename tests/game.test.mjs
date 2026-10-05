@@ -55,8 +55,15 @@ import { getPrimaryMenuAction } from "../.test-dist/game/CampaignNavigation.js";
 import {
   COMPLETE_LAYOUT, getRewardMotionPolicy, REWARD_LAYOUT, REWARD_TRANSITION_DIM_ALPHA,
 } from "../.test-dist/game/RewardVisualPolicy.js";
+import { blendHexColors } from "../.test-dist/platform/PageBackdrop.js";
 
 const progressAt = (completedThroughLevel) => ({ version: 1, completedThroughLevel });
+
+test("page backdrop source-over blend is deterministic", () => {
+  assert.equal(blendHexColors("#F5EEDF", "#1C2323", 0.22), "#C5C1B6");
+  assert.equal(blendHexColors("#F5EEDF", "#1C2323", 0), "#F5EEDF");
+  assert.equal(blendHexColors("#F5EEDF", "#1C2323", 1), "#1C2323");
+});
 
 test("Phase 4 localization dictionaries have equivalent complete shapes", () => {
   assert.deepEqual(Object.keys(UI_STRINGS).sort(), ["en", "ru"]);

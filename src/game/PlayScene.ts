@@ -1,5 +1,6 @@
 import { applyMove, findPath, type Board, type GridPoint, type LegalMove } from "../domain/index.js";
 import type { PlatformService } from "../platform/PlatformService.js";
+import { blendHexColors, resetPageBackdrop, setPageBackdrop } from "../platform/PageBackdrop.js";
 import { recordStageCompletion, type CampaignProgress } from "../progress/CampaignProgress.js";
 import type { ProgressStore } from "../progress/ProgressStore.js";
 import { BoardLayout, getVisibleBackingCount } from "./BoardLayout.js";
@@ -31,6 +32,12 @@ import { getLevelChapterPresentation } from "./ChapterPresentation.js";
 import {
   COMPLETE_LAYOUT, getRewardMotionPolicy, REWARD_LAYOUT, REWARD_TRANSITION_DIM_ALPHA,
 } from "./RewardVisualPolicy.js";
+
+const REWARD_PAGE_BACKGROUND = blendHexColors(
+  VISUAL_COLORS.bg.app.hex,
+  VISUAL_COLORS.overlay.modal.hex,
+  REWARD_TRANSITION_DIM_ALPHA,
+);
 
 const keyOf = ({ col, row }: GridPoint): string => `${col},${row}`;
 const samePoint = (left: GridPoint, right: GridPoint): boolean =>
@@ -637,6 +644,7 @@ export class PlayScene extends Phaser.Scene {
       this.rewardTransitionImage = transitionImage;
       this.rewardTransitionDim = transitionDim;
       sourceArtwork.setVisible(false);
+      setPageBackdrop(REWARD_PAGE_BACKGROUND, motion.transitionDuration);
       const targetScale = REWARD_LAYOUT.artwork.width / transitionImage.width;
       this.rewardTween = this.tweens.add({
         targets: transitionImage,
@@ -694,6 +702,7 @@ export class PlayScene extends Phaser.Scene {
   }
 
   private cleanupRewardPresentation(): void {
+    resetPageBackdrop(VISUAL_COLORS.bg.app.hex);
     this.rewardTimer?.remove(false);
     this.rewardTimer = null;
     this.rewardTween?.stop();
