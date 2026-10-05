@@ -836,12 +836,24 @@ export class PlayScene extends Phaser.Scene {
     }
     if (animateEntry) {
       const motion = getPauseMotionPolicy(this.prefersReducedMotion());
-      this.pauseOverlay.setAlpha(0);
-      setPageDim(VISUAL_COLORS.overlay.modal.alpha, motion.enterDuration);
-      this.pauseTween = this.tweens.add({
-        targets: this.pauseOverlay, alpha: 1, duration: motion.enterDuration, ease: PAUSE_FADE_EASE,
-        onComplete: () => { this.pauseTween = null; },
+      const overlay = this.pauseOverlay;
+      overlay.setAlpha(0);
+      this.syncPausePageDim(0);
+      let tween!: Phaser.Tweens.Tween;
+      tween = this.tweens.add({
+        targets: overlay, alpha: 1, duration: motion.enterDuration, ease: PAUSE_FADE_EASE,
+        onUpdate: () => {
+          if (this.pauseTween === tween && this.pauseOverlay === overlay) {
+            this.syncPausePageDim(overlay.alpha);
+          }
+        },
+        onComplete: () => {
+          if (this.pauseTween !== tween || this.pauseOverlay !== overlay) return;
+          this.syncPausePageDim(1);
+          this.pauseTween = null;
+        },
       });
+      this.pauseTween = tween;
     }
   }
 
@@ -850,20 +862,32 @@ export class PlayScene extends Phaser.Scene {
     this.pauseClosing = true;
     const overlay = this.pauseOverlay;
     const motion = getPauseMotionPolicy(this.prefersReducedMotion());
-    setPageDim(0, motion.exitDuration);
     this.pauseTween?.stop();
-    this.pauseTween = this.tweens.add({
+    this.pauseTween = null;
+    this.syncPausePageDim(overlay.alpha);
+    let tween!: Phaser.Tweens.Tween;
+    tween = this.tweens.add({
       targets: overlay, alpha: 0, duration: motion.exitDuration, ease: PAUSE_FADE_EASE,
-      onComplete: () => {
-        this.pauseTween = null;
-        if (this.pauseOverlay === overlay) {
-          overlay.destroy(true);
-          this.pauseOverlay = null;
+      onUpdate: () => {
+        if (this.pauseTween === tween && this.pauseOverlay === overlay) {
+          this.syncPausePageDim(overlay.alpha);
         }
+      },
+      onComplete: () => {
+        if (this.pauseTween !== tween || this.pauseOverlay !== overlay) return;
+        this.pauseTween = null;
+        this.syncPausePageDim(0);
+        overlay.destroy(true);
+        this.pauseOverlay = null;
         this.pauseClosing = false;
         afterDismiss?.();
       },
     });
+    this.pauseTween = tween;
+  }
+
+  private syncPausePageDim(overlayAlpha: number): void {
+    setPageDim(VISUAL_COLORS.overlay.modal.alpha * overlayAlpha, 0);
   }
 
   private clearPauseOverlayImmediately(): void {
