@@ -59,7 +59,7 @@ import { getPrimaryMenuAction } from "../.test-dist/game/CampaignNavigation.js";
 import {
   COMPLETE_LAYOUT, getRewardMotionPolicy, REWARD_LAYOUT, REWARD_TRANSITION_DIM_ALPHA,
 } from "../.test-dist/game/RewardVisualPolicy.js";
-import { getPauseMotionPolicy, PAUSE_LAYOUT } from "../.test-dist/game/PauseVisualPolicy.js";
+import { getPauseMotionPolicy, PAUSE_FADE_EASE, PAUSE_LAYOUT } from "../.test-dist/game/PauseVisualPolicy.js";
 
 const progressAt = (completedThroughLevel) => ({ version: 1, completedThroughLevel });
 
@@ -88,6 +88,7 @@ test("Pause and confirmation production policy freezes layout, motion, and local
   assert.deepEqual(PAUSE_LAYOUT.button, { centerX: 240, width: 368, height: 52, gap: 12 });
   assert.deepEqual(PAUSE_LAYOUT.pauseButtonCenters, [360, 424, 488]);
   assert.deepEqual(PAUSE_LAYOUT.confirmationButtonCenters, { safe: 420, danger: 484 });
+  assert.equal(PAUSE_FADE_EASE, "Linear");
   assert.deepEqual(getPauseMotionPolicy(false), { enterDuration: 200, exitDuration: 160 });
   assert.deepEqual(getPauseMotionPolicy(true), { enterDuration: 100, exitDuration: 80 });
   assert.deepEqual(

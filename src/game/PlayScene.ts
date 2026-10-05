@@ -32,7 +32,7 @@ import { getLevelChapterPresentation } from "./ChapterPresentation.js";
 import {
   COMPLETE_LAYOUT, getRewardMotionPolicy, REWARD_LAYOUT, REWARD_TRANSITION_DIM_ALPHA,
 } from "./RewardVisualPolicy.js";
-import { getPauseMotionPolicy, PAUSE_LAYOUT } from "./PauseVisualPolicy.js";
+import { getPauseMotionPolicy, PAUSE_FADE_EASE, PAUSE_LAYOUT } from "./PauseVisualPolicy.js";
 
 const keyOf = ({ col, row }: GridPoint): string => `${col},${row}`;
 const samePoint = (left: GridPoint, right: GridPoint): boolean =>
@@ -802,7 +802,6 @@ export class PlayScene extends Phaser.Scene {
     animateEntry = false,
   ): void {
     if (this.pauseClosing) return;
-    this.pauseOverlay?.destroy(true);
     const shell = createModalShell(this, {
       x: PAUSE_LAYOUT.panel.centerX, y: PAUSE_LAYOUT.panel.centerY,
       width: PAUSE_LAYOUT.panel.width, height: PAUSE_LAYOUT.panel.height, borderRole: "soft",
@@ -829,13 +828,18 @@ export class PlayScene extends Phaser.Scene {
       });
       objects.push(button.container);
     });
-    this.pauseOverlay = this.add.container(0, 0, objects).setDepth(50);
+    if (this.pauseOverlay === null) {
+      this.pauseOverlay = this.add.container(0, 0, objects).setDepth(50);
+    } else {
+      this.pauseOverlay.removeAll(true);
+      this.pauseOverlay.add(objects);
+    }
     if (animateEntry) {
       const motion = getPauseMotionPolicy(this.prefersReducedMotion());
       this.pauseOverlay.setAlpha(0);
       setPageDim(VISUAL_COLORS.overlay.modal.alpha, motion.enterDuration);
       this.pauseTween = this.tweens.add({
-        targets: this.pauseOverlay, alpha: 1, duration: motion.enterDuration, ease: "Quad.Out",
+        targets: this.pauseOverlay, alpha: 1, duration: motion.enterDuration, ease: PAUSE_FADE_EASE,
         onComplete: () => { this.pauseTween = null; },
       });
     }
@@ -849,7 +853,7 @@ export class PlayScene extends Phaser.Scene {
     setPageDim(0, motion.exitDuration);
     this.pauseTween?.stop();
     this.pauseTween = this.tweens.add({
-      targets: overlay, alpha: 0, duration: motion.exitDuration, ease: "Quad.Out",
+      targets: overlay, alpha: 0, duration: motion.exitDuration, ease: PAUSE_FADE_EASE,
       onComplete: () => {
         this.pauseTween = null;
         if (this.pauseOverlay === overlay) {

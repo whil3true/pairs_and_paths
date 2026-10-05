@@ -12,6 +12,8 @@ export interface PauseMotionPolicy {
   readonly exitDuration: number;
 }
 
+export const PAUSE_FADE_EASE = "Linear";
+
 export const getPauseMotionPolicy = (reducedMotion: boolean): PauseMotionPolicy => Object.freeze(
   reducedMotion
     ? { enterDuration: 100, exitDuration: 80 }
