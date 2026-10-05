@@ -33,7 +33,11 @@ import {
 } from "../.test-dist/game/LevelArtwork.js";
 import {
   getArtworkGallerySlotState, getDefaultArtworkGalleryChapter, getUnlockedArtworkCount,
+  getUnlockedArtworkCountInChapter,
 } from "../.test-dist/game/ArtworkGallery.js";
+import {
+  ARTWORK_FULL_VIEW_LAYOUT, ARTWORK_GALLERY_LAYOUT, getArtworkGallerySlotBounds,
+} from "../.test-dist/game/ArtworkGalleryVisualPolicy.js";
 import {
   BORDERS, COMPONENT_RADII, MOTION, RADII, SPACING, TYPOGRAPHY, VISUAL_COLORS,
 } from "../.test-dist/game/VisualTokens.js";
@@ -63,6 +67,8 @@ test("Phase 4 localization dictionaries have equivalent complete shapes", () => 
   assert.deepEqual(Object.keys(UI_STRINGS.ru).sort(), Object.keys(UI_STRINGS.en).sort());
   const required = ["gameTitle", "tagline", "play", "continueLevel", "playAgainLevel", "levels", "gallery",
     "openedProgress", "collectionComplete", "chapterLabel", "chapterHeader", "globalProgress", "backToMenu",
+    "galleryChapterProgress", "levelLabel", "gallerySoon", "galleryLoading", "galleryUnavailable", "back",
+    "artworkLoading", "artworkUnavailable",
     "rewardHeading", "rewardContinue", "levelComplete", "campaignComplete", "nextLevel", "restartFromLevelOne",
     "replayLevel", "menu", "chapterTitles"];
   assert.deepEqual(Object.keys(UI_STRINGS.ru).sort(), required.sort());
@@ -495,6 +501,39 @@ test("artwork Gallery count and default chapter derive from catalog and progress
     assert.equal(getUnlockedArtworkCount(progressAt(completed)), count);
     assert.equal(getDefaultArtworkGalleryChapter(progressAt(completed)), chapter);
   }
+});
+
+test("production artwork Gallery and Full View geometry is stable", () => {
+  assert.deepEqual([ARTWORK_GALLERY_LAYOUT.grid.columns, ARTWORK_GALLERY_LAYOUT.grid.rows,
+    ARTWORK_GALLERY_LAYOUT.grid.cardSize], [5, 2, 72]);
+  const slots = Array.from({ length: 10 }, (_, index) => getArtworkGallerySlotBounds(index));
+  assert.deepEqual(slots.map(({ x, width }) => x + width / 2), [60, 150, 240, 330, 420, 60, 150, 240, 330, 420]);
+  assert.deepEqual(slots.map(({ y }) => y), [176, 176, 176, 176, 176, 292, 292, 292, 292, 292]);
+  assert.ok(slots.every(({ width, height }) => width === 72 && height === 72));
+  assert.deepEqual(ARTWORK_FULL_VIEW_LAYOUT.artwork, { x: 40, y: 156, width: 400, height: 400 });
+  assert.deepEqual(ARTWORK_FULL_VIEW_LAYOUT.back, { x: 24, y: 20, width: 48, height: 48 });
+  for (const invalid of [-1, 10, 1.5]) assert.throws(() => getArtworkGallerySlotBounds(invalid), RangeError);
+});
+
+test("production Gallery counts only implemented unlocked artwork out of 100 campaign slots", () => {
+  assert.equal(TOTAL_LEVELS, 100);
+  assert.deepEqual([0, 1, 30, 80, 100].map((completed) => getUnlockedArtworkCount(progressAt(completed))),
+    [0, 1, 2, 3, 3]);
+  assert.deepEqual([1, 3, 8].map((chapter) => getUnlockedArtworkCountInChapter(progressAt(100), chapter)), [1, 1, 1]);
+  assert.equal(getUnlockedArtworkCountInChapter(progressAt(29), 3), 0);
+  assert.equal(getUnlockedArtworkCountInChapter(progressAt(30), 3), 1);
+});
+
+test("production Gallery localization resolves equivalent RU and EN copy", () => {
+  const ru = getUiStrings("ru"); const en = getUiStrings("en");
+  assert.deepEqual([ru.gallery, ru.galleryChapterProgress(1, 10), ru.levelLabel(30), ru.gallerySoon,
+    ru.galleryLoading, ru.galleryUnavailable, ru.back, ru.artworkLoading, ru.artworkUnavailable],
+  ["Галерея", "Открыто 1 из 10", "Уровень 30", "Скоро", "Загрузка…", "Недоступно", "Назад",
+    "Загрузка картины…", "Картина недоступна"]);
+  assert.deepEqual([en.gallery, en.galleryChapterProgress(1, 10), en.levelLabel(30), en.gallerySoon,
+    en.galleryLoading, en.galleryUnavailable, en.back, en.artworkLoading, en.artworkUnavailable],
+  ["Gallery", "Unlocked 1 of 10", "Level 30", "Soon", "Loading…", "Unavailable", "Back",
+    "Loading artwork…", "Artwork unavailable"]);
 });
 
 test("pilot artwork catalog and final-stage reveal eligibility are explicit", () => {

@@ -16,6 +16,14 @@ export interface UiStrings {
   readonly chapterHeader: (chapter: number, title: string) => string;
   readonly globalProgress: (completed: number, total: number) => string;
   readonly backToMenu: string;
+  readonly galleryChapterProgress: (opened: number, total: number) => string;
+  readonly levelLabel: (level: number) => string;
+  readonly gallerySoon: string;
+  readonly galleryLoading: string;
+  readonly galleryUnavailable: string;
+  readonly back: string;
+  readonly artworkLoading: string;
+  readonly artworkUnavailable: string;
   readonly rewardHeading: string;
   readonly rewardContinue: string;
   readonly levelComplete: string;
@@ -41,6 +49,14 @@ const ru = Object.freeze<UiStrings>({
     chapterHeader: (chapter, title) => `Глава ${chapter} · ${title}`,
     globalProgress: (completed, total) => `${completed} / ${total} · 10 уровней`,
     backToMenu: "Назад в меню",
+    galleryChapterProgress: (opened, total) => `Открыто ${opened} из ${total}`,
+    levelLabel: (level) => `Уровень ${level}`,
+    gallerySoon: "Скоро",
+    galleryLoading: "Загрузка…",
+    galleryUnavailable: "Недоступно",
+    back: "Назад",
+    artworkLoading: "Загрузка картины…",
+    artworkUnavailable: "Картина недоступна",
     rewardHeading: "Картина открыта",
     rewardContinue: "Продолжить",
     levelComplete: "Уровень пройден",
@@ -68,6 +84,14 @@ const en = Object.freeze<UiStrings>({
     chapterHeader: (chapter, title) => `Chapter ${chapter} · ${title}`,
     globalProgress: (completed, total) => `${completed} / ${total} · 10 levels`,
     backToMenu: "Back to Menu",
+    galleryChapterProgress: (opened, total) => `Unlocked ${opened} of ${total}`,
+    levelLabel: (level) => `Level ${level}`,
+    gallerySoon: "Soon",
+    galleryLoading: "Loading…",
+    galleryUnavailable: "Unavailable",
+    back: "Back",
+    artworkLoading: "Loading artwork…",
+    artworkUnavailable: "Artwork unavailable",
     rewardHeading: "Artwork unlocked",
     rewardContinue: "Continue",
     levelComplete: "Level complete",
