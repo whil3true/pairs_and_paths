@@ -36,7 +36,7 @@ import {
   getUnlockedArtworkCountInChapter,
 } from "../.test-dist/game/ArtworkGallery.js";
 import {
-  ARTWORK_FULL_VIEW_LAYOUT, ARTWORK_GALLERY_LAYOUT, getArtworkGallerySlotBounds,
+  ARTWORK_FULL_VIEW_LAYOUT, ARTWORK_GALLERY_LAYOUT, ARTWORK_GALLERY_THUMBNAIL, getArtworkGallerySlotBounds,
 } from "../.test-dist/game/ArtworkGalleryVisualPolicy.js";
 import {
   BORDERS, COMPONENT_RADII, MOTION, RADII, SPACING, TYPOGRAPHY, VISUAL_COLORS,
@@ -510,6 +510,7 @@ test("production artwork Gallery and Full View geometry is stable", () => {
   assert.deepEqual(slots.map(({ x, width }) => x + width / 2), [60, 150, 240, 330, 420, 60, 150, 240, 330, 420]);
   assert.deepEqual(slots.map(({ y }) => y), [176, 176, 176, 176, 176, 292, 292, 292, 292, 292]);
   assert.ok(slots.every(({ width, height }) => width === 72 && height === 72));
+  assert.deepEqual(ARTWORK_GALLERY_THUMBNAIL, { size: 64, radius: 12 });
   assert.deepEqual(ARTWORK_FULL_VIEW_LAYOUT.artwork, { x: 40, y: 156, width: 400, height: 400 });
   assert.deepEqual(ARTWORK_FULL_VIEW_LAYOUT.back, { x: 24, y: 20, width: 48, height: 48 });
   for (const invalid of [-1, 10, 1.5]) assert.throws(() => getArtworkGallerySlotBounds(invalid), RangeError);

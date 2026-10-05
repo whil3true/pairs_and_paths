@@ -662,7 +662,7 @@ State comprehension must survive grayscale and low brightness.
 
 ### 19.2 Slot states
 
-- Unlocked: actual 256 thumbnail, contained square, no crop/stretch; 2 px strong border. Tappable.
+- Unlocked: actual 256 thumbnail, contained square, no crop/stretch, with restrained rounded clipping that respects the radius-16 card presentation; no square thumbnail corner may protrude over the card. The 2 px strong structural border renders above the thumbnail. Tappable.
 - Locked: neutral `state.lockedFill`; large lock glyph; Level number; no asset request.
 - Unavailable: `surface.card`, interrupted/dashed soft border, unavailable-image glyph + `Скоро`; no asset request. It must not look locked or achievable now.
 - Loading: `surface.card` skeleton + small spinner and `Загрузка…`; keep dimensions stable. Only eligible unlocked thumbnails may enter loading.
@@ -672,7 +672,7 @@ State comprehension must survive grayscale and low brightness.
 ### 19.3 Full View
 
 - Back target at top-left `24,20,48×48`; title area centered.
-- Artwork frame: exact `400×400`, x `40`, y `156`, radius 20, 3 px gold only for unlocked reward art; no crop/stretch.
+- Artwork frame: exact `400×400`, x `40`, y `156`; square artwork with no rounded mask, and a 3 px gold square frame only for unlocked artwork; no crop/stretch.
 - Level/chapter metadata above; artwork title below if available.
 - Back returns to the originating chapter and scroll/state position. It never starts gameplay or writes progress.
 - First uncached open shows loading immediately and requests only the selected full asset. Cached revisit appears without artificial loading delay.
