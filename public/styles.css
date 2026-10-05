@@ -1,11 +1,19 @@
 :root {
+  --page-background: #F5EEDF;
+  --page-background-transition: 0ms;
   color-scheme: light;
   font-family: "Manrope", system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
-  background: #f5eedf;
+  background-color: var(--page-background);
+  transition: background-color var(--page-background-transition) linear;
 }
 * { box-sizing: border-box; }
 html, body { width: 100%; min-height: 100%; margin: 0; }
-body { min-height: 100dvh; overflow: hidden; background: #f5eedf; }
+body {
+  min-height: 100dvh;
+  overflow: hidden;
+  background-color: var(--page-background);
+  transition: background-color var(--page-background-transition) linear;
+}
 /* The body owns the full-viewport background; Phaser fits only inside this safe-area frame. */
 #game {
   position: fixed;
