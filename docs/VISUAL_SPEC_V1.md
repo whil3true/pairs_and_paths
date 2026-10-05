@@ -663,6 +663,7 @@ State comprehension must survive grayscale and low brightness.
 ### 19.2 Slot states
 
 - Unlocked: the actual 256 thumbnail fills the complete `72×72` rounded card aperture edge-to-edge with radius 16 and no crop/stretch. There is no inner `surface.card` margin or white/light ring, and no square thumbnail corner may protrude. The 2 px strong structural border renders above the image. Tappable.
+- Loaded thumbnails use static `bg.app` corner occlusion in the chapter container rather than `GeometryMask` clipping.
 - Locked: neutral `state.lockedFill`; large lock glyph; Level number; no asset request.
 - Unavailable: `surface.card`, interrupted/dashed soft border, unavailable-image glyph + `Скоро`; no asset request. It must not look locked or achievable now.
 - Loading: `surface.card` skeleton + small spinner and `Загрузка…`; keep dimensions stable. Only eligible unlocked thumbnails may enter loading.
