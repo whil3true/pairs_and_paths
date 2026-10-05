@@ -619,7 +619,10 @@ export class PlayScene extends Phaser.Scene {
       const backdrop = this.add.rectangle(
         240, 400, 480, 800, VISUAL_COLORS.bg.app.phaser,
       ).setAlpha(0).setInteractive();
-      this.artworkPresentation = this.add.container(0, 0, [backdrop]).setDepth(40);
+      const settledDim = this.add.rectangle(
+        240, 400, 480, 800, VISUAL_COLORS.overlay.modal.phaser,
+      ).setAlpha(0).setInteractive();
+      this.artworkPresentation = this.add.container(0, 0, [backdrop, settledDim]).setDepth(40);
       const transitionDim = this.add.rectangle(
         240, 400, 480, 800, VISUAL_COLORS.overlay.modal.phaser,
       ).setAlpha(0).setDepth(39).setInteractive();
@@ -645,6 +648,7 @@ export class PlayScene extends Phaser.Scene {
           this.rewardDimTween?.stop();
           this.rewardDimTween = null;
           backdrop.setAlpha(1);
+          settledDim.setAlpha(REWARD_TRANSITION_DIM_ALPHA);
           transitionDim.destroy();
           this.rewardTransitionDim = null;
           this.destroyBoardVisuals();
