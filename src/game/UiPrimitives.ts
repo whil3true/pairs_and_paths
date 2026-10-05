@@ -119,12 +119,20 @@ export const createPrimaryButton = (scene: Phaser.Scene, renderScale: number, op
   createButton(scene, renderScale, "primary", options);
 export const createSecondaryButton = (scene: Phaser.Scene, renderScale: number, options: ButtonOptions): UiButton =>
   createButton(scene, renderScale, "secondary", options);
+export const createDangerButton = (scene: Phaser.Scene, renderScale: number, options: ButtonOptions): UiButton =>
+  createButton(scene, renderScale, "danger", options);
 export const createTertiaryButton = (scene: Phaser.Scene, renderScale: number, options: ButtonOptions): UiButton =>
   createButton(scene, renderScale, "tertiary", options);
 export const createIconButton = (scene: Phaser.Scene, renderScale: number, options: ButtonOptions): UiButton =>
   createButton(scene, renderScale, "secondary", { ...options, width: Math.max(options.width, 48), height: Math.max(options.height ?? 48, 48) }, true);
 
-export interface PanelOptions { readonly x: number; readonly y: number; readonly width: number; readonly height: number; }
+export interface PanelOptions {
+  readonly x: number;
+  readonly y: number;
+  readonly width: number;
+  readonly height: number;
+  readonly borderRole?: "strong" | "soft";
+}
 
 export const createCard = (scene: Phaser.Scene, options: PanelOptions): Phaser.GameObjects.Graphics =>
   scene.add.graphics().fillStyle(VISUAL_COLORS.surface.card.phaser)
@@ -137,7 +145,7 @@ export const createModalShell = (scene: Phaser.Scene, options: PanelOptions): Ph
     .setInteractive();
   const panel = scene.add.graphics().fillStyle(VISUAL_COLORS.surface.elevated.phaser)
     .fillRoundedRect(options.x - options.width / 2, options.y - options.height / 2, options.width, options.height, COMPONENT_RADII.modal)
-    .lineStyle(BORDERS.structural, VISUAL_COLORS.border.strong.phaser)
+    .lineStyle(BORDERS.structural, VISUAL_COLORS.border[options.borderRole ?? "strong"].phaser)
     .strokeRoundedRect(options.x - options.width / 2, options.y - options.height / 2, options.width, options.height, COMPONENT_RADII.modal);
   return scene.add.container(0, 0, [backdrop, panel]);
 };

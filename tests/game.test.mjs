@@ -59,6 +59,7 @@ import { getPrimaryMenuAction } from "../.test-dist/game/CampaignNavigation.js";
 import {
   COMPLETE_LAYOUT, getRewardMotionPolicy, REWARD_LAYOUT, REWARD_TRANSITION_DIM_ALPHA,
 } from "../.test-dist/game/RewardVisualPolicy.js";
+import { getPauseMotionPolicy, PAUSE_LAYOUT } from "../.test-dist/game/PauseVisualPolicy.js";
 
 const progressAt = (completedThroughLevel) => ({ version: 1, completedThroughLevel });
 
@@ -70,7 +71,9 @@ test("Phase 4 localization dictionaries have equivalent complete shapes", () => 
     "galleryChapterProgress", "levelLabel", "gallerySoon", "galleryLoading", "galleryUnavailable", "back",
     "artworkLoading", "artworkUnavailable",
     "rewardHeading", "rewardContinue", "levelComplete", "campaignComplete", "nextLevel", "restartFromLevelOne",
-    "replayLevel", "menu", "chapterTitles"];
+    "replayLevel", "menu", "pauseTitle", "pauseResume", "pauseRestart", "pauseExit",
+    "restartConfirmTitle", "restartConfirmBody", "restartConfirmAction", "exitConfirmTitle",
+    "exitConfirmBody", "exitConfirmAction", "cancel", "chapterTitles"];
   assert.deepEqual(Object.keys(UI_STRINGS.ru).sort(), required.sort());
   assert.equal(UI_STRINGS.ru.chapterTitles.length, 10);
   assert.equal(UI_STRINGS.en.chapterTitles.length, 10);
@@ -78,6 +81,46 @@ test("Phase 4 localization dictionaries have equivalent complete shapes", () => 
   assert.equal(getUiStrings("en").continueLevel(30), "Continue · Level 30");
   assert.equal(getUiStrings("ru").openedProgress(29, 100), "Открыто 29 из 100");
   assert.equal(getUiStrings("en").openedProgress(29, 100), "Unlocked 29 of 100");
+});
+
+test("Pause and confirmation production policy freezes layout, motion, and localization", () => {
+  assert.deepEqual(PAUSE_LAYOUT.panel, { centerX: 240, centerY: 400, width: 416, height: 360 });
+  assert.deepEqual(PAUSE_LAYOUT.button, { centerX: 240, width: 368, height: 52, gap: 12 });
+  assert.deepEqual(PAUSE_LAYOUT.pauseButtonCenters, [360, 424, 488]);
+  assert.deepEqual(PAUSE_LAYOUT.confirmationButtonCenters, { safe: 420, danger: 484 });
+  assert.deepEqual(getPauseMotionPolicy(false), { enterDuration: 200, exitDuration: 160 });
+  assert.deepEqual(getPauseMotionPolicy(true), { enterDuration: 100, exitDuration: 80 });
+  assert.deepEqual(
+    [getUiStrings("ru").pauseTitle, getUiStrings("ru").pauseResume, getUiStrings("ru").pauseRestart,
+      getUiStrings("ru").pauseExit, getUiStrings("ru").restartConfirmTitle,
+      getUiStrings("ru").restartConfirmBody, getUiStrings("ru").restartConfirmAction,
+      getUiStrings("ru").exitConfirmTitle, getUiStrings("ru").exitConfirmBody,
+      getUiStrings("ru").exitConfirmAction, getUiStrings("ru").cancel],
+    ["Пауза", "Продолжить", "Начать уровень заново", "Выйти в меню", "Начать заново?",
+      "Текущий уровень начнётся с первого этапа.", "Начать заново", "Выйти в меню?",
+      "Незавершённый уровень не сохранится.", "Выйти", "Отмена"],
+  );
+  assert.deepEqual(
+    [getUiStrings("en").pauseTitle, getUiStrings("en").pauseResume, getUiStrings("en").pauseRestart,
+      getUiStrings("en").pauseExit, getUiStrings("en").restartConfirmTitle,
+      getUiStrings("en").restartConfirmBody, getUiStrings("en").restartConfirmAction,
+      getUiStrings("en").exitConfirmTitle, getUiStrings("en").exitConfirmBody,
+      getUiStrings("en").exitConfirmAction, getUiStrings("en").cancel],
+    ["Paused", "Resume", "Restart level", "Exit to menu", "Restart level?",
+      "The current level will restart from Stage 1.", "Restart", "Exit to menu?",
+      "Unfinished level progress will not be saved.", "Exit", "Cancel"],
+  );
+});
+
+test("danger button policy uses the production danger token and tactile press", () => {
+  const defaultVisual = resolveButtonVisual("danger", "default");
+  const pressedVisual = resolveButtonVisual("danger", "pressed");
+  assert.equal(defaultVisual.fill, VISUAL_COLORS.state.danger.phaser);
+  assert.equal(defaultVisual.label, VISUAL_COLORS.white.hex);
+  assert.equal(pressedVisual.fill, VISUAL_COLORS.state.danger.phaser);
+  assert.equal(pressedVisual.offsetY, 2);
+  assert.equal(resolveButtonVisual("primary", "default").fill, VISUAL_COLORS.primary.teal.phaser);
+  assert.equal(resolveButtonVisual("secondary", "default").fill, VISUAL_COLORS.surface.card.phaser);
 });
 
 test("Reward and Complete presentation policy freezes layout, motion, and localization", () => {

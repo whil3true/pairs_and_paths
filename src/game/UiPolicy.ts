@@ -1,6 +1,6 @@
 import { BORDERS, VISUAL_COLORS } from "./VisualTokens.js";
 
-export type ButtonKind = "primary" | "secondary" | "tertiary";
+export type ButtonKind = "primary" | "secondary" | "tertiary" | "danger";
 export type ButtonState = "default" | "hover" | "pressed" | "disabled" | "focus";
 
 export interface ButtonVisualPolicy {
@@ -51,6 +51,11 @@ export const resolveButtonVisual = (kind: ButtonKind, state: ButtonState): Butto
   if (kind === "secondary") return {
     fill: state === "pressed" ? c.secondaryPressed.phaser : state === "hover" ? c.state.selectedFill.phaser : c.surface.card.phaser,
     fillAlpha: 1, label: c.text.primary.hex, border: c.border.strong.phaser, borderWidth: BORDERS.structural,
+    offsetY: state === "pressed" ? 2 : state === "hover" ? -1 : 0, focusRing: state === "focus",
+  };
+  if (kind === "danger") return {
+    fill: c.state.danger.phaser, fillAlpha: 1, label: c.white.hex,
+    border: c.state.danger.phaser, borderWidth: 0,
     offsetY: state === "pressed" ? 2 : state === "hover" ? -1 : 0, focusRing: state === "focus",
   };
   return {
