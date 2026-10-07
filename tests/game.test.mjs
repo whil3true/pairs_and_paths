@@ -12,7 +12,7 @@ import {
 } from "../.test-dist/game/BoardVisualPolicy.js";
 import { isSymbolGalleryRequested, parseDebugLocale, parseDebugStart } from "../.test-dist/game/DebugStart.js";
 import {
-  computePortraitFrame, computeRenderScale, isLegacyRenderScaleDebugRequested,
+  computePortraitFrame, computeRenderScale, isLegacyRenderScaleDebugRequested, MAX_LOGICAL_VIEWPORT_HEIGHT,
 } from "../.test-dist/game/Display.js";
 import { applyMove, findLegalMoves, findPath, solveBoard, validateGeneratedLevel } from "../.test-dist/domain/index.js";
 import {
@@ -744,25 +744,7 @@ test("developer symbol gallery requires both flags and reuses the shared catalog
   assert.doesNotMatch(gallerySource, /assets\/symbols\//);
 });
 
-test("portrait frame uniformly contains the canonical game in representative viewports", () => {
-  for (const [width, height] of [
-    [480, 800], [1080, 1920], [1220, 2712], [1920, 1080], [2560, 1440], [1024, 768],
-  ]) {
-    const frame = computePortraitFrame(width, height);
-    assert.ok(frame.displayWidth <= width + Number.EPSILON);
-    assert.ok(frame.displayHeight <= height + Number.EPSILON);
-    assert.equal(frame.displayWidth / frame.displayHeight, 480 / 800);
-    assert.equal(frame.sideGutter * 2 + frame.displayWidth, width);
-    assert.equal(frame.topBottomGutter * 2 + frame.displayHeight, height);
-  }
-  assert.deepEqual(computePortraitFrame(480, 800), {
-    scale: 1, displayWidth: 480, displayHeight: 800, sideGutter: 0, topBottomGutter: 0,
-  });
-  assert.ok(computePortraitFrame(1920, 1080).sideGutter > 0);
-  assert.ok(computePortraitFrame(1080, 1920).topBottomGutter > 0);
-});
-
-test("desktop portrait frame is full-height with symmetric side backdrop gutters", () => {
+test("production viewport keeps desktop full-height with symmetric side backdrop gutters", () => {
   const desktopViewports = [
     [1920, 1080],
     [2560, 1440],
@@ -775,38 +757,54 @@ test("desktop portrait frame is full-height with symmetric side backdrop gutters
     const frame = computePortraitFrame(width, height);
     assert.ok(Math.abs(frame.displayHeight - height) < 1e-9,
       `${width}x${height} must use the full available height`);
-    assert.ok(Math.abs(frame.topBottomGutter) < 1e-9,
-      `${width}x${height} must not leave top/bottom gutters`);
-    assert.ok(frame.sideGutter > 0,
-      `${width}x${height} must leave presentation backdrop at the sides`);
-    assert.equal(frame.displayWidth / frame.displayHeight, 480 / 800);
+    assert.ok(Math.abs(frame.topBottomGutter) < 1e-9);
+    assert.ok(frame.sideGutter > 0);
+    assert.equal(frame.logicalViewportWidth, 480);
+    assert.equal(frame.logicalViewportHeight, 800);
   }
 
-  const fullHd = computePortraitFrame(1920, 1080);
-  assert.ok(Math.abs(fullHd.displayWidth - 648) < 1e-9);
-  assert.ok(Math.abs(fullHd.displayHeight - 1080) < 1e-9);
-  assert.ok(Math.abs(fullHd.sideGutter - 636) < 1e-9);
-  assert.ok(Math.abs(fullHd.topBottomGutter) < 1e-9);
+  assert.deepEqual(computePortraitFrame(1920, 1080), {
+    scale: 1.35,
+    displayWidth: 648,
+    displayHeight: 1080,
+    sideGutter: 636,
+    topBottomGutter: 0,
+    logicalViewportWidth: 480,
+    logicalViewportHeight: 800,
+  });
 });
 
-test("tall mobile portrait frame is full-width with only top/bottom backdrop gutters", () => {
+test("normal tall-mobile viewport expands Phaser vertically with no CSS gutters", () => {
   for (const [width, height] of [
     [1080, 1920],
     [1220, 2712],
   ]) {
     const frame = computePortraitFrame(width, height);
-    assert.ok(Math.abs(frame.displayWidth - width) < 1e-9,
-      `${width}x${height} must use the full available width`);
-    assert.ok(Math.abs(frame.sideGutter) < 1e-9,
-      `${width}x${height} must not leave side gutters`);
-    assert.ok(frame.topBottomGutter > 0,
-      `${width}x${height} must leave presentation backdrop above/below the game field`);
-    assert.equal(frame.displayWidth / frame.displayHeight, 480 / 800);
+    assert.ok(Math.abs(frame.displayWidth - width) < 1e-9);
+    assert.ok(Math.abs(frame.displayHeight - height) < 1e-9);
+    assert.ok(Math.abs(frame.sideGutter) < 1e-9);
+    assert.ok(Math.abs(frame.topBottomGutter) < 1e-9);
+    assert.equal(frame.logicalViewportWidth, 480);
+    assert.ok(frame.logicalViewportHeight > 800);
+    assert.ok(frame.logicalViewportHeight < MAX_LOGICAL_VIEWPORT_HEIGHT);
   }
+});
 
+test("canonical viewport stays exact and pathological tall ratios retain a fill-rate guard", () => {
   assert.deepEqual(computePortraitFrame(480, 800), {
-    scale: 1, displayWidth: 480, displayHeight: 800, sideGutter: 0, topBottomGutter: 0,
+    scale: 1,
+    displayWidth: 480,
+    displayHeight: 800,
+    sideGutter: 0,
+    topBottomGutter: 0,
+    logicalViewportWidth: 480,
+    logicalViewportHeight: 800,
   });
+
+  const extreme = computePortraitFrame(480, 2000);
+  assert.equal(extreme.logicalViewportHeight, MAX_LOGICAL_VIEWPORT_HEIGHT);
+  assert.equal(extreme.displayHeight, MAX_LOGICAL_VIEWPORT_HEIGHT);
+  assert.equal(extreme.topBottomGutter, 200);
 });
 
 test("production render scale clamps finite DPR to 1 through 2", () => {

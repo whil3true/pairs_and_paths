@@ -1,4 +1,4 @@
-import { setHiDpiTextResolution } from "./Display.js";
+import { LOGICAL_GAME_HEIGHT, LOGICAL_GAME_WIDTH, MAX_LOGICAL_VIEWPORT_HEIGHT, setHiDpiTextResolution } from "./Display.js";
 import { createButtonHitArea, resolveButtonVisual, type ButtonKind, type ButtonState } from "./UiPolicy.js";
 import {
   BORDERS, COMPONENT_RADII, FONT_FAMILY, SPACING, TYPOGRAPHY, VISUAL_COLORS, type TypographyRole,
@@ -141,8 +141,14 @@ export const createCard = (scene: Phaser.Scene, options: PanelOptions): Phaser.G
     .strokeRoundedRect(options.x - options.width / 2, options.y - options.height / 2, options.width, options.height, COMPONENT_RADII.chapterBanner);
 
 export const createModalShell = (scene: Phaser.Scene, options: PanelOptions): Phaser.GameObjects.Container => {
-  const backdrop = scene.add.rectangle(240, 400, 480, 800, VISUAL_COLORS.overlay.modal.phaser, VISUAL_COLORS.overlay.modal.alpha)
-    .setInteractive();
+  const backdrop = scene.add.rectangle(
+    LOGICAL_GAME_WIDTH / 2,
+    LOGICAL_GAME_HEIGHT / 2,
+    LOGICAL_GAME_WIDTH,
+    MAX_LOGICAL_VIEWPORT_HEIGHT,
+    VISUAL_COLORS.overlay.modal.phaser,
+    VISUAL_COLORS.overlay.modal.alpha,
+  ).setInteractive();
   const panel = scene.add.graphics().fillStyle(VISUAL_COLORS.surface.elevated.phaser)
     .fillRoundedRect(options.x - options.width / 2, options.y - options.height / 2, options.width, options.height, COMPONENT_RADII.modal)
     .lineStyle(BORDERS.structural, VISUAL_COLORS.border[options.borderRole ?? "strong"].phaser)
