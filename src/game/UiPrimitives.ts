@@ -158,9 +158,10 @@ export const createModalShell = (scene: Phaser.Scene, options: PanelOptions): Ph
     VISUAL_COLORS.overlay.modal.phaser,
     VISUAL_COLORS.overlay.modal.alpha,
   ).setInteractive();
+  const modalBorderRole = options.borderRole === "soft" ? "soft" : "strong";
   const panel = scene.add.graphics().fillStyle(VISUAL_COLORS.surface.elevated.phaser)
     .fillRoundedRect(options.x - options.width / 2, options.y - options.height / 2, options.width, options.height, COMPONENT_RADII.modal)
-    .lineStyle(BORDERS.structural, VISUAL_COLORS.border[options.borderRole ?? "strong"].phaser)
+    .lineStyle(BORDERS.structural, VISUAL_COLORS.border[modalBorderRole].phaser)
     .strokeRoundedRect(options.x - options.width / 2, options.y - options.height / 2, options.width, options.height, COMPONENT_RADII.modal);
   return scene.add.container(0, 0, [backdrop, panel]);
 };
