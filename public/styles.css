@@ -32,7 +32,7 @@
 }
 
 :root {
-  --page-backdrop-color: #E7DCC8;
+  --page-backdrop-color: #F5EEDF;
   --page-dim-opacity: 0;
   --page-dim-transition: 0ms;
   color-scheme: light;
@@ -67,6 +67,9 @@ body {
 #game canvas { display: block; }
 
 @media (orientation: landscape) {
+  :root {
+    --page-backdrop-color: #E7DCC8;
+  }
   #game {
     left: 50%;
     right: auto;
