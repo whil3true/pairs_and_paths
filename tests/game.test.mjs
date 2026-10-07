@@ -829,12 +829,20 @@ test("developer symbol gallery requires both flags and reuses the shared catalog
   assert.doesNotMatch(gallerySource, /assets\/symbols\//);
 });
 
-test("portrait page backdrop and Android theme color match the Phaser app background", async () => {
+test("game parent owns mobile viewport geometry while landscape keeps centered 480:800 presentation", async () => {
   const css = await readFile(new URL("../public/styles.css", import.meta.url), "utf8");
   const html = await readFile(new URL("../public/index.html", import.meta.url), "utf8");
-  assert.match(css, /--page-backdrop-color:\s*#F5EEDF/);
-  assert.match(css, /@media \(orientation: landscape\)[\s\S]*--page-backdrop-color:\s*#E7DCC8/);
+  const main = await readFile(new URL("../src/main.ts", import.meta.url), "utf8");
+
+  assert.match(css, /--page-backdrop-color:\s*#E7DCC8/);
+  assert.match(css, /#game\s*\{[\s\S]*inset:\s*0;[\s\S]*background:\s*#F5EEDF/);
+  assert.match(css, /@media \(orientation: landscape\)[\s\S]*width:\s*min\(100dvw, calc\(100dvh \* 0\.6\)\)/);
+  assert.match(css, /@media \(orientation: landscape\)[\s\S]*left:\s*50%[\s\S]*translateX\(-50%\)/);
   assert.match(html, /name="theme-color" content="#F5EEDF"/);
+  assert.match(main, /mode:\s*Phaser\.Scale\.EXPAND/);
+  assert.match(main, /autoCenter:\s*Phaser\.Scale\.NO_CENTER/);
+  assert.match(main, /expandParent:\s*false/);
+  assert.doesNotMatch(main, /scale:\s*\{[\s\S]*?max:\s*\{/);
 });
 
 test("pause and complete secondary actions use the dedicated modal contrast tone", async () => {
