@@ -40,14 +40,14 @@ export class MainMenuScene extends Phaser.Scene {
       brandLayout.descriptorRole, { color: VISUAL_COLORS.text.secondary.hex, align: "center" }).setOrigin(0.5, 0);
 
     const preview = MAIN_MENU_LAYOUT.preview;
-    createChapterBanner(this, previewChapter, preview);
+    createChapterBanner(this, previewChapter, preview, false);
     this.add.graphics().fillStyle(VISUAL_COLORS.surface.elevated.phaser, 0.94)
       .fillRoundedRect(preview.x + 16, preview.y + 16, 112, 38, 12)
       .fillRoundedRect(preview.x + 16, preview.y + preview.height - 64, 250, 48, 12);
-    createUiText(this, this.renderScale, preview.x + 32, preview.y + 25,
-      strings.chapterLabel(previewChapter), "smallMetadata", { color: VISUAL_COLORS.text.secondary.hex });
-    createUiText(this, this.renderScale, preview.x + 32, preview.y + preview.height - 39,
-      getChapterTitle(this.locale, previewChapter), "levelTitle");
+    createUiText(this, this.renderScale, preview.x + 32, preview.y + 35,
+      strings.chapterLabel(previewChapter), "smallMetadata", { color: VISUAL_COLORS.text.secondary.hex }).setOrigin(0, 0.5);
+    createUiText(this, this.renderScale, preview.x + 32, preview.y + preview.height - 40,
+      getChapterTitle(this.locale, previewChapter), "levelTitle").setOrigin(0, 0.5);
 
     const button = MAIN_MENU_LAYOUT.primary;
     createPrimaryButton(this, this.renderScale, {
@@ -60,11 +60,12 @@ export class MainMenuScene extends Phaser.Scene {
       [MAIN_MENU_LAYOUT.secondaryRight, strings.gallery, "ArtworkGalleryScene"],
     ] as const) createSecondaryButton(this, this.renderScale, {
       x: bounds.x + bounds.width / 2, y: bounds.y + bounds.height / 2,
-      width: bounds.width, height: bounds.height, label, onActivate: () => this.scene.start(target),
+      width: bounds.width, height: bounds.height, label, borderless: true,
+      onActivate: () => this.scene.start(target),
     });
 
     const card = MAIN_MENU_LAYOUT.progress;
-    createCard(this, { x: card.x + card.width / 2, y: card.y + card.height / 2, width: card.width, height: card.height });
+    createCard(this, { x: card.x + card.width / 2, y: card.y + card.height / 2, width: card.width, height: card.height, borderRole: "none" });
     const completed = progress.completedThroughLevel;
     createUiText(this, this.renderScale, card.x + 20, card.y + 22,
       completed === TOTAL_LEVELS
