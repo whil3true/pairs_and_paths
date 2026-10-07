@@ -382,14 +382,16 @@ test("production visual tokens protect core palette and layout invariants", () =
 });
 
 test("typography roles preserve production floors and valid metrics", () => {
-  assert.equal(Object.keys(TYPOGRAPHY).length, 12);
+  assert.equal(Object.keys(TYPOGRAPHY).length, 13);
   for (const role of Object.values(TYPOGRAPHY)) {
-    assert.ok(role.weight > 0);
+    assert.ok(role.weight >= 400 && role.weight <= 600);
     assert.ok(role.size >= 14);
     assert.ok(role.lineHeight >= role.size);
+    assert.ok(role.family === "display" || role.family === "ui");
   }
   assert.equal(TYPOGRAPHY.hudSecondary.size, 16);
-  assert.deepEqual(TYPOGRAPHY.chapterHeading, { weight: 750, size: 24, lineHeight: 30, tracking: -0.2, align: "center" });
+  assert.deepEqual(TYPOGRAPHY.chapterHeading,
+    { family: "ui", weight: 600, size: 24, lineHeight: 30, tracking: -0.2, align: "center" });
   assert.equal(TYPOGRAPHY.buttonPrimary.size, 19);
 });
 
