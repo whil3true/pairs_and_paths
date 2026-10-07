@@ -95,8 +95,12 @@ test("Pause and confirmation production policy freezes layout, motion, and local
   assert.deepEqual(PAUSE_LAYOUT.pauseButtonCenters, [360, 424, 488]);
   assert.deepEqual(PAUSE_LAYOUT.confirmationButtonCenters, { safe: 420, danger: 484 });
   assert.equal(PAUSE_FADE_EASE, "Linear");
-  assert.deepEqual(getPauseMotionPolicy(false), { enterDuration: 200, exitDuration: 160 });
-  assert.deepEqual(getPauseMotionPolicy(true), { enterDuration: 100, exitDuration: 80 });
+  assert.deepEqual(getPauseMotionPolicy(false), {
+    enterDuration: 200, exitDuration: 160, contentDelay: 45, contentDuration: 155, contentLift: 8,
+  });
+  assert.deepEqual(getPauseMotionPolicy(true), {
+    enterDuration: 100, exitDuration: 80, contentDelay: 0, contentDuration: 100, contentLift: 0,
+  });
   assert.deepEqual(
     [getUiStrings("ru").pauseTitle, getUiStrings("ru").pauseResume, getUiStrings("ru").pauseRestart,
       getUiStrings("ru").pauseExit, getUiStrings("ru").restartConfirmTitle,
