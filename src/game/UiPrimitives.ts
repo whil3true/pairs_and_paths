@@ -40,6 +40,7 @@ export interface ButtonOptions {
   readonly label: string;
   readonly onActivate: () => void;
   readonly disabled?: boolean;
+  readonly borderless?: boolean;
 }
 
 /** Small focus seam: callers may connect setFocused() to a future keyboard-navigation owner. */
@@ -81,7 +82,7 @@ const createButton = (
         .strokeRoundedRect(-width / 2 - 2, -height / 2 - 2, width + 4, height + 4, radius + 2);
     }
     graphics.fillStyle(visual.fill, visual.fillAlpha).fillRoundedRect(-width / 2, -height / 2, width, height, radius);
-    if (visual.borderWidth > 0) graphics.lineStyle(visual.borderWidth, visual.border, 1)
+    if (!options.borderless && visual.borderWidth > 0) graphics.lineStyle(visual.borderWidth, visual.border, 1)
       .strokeRoundedRect(-width / 2, -height / 2, width, height, radius);
     label.setColor(visual.label);
     visualContent.setY(visual.offsetY);
@@ -132,14 +133,21 @@ export interface PanelOptions {
   readonly y: number;
   readonly width: number;
   readonly height: number;
-  readonly borderRole?: "strong" | "soft";
+  readonly borderRole?: "strong" | "soft" | "none";
 }
 
-export const createCard = (scene: Phaser.Scene, options: PanelOptions): Phaser.GameObjects.Graphics =>
-  scene.add.graphics().fillStyle(VISUAL_COLORS.surface.card.phaser)
-    .fillRoundedRect(options.x - options.width / 2, options.y - options.height / 2, options.width, options.height, COMPONENT_RADII.chapterBanner)
-    .lineStyle(BORDERS.structural, VISUAL_COLORS.border.soft.phaser)
-    .strokeRoundedRect(options.x - options.width / 2, options.y - options.height / 2, options.width, options.height, COMPONENT_RADII.chapterBanner);
+export const createCard = (scene: Phaser.Scene, options: PanelOptions): Phaser.GameObjects.Graphics => {
+  const graphics = scene.add.graphics().fillStyle(VISUAL_COLORS.surface.card.phaser)
+    .fillRoundedRect(options.x - options.width / 2, options.y - options.height / 2, options.width, options.height, COMPONENT_RADII.chapterBanner);
+  if (options.borderRole !== "none") graphics.lineStyle(
+    BORDERS.structural,
+    VISUAL_COLORS.border[options.borderRole ?? "soft"].phaser,
+  ).strokeRoundedRect(
+    options.x - options.width / 2, options.y - options.height / 2,
+    options.width, options.height, COMPONENT_RADII.chapterBanner,
+  );
+  return graphics;
+};
 
 export const createModalShell = (scene: Phaser.Scene, options: PanelOptions): Phaser.GameObjects.Container => {
   const backdrop = scene.add.rectangle(
