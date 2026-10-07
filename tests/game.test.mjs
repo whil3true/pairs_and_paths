@@ -762,6 +762,53 @@ test("portrait frame uniformly contains the canonical game in representative vie
   assert.ok(computePortraitFrame(1080, 1920).topBottomGutter > 0);
 });
 
+test("desktop portrait frame is full-height with symmetric side backdrop gutters", () => {
+  const desktopViewports = [
+    [1920, 1080],
+    [2560, 1440],
+    [1440, 900],
+    [1366, 768],
+    [1024, 768],
+  ];
+
+  for (const [width, height] of desktopViewports) {
+    const frame = computePortraitFrame(width, height);
+    assert.ok(Math.abs(frame.displayHeight - height) < 1e-9,
+      `${width}x${height} must use the full available height`);
+    assert.ok(Math.abs(frame.topBottomGutter) < 1e-9,
+      `${width}x${height} must not leave top/bottom gutters`);
+    assert.ok(frame.sideGutter > 0,
+      `${width}x${height} must leave presentation backdrop at the sides`);
+    assert.equal(frame.displayWidth / frame.displayHeight, 480 / 800);
+  }
+
+  const fullHd = computePortraitFrame(1920, 1080);
+  assert.ok(Math.abs(fullHd.displayWidth - 648) < 1e-9);
+  assert.ok(Math.abs(fullHd.displayHeight - 1080) < 1e-9);
+  assert.ok(Math.abs(fullHd.sideGutter - 636) < 1e-9);
+  assert.ok(Math.abs(fullHd.topBottomGutter) < 1e-9);
+});
+
+test("tall mobile portrait frame is full-width with only top/bottom backdrop gutters", () => {
+  for (const [width, height] of [
+    [1080, 1920],
+    [1220, 2712],
+  ]) {
+    const frame = computePortraitFrame(width, height);
+    assert.ok(Math.abs(frame.displayWidth - width) < 1e-9,
+      `${width}x${height} must use the full available width`);
+    assert.ok(Math.abs(frame.sideGutter) < 1e-9,
+      `${width}x${height} must not leave side gutters`);
+    assert.ok(frame.topBottomGutter > 0,
+      `${width}x${height} must leave presentation backdrop above/below the game field`);
+    assert.equal(frame.displayWidth / frame.displayHeight, 480 / 800);
+  }
+
+  assert.deepEqual(computePortraitFrame(480, 800), {
+    scale: 1, displayWidth: 480, displayHeight: 800, sideGutter: 0, topBottomGutter: 0,
+  });
+});
+
 test("production render scale clamps finite DPR to 1 through 2", () => {
   assert.deepEqual([0.75, 1, 1.5, 2, 2.5, 3].map(computeRenderScale), [1, 1, 1.5, 2, 2, 2]);
   assert.equal(computeRenderScale(Number.NaN), 1);
