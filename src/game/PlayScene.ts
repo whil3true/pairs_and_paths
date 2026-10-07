@@ -830,9 +830,9 @@ export class PlayScene extends Phaser.Scene {
     });
     const title = createUiText(this, this.renderScale, PAUSE_LAYOUT.title.centerX,
       PAUSE_LAYOUT.title.centerY, titleCopy, "sectionHeading", { align: "center" }).setOrigin(0.5);
-    const objects: Phaser.GameObjects.GameObject[] = [shell, title];
+    const contentObjects: Phaser.GameObjects.GameObject[] = [title];
     if (message !== undefined) {
-      objects.push(createUiText(this, this.renderScale, PAUSE_LAYOUT.body.centerX,
+      contentObjects.push(createUiText(this, this.renderScale, PAUSE_LAYOUT.body.centerX,
         PAUSE_LAYOUT.body.centerY, message, "body", {
           color: VISUAL_COLORS.text.secondary.hex, align: "center",
         }).setOrigin(0.5));
@@ -849,8 +849,10 @@ export class PlayScene extends Phaser.Scene {
         tone: kind === "secondary" ? "modalSecondary" : "default",
         onActivate: () => { if (!this.pauseClosing) action(); },
       });
-      objects.push(button.container);
+      contentObjects.push(button.container);
     });
+    const content = this.add.container(0, 0, contentObjects);
+    const objects: Phaser.GameObjects.GameObject[] = [shell, content];
     if (this.pauseOverlay === null) {
       this.pauseOverlay = this.add.container(0, 0, objects).setDepth(50);
     } else {
@@ -861,6 +863,7 @@ export class PlayScene extends Phaser.Scene {
       const motion = getPauseMotionPolicy(this.prefersReducedMotion());
       const overlay = this.pauseOverlay;
       overlay.setAlpha(0);
+      content.setAlpha(0).setY(motion.contentLift);
       this.syncPausePageDim(0);
       let tween!: Phaser.Tweens.Tween;
       tween = this.tweens.add({
@@ -875,6 +878,14 @@ export class PlayScene extends Phaser.Scene {
           this.syncPausePageDim(1);
           this.pauseTween = null;
         },
+      });
+      this.tweens.add({
+        targets: content,
+        alpha: 1,
+        y: 0,
+        delay: motion.contentDelay,
+        duration: motion.contentDuration,
+        ease: "Quad.Out",
       });
       this.pauseTween = tween;
     }

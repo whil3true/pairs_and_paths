@@ -78,10 +78,42 @@ export class LevelSelectScene extends Phaser.Scene {
       const visual = resolveLevelCardVisual(state);
       const card = this.createLevelCard(geometry.centerX, geometry.centerY, level, state, false);
       add(card);
-      if (visual.selectable) card.setInteractive(
-        new Phaser.Geom.Rectangle(0, 0, geometry.interactiveWidth, geometry.interactiveHeight), Phaser.Geom.Rectangle.Contains,
-      ).input!.cursor = "pointer";
-      if (visual.selectable) card.on("pointerup", () => this.scene.start("PlayScene", playStartData(level)));
+      if (visual.selectable) {
+        card.setInteractive(
+          new Phaser.Geom.Rectangle(0, 0, geometry.interactiveWidth, geometry.interactiveHeight), Phaser.Geom.Rectangle.Contains,
+        ).input!.cursor = "pointer";
+        let armed = false;
+        const resetPress = (): void => {
+          armed = false;
+          this.tweens.killTweensOf(card);
+          card.setScale(1);
+        };
+        card.on("pointerdown", () => {
+          armed = true;
+          this.tweens.killTweensOf(card);
+          this.tweens.add({
+            targets: card,
+            scaleX: 0.96,
+            scaleY: 0.96,
+            duration: MOTION.buttonPressDown,
+            ease: "Quad.Out",
+          });
+        });
+        card.on("pointerout", resetPress);
+        card.on("pointerup", () => {
+          if (!armed) return;
+          armed = false;
+          this.tweens.killTweensOf(card);
+          this.tweens.add({
+            targets: card,
+            scaleX: 1,
+            scaleY: 1,
+            duration: MOTION.buttonPressUp,
+            ease: "Quad.Out",
+            onComplete: () => this.scene.start("PlayScene", playStartData(level)),
+          });
+        });
+      }
     }
     this.content = this.add.container(0, 0, objects);
   }

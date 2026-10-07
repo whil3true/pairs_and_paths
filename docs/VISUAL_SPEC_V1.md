@@ -664,6 +664,7 @@ The resulting 12 px banner-to-navigation and navigation-to-grid gaps are intenti
 - Arrows do not wrap at Chapters 1/10. Disabled arrow retains target box and becomes non-interactive.
 
 State comprehension must survive grayscale and low brightness. State is carried by fill tone plus check/tab/lock affordance, not by persistent card outlines.
+Selectable level cards use the standard button press cadence (`80 ms` down, `100 ms` release) and navigate only after the release animation completes.
 
 ---
 
@@ -749,6 +750,7 @@ Order:
 3. `Выйти в меню` — secondary with the same warm contrast fill.
 
 Buttons are `368×52`, 12 px gaps. Board remains visible behind overlay but is not interactive. Selection and exact session state remain intact.
+On entry, the modal shell/backdrop begins first; title/body/actions follow as one content group after a short 45 ms delay with a restrained 8 px upward settle. Reduced-motion removes the spatial lift and delay.
 
 ### 21.3 Confirm restart
 
