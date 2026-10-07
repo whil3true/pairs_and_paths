@@ -368,13 +368,14 @@ test("level select geometry, navigation boundaries, and semantic cards are stabl
   }), [["check", true, 22, 0], ["tab", true, 22, 0], ["lock", false, 20, 0]]);
 });
 
-test("level cards keep a stable centered hit target while visual feedback animates before navigation", async () => {
+test("level-card release navigation survives pointerout after a confirmed tap", async () => {
   const source = await readFile(new URL("../src/game/LevelSelectScene.ts", import.meta.url), "utf8");
-  assert.match(source, /new Phaser\.Geom\.Rectangle\([\s\S]*-geometry\.interactiveWidth \/ 2[\s\S]*-geometry\.interactiveHeight \/ 2/);
-  assert.match(source, /const pressVisual = card\.getAt\(0\) as Phaser\.GameObjects\.Container/);
-  assert.match(source, /pointerdown[\s\S]*targets:\s*pressVisual[\s\S]*scaleX:\s*0\.96[\s\S]*MOTION\.buttonPressDown/);
-  assert.match(source, /pointerup[\s\S]*targets:\s*pressVisual[\s\S]*MOTION\.buttonPressUp[\s\S]*onComplete:\s*\(\) => this\.scene\.start\("PlayScene"/);
-  assert.doesNotMatch(source, /targets:\s*card[\s\S]*scaleX:\s*0\.96/);
+  assert.match(source, /new Phaser\.Geom\.Rectangle\(0, 0, geometry\.interactiveWidth, geometry\.interactiveHeight\)/);
+  assert.match(source, /let activating = false/);
+  assert.match(source, /const resetPress = \(\): void => \{[\s\S]*if \(activating\) return/);
+  assert.match(source, /pointerdown[\s\S]*targets:\s*card[\s\S]*scaleX:\s*0\.96[\s\S]*MOTION\.buttonPressDown/);
+  assert.match(source, /pointerup[\s\S]*activating = true[\s\S]*targets:\s*card[\s\S]*MOTION\.buttonPressUp[\s\S]*onComplete:\s*\(\) => this\.scene\.start\("PlayScene"/);
+  assert.doesNotMatch(source, /const pressVisual = card\.getAt/);
 });
 
 test("pause content enters after the shell instead of appearing as a static first frame", async () => {
