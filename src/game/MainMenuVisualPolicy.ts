@@ -12,17 +12,23 @@ export const MAIN_MENU_LAYOUT = Object.freeze({
 });
 
 export interface MainMenuBrandLayout {
-  readonly titleTops: readonly number[];
+  readonly titleTop: number;
   readonly titleRole: TypographyRole;
   readonly titleLineHeight: number;
-  readonly taglineTop: number | null;
-  readonly taglineLineHeight: number;
+  readonly descriptorTop: number;
+  readonly descriptorRole: TypographyRole;
+  readonly descriptorLineHeight: number;
 }
 
-/** Explicit bilingual composition; Russian omits the optional tagline rather than overlapping it. */
-export const getMainMenuBrandLayout = (locale: SupportedLocale): MainMenuBrandLayout => locale === "ru"
-  ? Object.freeze({ titleTops: [28, 62], titleRole: "screenTitle", titleLineHeight: 36, taglineTop: null, taglineLineHeight: 20 })
-  : Object.freeze({ titleTops: [28], titleRole: "displayBrand", titleLineHeight: 42, taglineTop: 82, taglineLineHeight: 20 });
+/** Locked naming system: short visual brand plus mechanic descriptor in both locales. */
+export const getMainMenuBrandLayout = (_locale: SupportedLocale): MainMenuBrandLayout => Object.freeze({
+  titleTop: 28,
+  titleRole: "displayBrand",
+  titleLineHeight: 42,
+  descriptorTop: 82,
+  descriptorRole: "brandDescriptor",
+  descriptorLineHeight: 20,
+});
 
 export const progressRatio = (completed: number, total: number): number =>
   total > 0 ? Math.min(1, Math.max(0, completed / total)) : 0;
