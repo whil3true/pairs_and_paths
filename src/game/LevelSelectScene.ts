@@ -61,7 +61,7 @@ export class LevelSelectScene extends Phaser.Scene {
       strings.globalProgress(this.progress.completedThroughLevel, TOTAL_LEVELS), "body", {
         color: VISUAL_COLORS.text.secondary.hex, align: "center",
       }).setOrigin(0.5, 0));
-    add(createChapterBanner(this, this.chapter, LEVEL_SELECT_LAYOUT.banner));
+    add(createChapterBanner(this, this.chapter, LEVEL_SELECT_LAYOUT.banner, false));
 
     const navigation = canNavigateChapter(this.chapter);
     this.createChapterArrow(LEVEL_SELECT_LAYOUT.previous.centerX, false, navigation.previous, objects);
