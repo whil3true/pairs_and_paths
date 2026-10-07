@@ -644,7 +644,7 @@ export class PlayScene extends Phaser.Scene {
       this.rewardTransitionImage = transitionImage;
       this.rewardTransitionDim = transitionDim;
       sourceArtwork.setVisible(false);
-      setPageDim(REWARD_TRANSITION_DIM_ALPHA, motion.transitionDuration);
+      this.syncRewardPageDim(0);
       const targetScale = REWARD_LAYOUT.artwork.width / transitionImage.width;
       this.rewardTween = this.tweens.add({
         targets: transitionImage,
@@ -655,6 +655,7 @@ export class PlayScene extends Phaser.Scene {
           this.rewardTween = null;
           this.rewardDimTween?.stop();
           this.rewardDimTween = null;
+          this.syncRewardPageDim(REWARD_TRANSITION_DIM_ALPHA);
           backdrop.setAlpha(1);
           settledDim.setAlpha(REWARD_TRANSITION_DIM_ALPHA);
           transitionDim.destroy();
@@ -665,10 +666,22 @@ export class PlayScene extends Phaser.Scene {
           this.populateRewardPresentation(artwork.fullAssetKey);
         },
       });
-      this.rewardDimTween = this.tweens.add({
+      let dimTween!: Phaser.Tweens.Tween;
+      dimTween = this.tweens.add({
         targets: transitionDim, alpha: REWARD_TRANSITION_DIM_ALPHA,
         duration: motion.transitionDuration, ease: "Linear",
+        onUpdate: () => {
+          if (this.rewardDimTween === dimTween && this.rewardTransitionDim === transitionDim) {
+            this.syncRewardPageDim(transitionDim.alpha);
+          }
+        },
+        onComplete: () => {
+          if (this.rewardDimTween !== dimTween || this.rewardTransitionDim !== transitionDim) return;
+          this.syncRewardPageDim(REWARD_TRANSITION_DIM_ALPHA);
+          this.rewardDimTween = null;
+        },
       });
+      this.rewardDimTween = dimTween;
       this.tweens.add({
         targets: [this.currentBoardVisual, this.stageStackVisual], alpha: 0,
         duration: motion.transitionDuration, ease: "Quad.Out",
@@ -701,8 +714,11 @@ export class PlayScene extends Phaser.Scene {
     this.artworkPresentation.add([image, border, heading, chapterLabel, continueButton.container]);
   }
 
+  private syncRewardPageDim(alpha: number): void {
+    setPageDim(alpha, 0);
+  }
+
   private cleanupRewardPresentation(resetOuterDim = true): void {
-    if (resetOuterDim) resetPageDim();
     this.rewardTimer?.remove(false);
     this.rewardTimer = null;
     this.rewardTween?.stop();
@@ -715,6 +731,7 @@ export class PlayScene extends Phaser.Scene {
     this.rewardTransitionDim = null;
     this.artworkPresentation?.destroy(true);
     this.artworkPresentation = null;
+    if (resetOuterDim) resetPageDim();
   }
 
   private showComplete(): void {
