@@ -1,7 +1,8 @@
 import { LOGICAL_GAME_HEIGHT, LOGICAL_GAME_WIDTH, MAX_LOGICAL_VIEWPORT_HEIGHT, setHiDpiTextResolution } from "./Display.js";
 import { createButtonHitArea, resolveButtonVisual, type ButtonKind, type ButtonState } from "./UiPolicy.js";
 import {
-  BORDERS, COMPONENT_RADII, FONT_FAMILY, SPACING, TYPOGRAPHY, VISUAL_COLORS, type TypographyRole,
+  BORDERS, COMPONENT_RADII, FONT_DISPLAY_FAMILY, FONT_UI_FAMILY, SPACING, TYPOGRAPHY, VISUAL_COLORS,
+  type TypographyRole,
 } from "./VisualTokens.js";
 
 export interface TextOptions {
@@ -21,7 +22,7 @@ export const createUiText = (
   const token = TYPOGRAPHY[role];
   const text = scene.add.text(x, y, value, {
     color: options.color ?? VISUAL_COLORS.text.primary.hex,
-    fontFamily: FONT_FAMILY,
+    fontFamily: token.family === "display" ? FONT_DISPLAY_FAMILY : FONT_UI_FAMILY,
     fontSize: `${token.size}px`,
     fontStyle: String(token.weight),
     lineSpacing: token.lineHeight - token.size,
