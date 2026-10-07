@@ -43,7 +43,7 @@ import {
   VISUAL_COLORS,
 } from "../.test-dist/game/VisualTokens.js";
 import { createButtonHitArea, resolveButtonVisual } from "../.test-dist/game/UiPolicy.js";
-import { GAMEPLAY_HUD, formatRemainingPairs } from "../.test-dist/game/GameplayHudPolicy.js";
+import { GAMEPLAY_HUD } from "../.test-dist/game/GameplayHudPolicy.js";
 import {
   BLOCKER_VISUAL_STYLE, createPolylineMetrics, GAMEPLAY_FEEDBACK, partialPolyline,
   partialPolylineFromMetrics,
@@ -68,7 +68,7 @@ const progressAt = (completedThroughLevel) => ({ version: 1, completedThroughLev
 test("Phase 4 localization dictionaries have equivalent complete shapes", () => {
   assert.deepEqual(Object.keys(UI_STRINGS).sort(), ["en", "ru"]);
   assert.deepEqual(Object.keys(UI_STRINGS.ru).sort(), Object.keys(UI_STRINGS.en).sort());
-  const required = ["gameTitle", "brandTitle", "brandDescriptor", "tagline", "play", "continueLevel", "playAgainLevel", "levels", "gallery",
+  const required = ["gameTitle", "brandTitle", "brandDescriptor", "tagline", "play", "gameplayPause", "gameplayHint", "remainingPairs", "stageLabel", "continueLevel", "playAgainLevel", "levels", "gallery",
     "openedProgress", "collectionComplete", "chapterLabel", "chapterHeader", "globalProgress", "backToMenu",
     "galleryChapterProgress", "levelLabel", "gallerySoon", "galleryLoading", "galleryUnavailable", "back",
     "artworkLoading", "artworkUnavailable",
@@ -193,6 +193,15 @@ test("main menu production geometry, progress, and localized primary actions are
     assert.equal(formatPrimaryMenuAction(action, UI_STRINGS.ru), ru);
     assert.equal(formatPrimaryMenuAction(action, UI_STRINGS.en), en);
   }
+});
+
+test("main menu keeps its preview, secondary actions, and progress card borderless", async () => {
+  const source = await readFile(new URL("../src/game/MainMenuScene.ts", import.meta.url), "utf8");
+  assert.match(source, /createChapterBanner\(this, previewChapter, preview, false\)/);
+  assert.match(source, /borderless: true/);
+  assert.match(source, /borderRole: "none"/);
+  assert.match(source, /preview\.y \+ 35[\s\S]*setOrigin\(0, 0\.5\)/);
+  assert.match(source, /preview\.height - 40[\s\S]*setOrigin\(0, 0\.5\)/);
 });
 
 test("main menu locked brand plus descriptor composition clears the preview in both locales", () => {
@@ -420,17 +429,29 @@ test("button hit area matches the sized Container's local visual rectangle", () 
   assert.equal(hitArea.centerY, (hitArea.top + hitArea.bottom) / 2);
 });
 
-test("gameplay HUD policy freezes compact production bounds and Russian pair grammar", () => {
+test("gameplay HUD policy freezes compact production bounds and localized copy", () => {
   assert.deepEqual(GAMEPLAY_HUD.pause, { left: 24, top: 20, width: 104, height: 48, centerX: 76, centerY: 44 });
   assert.deepEqual(GAMEPLAY_HUD.hint, { left: 352, top: 20, width: 104, height: 48, centerX: 404, centerY: 44 });
   assert.deepEqual(
     [GAMEPLAY_HUD.statusLeftX, GAMEPLAY_HUD.statusRightX, GAMEPLAY_HUD.stageCenterX],
     [24, 456, 240],
   );
+
+  assert.deepEqual(
+    [UI_STRINGS.ru.gameplayPause, UI_STRINGS.ru.gameplayHint, UI_STRINGS.ru.stageLabel(1, 2)],
+    ["Пауза", "Подсказка", "Этап 1/2"],
+  );
+  assert.deepEqual(
+    [UI_STRINGS.en.gameplayPause, UI_STRINGS.en.gameplayHint, UI_STRINGS.en.stageLabel(1, 2)],
+    ["Pause", "Hint", "Stage 1/2"],
+  );
+
   for (const [count, word] of [[1, "пара"], [2, "пары"], [4, "пары"], [5, "пар"], [11, "пар"],
     [21, "пара"], [22, "пары"], [25, "пар"]]) {
-    assert.equal(formatRemainingPairs(count), `Осталось: ${count} ${word}`);
+    assert.equal(UI_STRINGS.ru.remainingPairs(count), `Осталось: ${count} ${word}`);
   }
+  assert.equal(UI_STRINGS.en.remainingPairs(1), "Remaining: 1 pair");
+  assert.equal(UI_STRINGS.en.remainingPairs(2), "Remaining: 2 pairs");
 });
 
 test("partial route progression follows physical length for arbitrary polylines", () => {

@@ -70,7 +70,7 @@ export const getChapterBannerFallbackManifest = (chapterNumber: number): readonl
 };
 
 export const createChapterBanner = (
-  scene: Phaser.Scene, chapterNumber: number, bounds: ChapterBannerBounds,
+  scene: Phaser.Scene, chapterNumber: number, bounds: ChapterBannerBounds, showBorder = true,
 ): Phaser.GameObjects.Container | Phaser.GameObjects.Graphics => {
   const asset = getChapterBannerAsset(chapterNumber);
   if (scene.textures.exists(asset.assetKey)) {
@@ -85,9 +85,13 @@ export const createChapterBanner = (
     if (cornerOcclusion) drawChapterBannerCornerOcclusion(
       cornerOcclusion, bounds, COMPONENT_RADII.chapterBanner,
     );
-    const border = scene.add.graphics().lineStyle(BORDERS.structural, VISUAL_COLORS.border.soft.phaser)
-      .strokeRoundedRect(bounds.x, bounds.y, bounds.width, bounds.height, COMPONENT_RADII.chapterBanner);
-    return scene.add.container(0, 0, cornerOcclusion ? [shell, image, cornerOcclusion, border] : [shell, image, border]);
+    const border = showBorder
+      ? scene.add.graphics().lineStyle(BORDERS.structural, VISUAL_COLORS.border.soft.phaser)
+        .strokeRoundedRect(bounds.x, bounds.y, bounds.width, bounds.height, COMPONENT_RADII.chapterBanner)
+      : null;
+    return scene.add.container(0, 0, [
+      shell, image, ...(cornerOcclusion ? [cornerOcclusion] : []), ...(border ? [border] : []),
+    ]);
   }
   const presentation = getChapterPresentation(chapterNumber);
   const colors = presentation;
@@ -113,7 +117,7 @@ export const createChapterBanner = (
       element.width, element.height, element.radius,
     );
   }
-  graphics.lineStyle(BORDERS.structural, VISUAL_COLORS.border.soft.phaser)
+  if (showBorder) graphics.lineStyle(BORDERS.structural, VISUAL_COLORS.border.soft.phaser)
     .strokeRoundedRect(bounds.x, bounds.y, bounds.width, bounds.height, COMPONENT_RADII.chapterBanner);
   return graphics;
 };

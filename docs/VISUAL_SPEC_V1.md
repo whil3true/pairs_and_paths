@@ -610,22 +610,22 @@ left identity rail, bottom accent rail, and small corner chip replace abstract o
 |---|---|
 | Brand | x 24..456, y 28..70; centered Literata 600, `36/42` |
 | Descriptor | y 82..102; Onest 600, `16/20`, secondary; always shows the mechanic phrase |
-| Chapter preview | x 24, y 124, `432×232`; artwork crop is prohibited—use contained square/approved wide derivative only. For v1 use a framed square/letterboxed composition, not arbitrary crop |
+| Chapter preview | x 24, y 124, `432×232`; borderless in Main Menu; artwork crop is prohibited—use contained square/approved wide derivative only. For v1 use a framed square/letterboxed composition, not arbitrary crop |
 | Chapter badge | inset 16 from preview top/left, opaque card |
 | Primary action | x 24, y 380, `432×64` |
 | Secondary row | y 460, two buttons `208×56`, 16 px gap |
 | Progress card | x 24, y 540, `432×104` |
 | Settings reserved slot | target `48×48`, x 408, y 708–756; render nothing in v1 until a real Settings feature exists |
 
-The preview may shift vertically by ±12 px after real art is available, while preserving all touch targets and bottom safe zone.
+The preview may shift vertically by ±12 px after real art is available, while preserving all touch targets and bottom safe zone. Both white banner overlays center their text vertically inside their own pills; do not return to fixed top-origin offsets.
 
 ### 17.2 Priority and state
 
 - Fresh progress: primary label `Играть` and target Level 1.
 - In progress: `Продолжить · Уровень N` and target Stage 1 of first uncompleted Level.
 - Campaign complete: `Играть снова · Уровень 1`; never clear recorded completion.
-- `Уровни` and `Галерея` are equal secondary buttons.
-- Progress card: `Открыто N из 100`, `18 px` label, 8 px-high track, gold fill, numeric value always present.
+- `Уровни` and `Галерея` are equal secondary buttons with card fill and **no structural border** in Main Menu.
+- Progress card: borderless card fill; `Открыто N из 100`, `18 px` label, 8 px-high track, gold fill, numeric value always present.
 - Settings position is reserved for future use. Do **not** render a dead/non-functional Settings control in v1; when a real Settings feature exists, it uses tertiary styling and remains visually separate.
 - Completed campaign progress card becomes `Коллекция: 100 из 100` with success check; no confetti or extra economy.
 

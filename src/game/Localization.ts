@@ -2,6 +2,16 @@ export type SupportedLocale = "ru" | "en";
 
 export const DEFAULT_LOCALE: SupportedLocale = "ru";
 
+const russianPairWord = (count: number): "пара" | "пары" | "пар" => {
+  const absolute = Math.abs(Math.trunc(count));
+  const modulo100 = absolute % 100;
+  if (modulo100 >= 11 && modulo100 <= 14) return "пар";
+  const modulo10 = absolute % 10;
+  if (modulo10 === 1) return "пара";
+  if (modulo10 >= 2 && modulo10 <= 4) return "пары";
+  return "пар";
+};
+
 export interface UiStrings {
   readonly gameTitle: string;
   readonly brandTitle: string;
@@ -45,6 +55,10 @@ export interface UiStrings {
   readonly exitConfirmBody: string;
   readonly exitConfirmAction: string;
   readonly cancel: string;
+  readonly gameplayPause: string;
+  readonly gameplayHint: string;
+  readonly remainingPairs: (count: number) => string;
+  readonly stageLabel: (stage: number, total: number) => string;
   readonly chapterTitles: readonly [string, string, string, string, string, string, string, string, string, string];
 }
 
@@ -91,6 +105,10 @@ const ru = Object.freeze<UiStrings>({
     exitConfirmBody: "Незавершённый уровень не сохранится.",
     exitConfirmAction: "Выйти",
     cancel: "Отмена",
+    gameplayPause: "Пауза",
+    gameplayHint: "Подсказка",
+    remainingPairs: (count) => `Осталось: ${count} ${russianPairWord(count)}`,
+    stageLabel: (stage, total) => `Этап ${stage}/${total}`,
     chapterTitles: [
       "Утро дома", "Чай и выпечка", "Цветочные лавки", "Книги и письма", "Сады и дворики",
       "У моря", "Дороги и станции", "Осенние огни", "Зимние окна", "Тихая магия",
@@ -139,6 +157,10 @@ const en = Object.freeze<UiStrings>({
     exitConfirmBody: "Unfinished level progress will not be saved.",
     exitConfirmAction: "Exit",
     cancel: "Cancel",
+    gameplayPause: "Pause",
+    gameplayHint: "Hint",
+    remainingPairs: (count) => `Remaining: ${count} ${count === 1 ? "pair" : "pairs"}`,
+    stageLabel: (stage, total) => `Stage ${stage}/${total}`,
     chapterTitles: [
       "Morning at Home", "Tea & Baking", "Flower Shops", "Books & Letters", "Gardens & Courtyards",
       "By the Sea", "Roads & Stations", "Autumn Lights", "Winter Windows", "Quiet Magic",
