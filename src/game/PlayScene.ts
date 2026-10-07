@@ -760,11 +760,12 @@ export class PlayScene extends Phaser.Scene {
     });
     const replayButton = createSecondaryButton(this, this.renderScale, {
       x: 240, y: COMPLETE_LAYOUT.replayY, width: COMPLETE_LAYOUT.buttonWidth,
-      height: COMPLETE_LAYOUT.buttonHeight, label: strings.replayLevel, onActivate: () => this.startLevel(),
+      height: COMPLETE_LAYOUT.buttonHeight, label: strings.replayLevel, tone: "modalSecondary",
+      onActivate: () => this.startLevel(),
     });
     const menuButton = createSecondaryButton(this, this.renderScale, {
       x: 240, y: COMPLETE_LAYOUT.menuY, width: COMPLETE_LAYOUT.buttonWidth,
-      height: COMPLETE_LAYOUT.buttonHeight, label: strings.menu,
+      height: COMPLETE_LAYOUT.buttonHeight, label: strings.menu, tone: "modalSecondary",
       onActivate: () => this.scene.start("MainMenuScene"),
     });
     this.completeOverlay = this.add.container(0, 0, [
@@ -845,6 +846,7 @@ export class PlayScene extends Phaser.Scene {
       const button = factory(this, this.renderScale, {
         x: PAUSE_LAYOUT.button.centerX, y, width: PAUSE_LAYOUT.button.width,
         height: PAUSE_LAYOUT.button.height, label,
+        tone: kind === "secondary" ? "modalSecondary" : "default",
         onActivate: () => { if (!this.pauseClosing) action(); },
       });
       objects.push(button.container);

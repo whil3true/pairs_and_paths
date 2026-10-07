@@ -41,6 +41,7 @@ export interface ButtonOptions {
   readonly onActivate: () => void;
   readonly disabled?: boolean;
   readonly borderless?: boolean;
+  readonly tone?: "default" | "modalSecondary";
 }
 
 /** Small focus seam: callers may connect setFocused() to a future keyboard-navigation owner. */
@@ -81,7 +82,12 @@ const createButton = (
       graphics.lineStyle(BORDERS.structural, VISUAL_COLORS.primary.tealPressed.phaser, 1)
         .strokeRoundedRect(-width / 2 - 2, -height / 2 - 2, width + 4, height + 4, radius + 2);
     }
-    graphics.fillStyle(visual.fill, visual.fillAlpha).fillRoundedRect(-width / 2, -height / 2, width, height, radius);
+    const fill = options.tone === "modalSecondary" && kind === "secondary"
+      ? resolvedState === "pressed" ? VISUAL_COLORS.secondaryPressed.phaser
+        : resolvedState === "hover" ? VISUAL_COLORS.state.selectedFill.phaser
+          : VISUAL_COLORS.state.pressedFill.phaser
+      : visual.fill;
+    graphics.fillStyle(fill, visual.fillAlpha).fillRoundedRect(-width / 2, -height / 2, width, height, radius);
     if (!options.borderless && visual.borderWidth > 0) graphics.lineStyle(visual.borderWidth, visual.border, 1)
       .strokeRoundedRect(-width / 2, -height / 2, width, height, radius);
     label.setColor(visual.label);

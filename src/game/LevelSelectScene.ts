@@ -94,8 +94,8 @@ export class LevelSelectScene extends Phaser.Scene {
     const graphics = this.add.graphics();
     if (focused) graphics.lineStyle(3, VISUAL_COLORS.primary.teal.phaser)
       .strokeRoundedRect(-half - 4, -half - 4, size + 8, size + 8, COMPONENT_RADII.levelCard + 4);
-    graphics.fillStyle(visual.fill).fillRoundedRect(-half, -half, size, size, COMPONENT_RADII.levelCard)
-      .lineStyle(visual.borderWidth, visual.border)
+    graphics.fillStyle(visual.fill).fillRoundedRect(-half, -half, size, size, COMPONENT_RADII.levelCard);
+    if (visual.borderWidth > 0) graphics.lineStyle(visual.borderWidth, visual.border)
       .strokeRoundedRect(-half, -half, size, size, COMPONENT_RADII.levelCard);
     const number = createUiText(this, this.renderScale, 0, 0, String(level), "sectionHeading", {
       color: state === "locked" ? VISUAL_COLORS.text.tertiary.hex : VISUAL_COLORS.text.primary.hex, align: "center",

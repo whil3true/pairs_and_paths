@@ -1,5 +1,5 @@
 import type { LevelState } from "./CampaignNavigation.js";
-import { BORDERS, VISUAL_COLORS } from "./VisualTokens.js";
+import { VISUAL_COLORS } from "./VisualTokens.js";
 
 export const LEVEL_SELECT_LAYOUT = Object.freeze({
   header: Object.freeze({
@@ -43,13 +43,13 @@ export interface LevelCardVisual {
 
 export const resolveLevelCardVisual = (state: LevelState): LevelCardVisual => state === "completed" ? {
   fill: VISUAL_COLORS.state.selectedFill.phaser, border: VISUAL_COLORS.state.success.phaser,
-  borderWidth: BORDERS.structural, affordance: "check", selectable: true, numberSize: 22,
+  borderWidth: 0, affordance: "check", selectable: true, numberSize: 22,
 } : state === "available" ? {
-  fill: VISUAL_COLORS.surface.card.phaser, border: VISUAL_COLORS.accent.gold.phaser,
-  borderWidth: BORDERS.emphasized, affordance: "tab", selectable: true, numberSize: 22,
+  fill: VISUAL_COLORS.state.hintFill.phaser, border: VISUAL_COLORS.accent.gold.phaser,
+  borderWidth: 0, affordance: "tab", selectable: true, numberSize: 22,
 } : {
   fill: VISUAL_COLORS.state.lockedFill.phaser, border: VISUAL_COLORS.state.locked.phaser,
-  borderWidth: BORDERS.structural, affordance: "lock", selectable: false, numberSize: 20,
+  borderWidth: 0, affordance: "lock", selectable: false, numberSize: 20,
 };
 
 export const canNavigateChapter = (chapter: number) => Object.freeze({ previous: chapter > 1, next: chapter < 10 });

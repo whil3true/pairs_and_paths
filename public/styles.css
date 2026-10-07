@@ -62,6 +62,15 @@ body {
   position: fixed;
   inset: 0;
   z-index: 1;
-  background: transparent;
+  background: #F5EEDF;
 }
 #game canvas { display: block; }
+
+@media (orientation: landscape) {
+  #game {
+    left: 50%;
+    right: auto;
+    width: min(100dvw, calc(100dvh * 0.6));
+    transform: translateX(-50%);
+  }
+}
