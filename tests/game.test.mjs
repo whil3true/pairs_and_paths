@@ -364,6 +364,33 @@ test("level select geometry, navigation boundaries, and semantic cards are stabl
   }), [["check", true, 22, 0], ["tab", true, 22, 0], ["lock", false, 20, 0]]);
 });
 
+test("level cards provide press feedback before navigation", async () => {
+  const source = await readFile(new URL("../src/game/LevelSelectScene.ts", import.meta.url), "utf8");
+  assert.match(source, /pointerdown[\s\S]*scaleX:\s*0\.96[\s\S]*MOTION\.buttonPressDown/);
+  assert.match(source, /pointerup[\s\S]*MOTION\.buttonPressUp[\s\S]*onComplete:\s*\(\) => this\.scene\.start\("PlayScene"/);
+});
+
+test("pause content enters after the shell instead of appearing as a static first frame", async () => {
+  const policy = await import("../.test-dist/game/PauseVisualPolicy.js");
+  const normal = policy.getPauseMotionPolicy(false);
+  const reduced = policy.getPauseMotionPolicy(true);
+  assert.deepEqual(normal, {
+    enterDuration: 200, exitDuration: 160, contentDelay: 45, contentDuration: 155, contentLift: 8,
+  });
+  assert.deepEqual(reduced, {
+    enterDuration: 100, exitDuration: 80, contentDelay: 0, contentDuration: 100, contentLift: 0,
+  });
+  const source = await readFile(new URL("../src/game/PlayScene.ts", import.meta.url), "utf8");
+  assert.match(source, /content\.setAlpha\(0\)\.setY\(motion\.contentLift\)/);
+  assert.match(source, /targets:\s*content[\s\S]*delay:\s*motion\.contentDelay[\s\S]*duration:\s*motion\.contentDuration/);
+});
+
+test("portrait startup root matches the game field while landscape restores the oat backdrop", async () => {
+  const css = await readFile(new URL("../public/styles.css", import.meta.url), "utf8");
+  assert.match(css, /--page-backdrop-color:\s*#F5EEDF/);
+  assert.match(css, /@media \(orientation: landscape\)[\s\S]*--page-backdrop-color:\s*#E7DCC8/);
+});
+
 test("level-select states remain distinct without structural borders", () => {
   const completed = resolveLevelCardVisual("completed");
   const available = resolveLevelCardVisual("available");
