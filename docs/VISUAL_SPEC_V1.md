@@ -42,7 +42,8 @@ The redesign must not change these invariants:
 - On normal taller/narrower mobile viewports, Phaser expands the canvas vertically to the full available safe-area height while keeping the canonical `480×800` composition centered. The extra world area above/below contains background only; it is not new gameplay layout space.
 - The CSS area outside the Phaser canvas is an intentional presentation backdrop, not a continuation of `bg.app`. Its production default is warm oat `#E7DCC8`; the Phaser game field remains warm ivory `#F5EEDF`. On normal tall mobile there are no CSS top/bottom gutters because Phaser owns the full safe-area viewport.
 - A maximum logical canvas height of `1600` guards pathological aspect ratios and GPU fill-rate. A full-viewport WebGL canvas is intentionally avoided on wide desktop displays.
-- The outer CSS presentation backdrop contains no gameplay objects or interactive UI.\n- 100 Levels; 10 Chapters × 10 Levels.
+- The outer CSS presentation backdrop contains no gameplay objects or interactive UI.
+- 100 Levels; 10 Chapters × 10 Levels.
 - `CELL_PITCH = 64`, `TILE_SIZE = 56`, intentional gap = `8` logical px.
 - Maximum board: `7×7`, footprint `448×448`, bounds `[16,196]..[464,644]`.
 - All board sizes use the same tile scale. Final campaign boards are square; authored pre-stages may be rectangular.
