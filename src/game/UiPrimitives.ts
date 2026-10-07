@@ -139,9 +139,9 @@ export interface PanelOptions {
 export const createCard = (scene: Phaser.Scene, options: PanelOptions): Phaser.GameObjects.Graphics => {
   const graphics = scene.add.graphics().fillStyle(VISUAL_COLORS.surface.card.phaser)
     .fillRoundedRect(options.x - options.width / 2, options.y - options.height / 2, options.width, options.height, COMPONENT_RADII.chapterBanner);
-  if (options.borderRole !== "none") graphics.lineStyle(
+  if (options.borderRole === "strong" || options.borderRole === "soft") graphics.lineStyle(
     BORDERS.structural,
-    VISUAL_COLORS.border[options.borderRole ?? "soft"].phaser,
+    VISUAL_COLORS.border[options.borderRole].phaser,
   ).strokeRoundedRect(
     options.x - options.width / 2, options.y - options.height / 2,
     options.width, options.height, COMPONENT_RADII.chapterBanner,
@@ -158,10 +158,7 @@ export const createModalShell = (scene: Phaser.Scene, options: PanelOptions): Ph
     VISUAL_COLORS.overlay.modal.phaser,
     VISUAL_COLORS.overlay.modal.alpha,
   ).setInteractive();
-  const modalBorderRole = options.borderRole === "soft" ? "soft" : "strong";
   const panel = scene.add.graphics().fillStyle(VISUAL_COLORS.surface.elevated.phaser)
-    .fillRoundedRect(options.x - options.width / 2, options.y - options.height / 2, options.width, options.height, COMPONENT_RADII.modal)
-    .lineStyle(BORDERS.structural, VISUAL_COLORS.border[modalBorderRole].phaser)
-    .strokeRoundedRect(options.x - options.width / 2, options.y - options.height / 2, options.width, options.height, COMPONENT_RADII.modal);
+    .fillRoundedRect(options.x - options.width / 2, options.y - options.height / 2, options.width, options.height, COMPONENT_RADII.modal);
   return scene.add.container(0, 0, [backdrop, panel]);
 };

@@ -416,6 +416,8 @@ test("button visual policy is deterministic and exposes disabled and focus state
   assert.equal(resolveButtonVisual("primary", "disabled").fill, VISUAL_COLORS.primary.tealDisabled.phaser);
   assert.equal(resolveButtonVisual("primary", "disabled").offsetY, 0);
   assert.equal(resolveButtonVisual("secondary", "disabled").border, VISUAL_COLORS.state.locked.phaser);
+  assert.equal(resolveButtonVisual("secondary", "disabled").borderWidth, 0);
+  assert.equal(resolveButtonVisual("secondary", "default").borderWidth, 0);
   assert.equal(resolveButtonVisual("secondary", "focus").focusRing, true);
 });
 
@@ -814,6 +816,24 @@ test("developer symbol gallery requires both flags and reuses the shared catalog
   const gallerySource = await readFile(new URL("../src/game/SymbolGalleryScene.ts", import.meta.url), "utf8");
   assert.match(gallerySource, /TILE_SYMBOLS\.forEach/);
   assert.doesNotMatch(gallerySource, /assets\/symbols\//);
+});
+
+test("page frame uses the full layout viewport without CSS safe-area inset gutters", async () => {
+  const css = await readFile(new URL("../public/styles.css", import.meta.url), "utf8");
+  assert.match(css, /#game\s*\{[\s\S]*inset:\s*0;/);
+  assert.doesNotMatch(css, /#game\s*\{[\s\S]*env\(safe-area-inset/);
+});
+
+test("flat UI keeps decorative chrome borderless while semantic state borders remain explicit", async () => {
+  const levelSelect = await readFile(new URL("../src/game/LevelSelectScene.ts", import.meta.url), "utf8");
+  const gallery = await readFile(new URL("../src/game/ArtworkGalleryScene.ts", import.meta.url), "utf8");
+  const primitives = await readFile(new URL("../src/game/UiPrimitives.ts", import.meta.url), "utf8");
+
+  assert.match(levelSelect, /createChapterBanner\(this, this\.chapter, LEVEL_SELECT_LAYOUT\.banner, false\)/);
+  assert.doesNotMatch(gallery, /VISUAL_COLORS\.border\.strong\.phaser[\s\S]*strokeRoundedRect\(bounds\.x, bounds\.y, 72, 72/);
+  assert.match(gallery, /drawDashedBorder/);
+  assert.match(primitives, /options\.borderRole === "strong" \|\| options\.borderRole === "soft"/);
+  assert.doesNotMatch(primitives, /const modalBorderRole/);
 });
 
 test("production viewport keeps desktop full-height with symmetric side backdrop gutters", () => {
