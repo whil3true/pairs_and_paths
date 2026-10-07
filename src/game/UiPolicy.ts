@@ -40,7 +40,7 @@ export const resolveButtonVisual = (kind: ButtonKind, state: ButtonState): Butto
   const c = VISUAL_COLORS;
   if (state === "disabled") return kind === "primary"
     ? { fill: c.primary.tealDisabled.phaser, fillAlpha: 1, label: c.disabledLabel.hex, border: c.primary.tealDisabled.phaser, borderWidth: 0, offsetY: 0, focusRing: false }
-    : { fill: c.state.lockedFill.phaser, fillAlpha: 1, label: c.text.tertiary.hex, border: c.state.locked.phaser, borderWidth: BORDERS.structural, offsetY: 0, focusRing: false };
+    : { fill: c.state.lockedFill.phaser, fillAlpha: 1, label: c.text.tertiary.hex, border: c.state.locked.phaser, borderWidth: 0, offsetY: 0, focusRing: false };
 
   if (kind === "primary") return {
     fill: state === "pressed" ? c.primary.tealPressed.phaser
@@ -50,7 +50,7 @@ export const resolveButtonVisual = (kind: ButtonKind, state: ButtonState): Butto
   };
   if (kind === "secondary") return {
     fill: state === "pressed" ? c.secondaryPressed.phaser : state === "hover" ? c.state.selectedFill.phaser : c.surface.card.phaser,
-    fillAlpha: 1, label: c.text.primary.hex, border: c.border.strong.phaser, borderWidth: BORDERS.structural,
+    fillAlpha: 1, label: c.text.primary.hex, border: c.border.strong.phaser, borderWidth: 0,
     offsetY: state === "pressed" ? 2 : state === "hover" ? -1 : 0, focusRing: state === "focus",
   };
   if (kind === "danger") return {
