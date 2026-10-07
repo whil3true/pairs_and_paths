@@ -80,26 +80,23 @@ export class LevelSelectScene extends Phaser.Scene {
       add(card);
       if (visual.selectable) {
         card.setInteractive(
-          new Phaser.Geom.Rectangle(
-            -geometry.interactiveWidth / 2,
-            -geometry.interactiveHeight / 2,
-            geometry.interactiveWidth,
-            geometry.interactiveHeight,
-          ),
+          new Phaser.Geom.Rectangle(0, 0, geometry.interactiveWidth, geometry.interactiveHeight),
           Phaser.Geom.Rectangle.Contains,
         ).input!.cursor = "pointer";
-        const pressVisual = card.getAt(0) as Phaser.GameObjects.Container;
         let armed = false;
+        let activating = false;
         const resetPress = (): void => {
+          if (activating) return;
           armed = false;
-          this.tweens.killTweensOf(pressVisual);
-          pressVisual.setScale(1);
+          this.tweens.killTweensOf(card);
+          card.setScale(1);
         };
         card.on("pointerdown", () => {
+          if (activating) return;
           armed = true;
-          this.tweens.killTweensOf(pressVisual);
+          this.tweens.killTweensOf(card);
           this.tweens.add({
-            targets: pressVisual,
+            targets: card,
             scaleX: 0.96,
             scaleY: 0.96,
             duration: MOTION.buttonPressDown,
@@ -108,11 +105,12 @@ export class LevelSelectScene extends Phaser.Scene {
         });
         card.on("pointerout", resetPress);
         card.on("pointerup", () => {
-          if (!armed) return;
+          if (!armed || activating) return;
           armed = false;
-          this.tweens.killTweensOf(pressVisual);
+          activating = true;
+          this.tweens.killTweensOf(card);
           this.tweens.add({
-            targets: pressVisual,
+            targets: card,
             scaleX: 1,
             scaleY: 1,
             duration: MOTION.buttonPressUp,
@@ -148,8 +146,7 @@ export class LevelSelectScene extends Phaser.Scene {
       graphics.lineStyle(2, VISUAL_COLORS.state.locked.phaser).strokeRoundedRect(17, -22, 11, 10, 2)
         .beginPath().arc(22.5, -22, 4, Math.PI, 0).strokePath();
     }
-    const visualLayer = this.add.container(0, 0, [graphics, number]);
-    return this.add.container(centerX, centerY, [visualLayer]).setSize(size, size);
+    return this.add.container(centerX, centerY, [graphics, number]).setSize(size, size);
   }
 
   private createChapterArrow(x: number, pointsRight: boolean, enabled: boolean, objects: Phaser.GameObjects.GameObject[]): void {
