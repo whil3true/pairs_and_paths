@@ -644,7 +644,7 @@ The chapter banner shares Main Menu's static code-only builder and makes no artw
   localized chapter title at y `46` in dedicated `24/30`, weight 600 chapter heading, then global
   progress at y `82` in body/secondary. Long localized titles must remain comfortably inside the
   screen margins and must not be recombined into a 30 px screen title.
-- Chapter banner x `24`, y `116`, `432×164`, radius 20. It is a deterministic chapter identity card,
+- Chapter banner x `24`, y `116`, `432×164`, radius 20, borderless. It is a deterministic chapter identity card,
   not procedural pseudo-art or a substitute artwork preview.
 - Chapter arrows: `48×48`, centers x `48` and `432`, y `316`; centered chapter indicator between.
 - Level grid: x `24..456`, y `352..532`, five columns × two rows.
@@ -679,7 +679,7 @@ State comprehension must survive grayscale and low brightness.
 
 ### 19.2 Slot states
 
-- Unlocked: the actual 256 thumbnail fills the complete `72×72` rounded card aperture edge-to-edge with radius 16 and no crop/stretch. There is no inner `surface.card` margin or white/light ring, and no square thumbnail corner may protrude. The 2 px strong structural border renders above the image. Tappable.
+- Unlocked: the actual 256 thumbnail fills the complete `72×72` rounded card aperture edge-to-edge with radius 16 and no crop/stretch. There is no inner `surface.card` margin, white/light ring, or decorative structural border, and no square thumbnail corner may protrude. Tappable.
 - Loaded thumbnails use static `bg.app` corner occlusion in the chapter container rather than `GeometryMask` clipping.
 - Locked: neutral `state.lockedFill`; large lock glyph; Level number; no asset request.
 - Unavailable: `surface.card`, interrupted/dashed soft border, unavailable-image glyph + `Скоро`; no asset request. It must not look locked or achievable now.
@@ -737,7 +737,7 @@ This is one continuous transformation from gameplay artwork into Reward artwork,
 ### 21.1 Overlay and modal
 
 - Backdrop: `overlay.modal` covering 480×800, input-blocking.
-- Modal: width `416 px`, centered near y `400`; height adapts to content (`360–440 px`), fill `surface.elevated`, radius 24, 2 px `border.soft`, `shadow.modal`.
+- Modal: width `416 px`, centered near y `400`; height adapts to content (`360–440 px`), fill `surface.elevated`, radius 24, no decorative structural border; `shadow.modal` may provide separation.
 - Padding `24 px`; title `24/30` weight 600; body `17/24`.
 
 ### 21.2 Pause menu
