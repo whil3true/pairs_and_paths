@@ -60,8 +60,7 @@ body {
 /* Phaser fits only inside this safe-area frame, above the page-only dim layer. */
 #game {
   position: fixed;
-  inset: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px)
-    env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
+  inset: 0;
   z-index: 1;
   background: transparent;
 }
