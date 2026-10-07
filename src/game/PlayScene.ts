@@ -19,7 +19,7 @@ import { computeContainedSquarePlacement, getLevelArtwork, isArtworkRevealStage 
 import { TileVisual } from "./TileVisual.js";
 import { createBlockerVisual } from "./BlockerVisual.js";
 import { ensureBoardRuntimeAtlas } from "./BoardRuntimeAtlas.js";
-import { GAMEPLAY_HUD, formatRemainingPairs } from "./GameplayHudPolicy.js";
+import { GAMEPLAY_HUD } from "./GameplayHudPolicy.js";
 import {
   createPolylineMetrics, GAMEPLAY_FEEDBACK, partialPolylineFromMetrics,
 } from "./GameplayFeedbackPolicy.js";
@@ -113,12 +113,12 @@ export class PlayScene extends Phaser.Scene {
     this.pauseControl = createSecondaryButton(this, this.renderScale, {
       x: GAMEPLAY_HUD.pause.centerX, y: GAMEPLAY_HUD.pause.centerY,
       width: GAMEPLAY_HUD.pause.width, height: GAMEPLAY_HUD.pause.height,
-      label: "Пауза", onActivate: () => this.showPause(),
+      label: getUiStrings(this.locale).gameplayPause, onActivate: () => this.showPause(),
     });
     this.hintControl = createSecondaryButton(this, this.renderScale, {
       x: GAMEPLAY_HUD.hint.centerX, y: GAMEPLAY_HUD.hint.centerY,
       width: GAMEPLAY_HUD.hint.width, height: GAMEPLAY_HUD.hint.height,
-      label: "Подсказка", onActivate: () => this.showHint(),
+      label: getUiStrings(this.locale).gameplayHint, onActivate: () => this.showHint(),
     });
     this.levelText = createUiText(this, this.renderScale, GAMEPLAY_HUD.statusLeftX, GAMEPLAY_HUD.statusY,
       "", "hudPrimary").setOrigin(0, 0);
@@ -171,8 +171,9 @@ export class PlayScene extends Phaser.Scene {
     const level = createLevelStage(this.currentLevelNumber, this.currentStageIndex);
     this.board = level.board;
     const stageCount = getStageCount(this.currentLevelNumber);
-    this.levelText.setText(`Уровень ${this.currentLevelNumber}`);
-    this.stageText.setText(`Этап ${this.currentStageIndex + 1}/${stageCount}`).setVisible(stageCount > 1);
+    const strings = getUiStrings(this.locale);
+    this.levelText.setText(strings.levelLabel(this.currentLevelNumber));
+    this.stageText.setText(strings.stageLabel(this.currentStageIndex + 1, stageCount)).setVisible(stageCount > 1);
     this.layout = new BoardLayout({
       sceneWidth: LOGICAL_GAME_WIDTH, sceneHeight: LOGICAL_GAME_HEIGHT,
       boardWidth: this.board.width, boardHeight: this.board.height,
@@ -552,7 +553,7 @@ export class PlayScene extends Phaser.Scene {
   }
 
   private updateRemaining(): void {
-    this.remainingText.setText(formatRemainingPairs(this.tiles.size / 2));
+    this.remainingText.setText(getUiStrings(this.locale).remainingPairs(this.tiles.size / 2));
   }
 
   private prefersReducedMotion(): boolean {
