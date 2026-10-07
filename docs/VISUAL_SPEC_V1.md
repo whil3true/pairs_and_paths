@@ -656,14 +656,14 @@ The resulting 12 px banner-to-navigation and navigation-to-grid gaps are intenti
 
 ### 18.2 States
 
-- Completed: pale success fill, 2 px success border, number 22 px, check glyph top-right.
-- Current/frontier: warm ivory fill, 3 px gold border, small upward tab/diamond at bottom; number 22 px. It remains selectable.
-- Locked: locked fill, 2 px locked border, number 20 px + lock glyph top-right. No interaction.
-- Selected/focus (keyboard): teal outer focus ring in addition to the state border; do not erase current/completed semantics.
+- Completed: pale teal success fill, **no structural border**, number 22 px, check glyph top-right.
+- Current/frontier: warm gold-tint fill, **no structural border**, small upward gold tab/diamond at bottom; number 22 px. It remains selectable.
+- Locked: neutral locked fill, **no structural border**, number 20 px + lock glyph top-right. No interaction.
+- Selected/focus (keyboard): teal outer focus ring may appear outside the card; do not erase current/completed semantics.
 - Chapter banner should never imply a level is unlocked.
 - Arrows do not wrap at Chapters 1/10. Disabled arrow retains target box and becomes non-interactive.
 
-State comprehension must survive grayscale and low brightness.
+State comprehension must survive grayscale and low brightness. State is carried by fill tone plus check/tab/lock affordance, not by persistent card outlines.
 
 ---
 
@@ -745,8 +745,8 @@ This is one continuous transformation from gameplay artwork into Reward artwork,
 Order:
 
 1. `Продолжить` — primary teal.
-2. `Начать уровень заново` — secondary.
-3. `Выйти в меню` — secondary.
+2. `Начать уровень заново` — secondary with a warm contrast fill distinct from the elevated modal surface.
+3. `Выйти в меню` — secondary with the same warm contrast fill.
 
 Buttons are `368×52`, 12 px gaps. Board remains visible behind overlay but is not interactive. Selection and exact session state remain intact.
 
