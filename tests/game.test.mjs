@@ -361,7 +361,18 @@ test("level select geometry, navigation boundaries, and semantic cards are stabl
   assert.deepEqual(["completed", "available", "locked"].map((state) => {
     const visual = resolveLevelCardVisual(state);
     return [visual.affordance, visual.selectable, visual.numberSize, visual.borderWidth];
-  }), [["check", true, 22, 2], ["tab", true, 22, 3], ["lock", false, 20, 2]]);
+  }), [["check", true, 22, 0], ["tab", true, 22, 0], ["lock", false, 20, 0]]);
+});
+
+test("level-select states remain distinct without structural borders", () => {
+  const completed = resolveLevelCardVisual("completed");
+  const available = resolveLevelCardVisual("available");
+  const locked = resolveLevelCardVisual("locked");
+  assert.equal(completed.fill, VISUAL_COLORS.state.selectedFill.phaser);
+  assert.equal(available.fill, VISUAL_COLORS.state.hintFill.phaser);
+  assert.equal(locked.fill, VISUAL_COLORS.state.lockedFill.phaser);
+  assert.deepEqual([completed.borderWidth, available.borderWidth, locked.borderWidth], [0, 0, 0]);
+  assert.deepEqual([completed.affordance, available.affordance, locked.affordance], ["check", "tab", "lock"]);
 });
 
 test("debug locale override is gated, valid, non-persistent, and defaults to Russian", () => {
@@ -816,6 +827,24 @@ test("developer symbol gallery requires both flags and reuses the shared catalog
   const gallerySource = await readFile(new URL("../src/game/SymbolGalleryScene.ts", import.meta.url), "utf8");
   assert.match(gallerySource, /TILE_SYMBOLS\.forEach/);
   assert.doesNotMatch(gallerySource, /assets\/symbols\//);
+});
+
+test("portrait page backdrop and Android theme color match the Phaser app background", async () => {
+  const css = await readFile(new URL("../public/styles.css", import.meta.url), "utf8");
+  const html = await readFile(new URL("../public/index.html", import.meta.url), "utf8");
+  assert.match(css, /--page-backdrop-color:\s*#F5EEDF/);
+  assert.match(css, /@media \(orientation: landscape\)[\s\S]*--page-backdrop-color:\s*#E7DCC8/);
+  assert.match(html, /name="theme-color" content="#F5EEDF"/);
+});
+
+test("pause and complete secondary actions use the dedicated modal contrast tone", async () => {
+  const play = await readFile(new URL("../src/game/PlayScene.ts", import.meta.url), "utf8");
+  const primitives = await readFile(new URL("../src/game/UiPrimitives.ts", import.meta.url), "utf8");
+  assert.match(play, /tone: kind === "secondary" \? "modalSecondary" : "default"/);
+  assert.match(play, /label: strings\.replayLevel, tone: "modalSecondary"/);
+  assert.match(play, /label: strings\.menu, tone: "modalSecondary"/);
+  assert.match(primitives, /options\.tone === "modalSecondary"/);
+  assert.match(primitives, /VISUAL_COLORS\.state\.pressedFill\.phaser/);
 });
 
 test("page frame uses the full layout viewport without CSS safe-area inset gutters", async () => {
