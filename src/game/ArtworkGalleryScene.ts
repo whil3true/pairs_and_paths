@@ -121,7 +121,7 @@ export class ArtworkGalleryScene extends Phaser.Scene {
       } else {
         graphics.fillStyle(VISUAL_COLORS.surface.card.phaser).fillRoundedRect(bounds.x, bounds.y, 72, 72, COMPONENT_RADII.levelCard);
         if (state === "unavailable") this.drawDashedBorder(graphics, bounds.x, bounds.y, 72, 72);
-        else graphics.lineStyle(BORDERS.structural, VISUAL_COLORS.border.soft.phaser)
+        else if (failed) graphics.lineStyle(BORDERS.structural, VISUAL_COLORS.state.danger.phaser)
           .strokeRoundedRect(bounds.x, bounds.y, 72, 72, COMPONENT_RADII.levelCard);
         if (state === "unavailable") this.drawImageGlyph(graphics, x, y - 8, false);
         else if (failed) this.drawImageGlyph(graphics, x, y - 8, true);
@@ -133,9 +133,7 @@ export class ArtworkGalleryScene extends Phaser.Scene {
       const image = this.add.image(x, y, artwork.thumbnailAssetKey).setDisplaySize(thumbnail.size, thumbnail.size);
       const cornerOcclusion = this.add.graphics().fillStyle(VISUAL_COLORS.bg.app.phaser);
       drawThumbnailCornerOcclusion(cornerOcclusion, bounds, thumbnail.radius);
-      objects.push(image, cornerOcclusion, this.add.graphics()
-        .lineStyle(BORDERS.structural, VISUAL_COLORS.border.strong.phaser)
-        .strokeRoundedRect(bounds.x, bounds.y, 72, 72, COMPONENT_RADII.levelCard));
+      objects.push(image, cornerOcclusion);
     }
     if (!loaded && state !== "locked") objects.push(createUiText(this, this.renderScale, x, y + 17,
       state === "unavailable" ? strings.gallerySoon : failed ? strings.galleryUnavailable : strings.galleryLoading,
