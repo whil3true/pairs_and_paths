@@ -49,13 +49,10 @@ const startGame = async (): Promise<void> => {
     ],
     scale: {
       mode: Phaser.Scale.EXPAND,
-      autoCenter: Phaser.Scale.CENTER_BOTH,
+      autoCenter: Phaser.Scale.NO_CENTER,
+      expandParent: false,
       width: LOGICAL_GAME_WIDTH * renderScale,
       height: LOGICAL_GAME_HEIGHT * renderScale,
-      max: {
-        width: LOGICAL_GAME_WIDTH * renderScale,
-        height: MAX_LOGICAL_VIEWPORT_HEIGHT * renderScale,
-      },
     },
   });
 };
