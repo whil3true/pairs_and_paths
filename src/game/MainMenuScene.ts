@@ -34,11 +34,10 @@ export class MainMenuScene extends Phaser.Scene {
     const previewChapter = getChapterNumber(primary.levelNumber);
 
     const brandLayout = getMainMenuBrandLayout(this.locale);
-    const titleLines = this.locale === "ru" ? strings.gameTitle.split(": ") : [strings.gameTitle];
-    titleLines.forEach((line, index) => createUiText(this, this.renderScale, 240, brandLayout.titleTops[index]!, line,
-      brandLayout.titleRole, { align: "center" }).setOrigin(0.5, 0));
-    if (brandLayout.taglineTop !== null) createUiText(this, this.renderScale, 240, brandLayout.taglineTop,
-      strings.tagline, "hudSecondary", { color: VISUAL_COLORS.text.secondary.hex, align: "center" }).setOrigin(0.5, 0);
+    createUiText(this, this.renderScale, 240, brandLayout.titleTop, strings.brandTitle,
+      brandLayout.titleRole, { align: "center" }).setOrigin(0.5, 0);
+    createUiText(this, this.renderScale, 240, brandLayout.descriptorTop, strings.brandDescriptor,
+      brandLayout.descriptorRole, { color: VISUAL_COLORS.text.secondary.hex, align: "center" }).setOrigin(0.5, 0);
 
     const preview = MAIN_MENU_LAYOUT.preview;
     createChapterBanner(this, previewChapter, preview);
