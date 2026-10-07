@@ -12,7 +12,7 @@ import type { PlayStartData } from "./SceneStart.js";
 import { createLevelStage, getStageClearOutcome, getStageCount, hasNextLevel } from "./LevelSequence.js";
 import { getTileSymbol, preloadTileSymbols } from "./TileSymbols.js";
 import {
-  configureLogicalCamera, LOGICAL_GAME_HEIGHT, LOGICAL_GAME_WIDTH,
+  configureLogicalCamera, LOGICAL_GAME_HEIGHT, LOGICAL_GAME_WIDTH, MAX_LOGICAL_VIEWPORT_HEIGHT,
 } from "./Display.js";
 import { getHintMove } from "./Hint.js";
 import { computeContainedSquarePlacement, getLevelArtwork, isArtworkRevealStage } from "./LevelArtwork.js";
@@ -621,14 +621,17 @@ export class PlayScene extends Phaser.Scene {
       this.rewardTimer = null;
       if (!this.sys.isActive() || this.artworkPresentation !== null) return;
       const backdrop = this.add.rectangle(
-        240, 400, 480, 800, VISUAL_COLORS.bg.app.phaser,
+        LOGICAL_GAME_WIDTH / 2, LOGICAL_GAME_HEIGHT / 2,
+        LOGICAL_GAME_WIDTH, MAX_LOGICAL_VIEWPORT_HEIGHT, VISUAL_COLORS.bg.app.phaser,
       ).setAlpha(0).setInteractive();
       const settledDim = this.add.rectangle(
-        240, 400, 480, 800, VISUAL_COLORS.overlay.modal.phaser,
+        LOGICAL_GAME_WIDTH / 2, LOGICAL_GAME_HEIGHT / 2,
+        LOGICAL_GAME_WIDTH, MAX_LOGICAL_VIEWPORT_HEIGHT, VISUAL_COLORS.overlay.modal.phaser,
       ).setAlpha(0).setInteractive();
       this.artworkPresentation = this.add.container(0, 0, [backdrop, settledDim]).setDepth(40);
       const transitionDim = this.add.rectangle(
-        240, 400, 480, 800, VISUAL_COLORS.overlay.modal.phaser,
+        LOGICAL_GAME_WIDTH / 2, LOGICAL_GAME_HEIGHT / 2,
+        LOGICAL_GAME_WIDTH, MAX_LOGICAL_VIEWPORT_HEIGHT, VISUAL_COLORS.overlay.modal.phaser,
       ).setAlpha(0).setDepth(39).setInteractive();
       const transitionImage = this.add.image(
         motion.spatialTravel ? sourceBounds.centerX : REWARD_LAYOUT.artwork.centerX,

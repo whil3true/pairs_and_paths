@@ -36,12 +36,13 @@ Real-user testing is useful but is not a pre-production gate. Unverified cohort 
 The redesign must not change these invariants:
 
 - Phaser 4 + TypeScript, HTML5, Yandex Games target.
-- Permanent logical viewport: `480×800`; portrait-first. Desktop is a centered portrait game with gutters, not a desktop layout.
-- Production scaling remains uniform contain / `Phaser.Scale.FIT`; the game field never stretches non-uniformly and gameplay coordinates never expand beyond `480×800`.
-- On ordinary landscape desktop viewports, the portrait game field is height-constrained: it occupies the full available safe-area height, is horizontally centered, and leaves only symmetric left/right gutters. No desktop top/bottom margin or max-height is added.
-- On taller/narrower mobile viewports, the game field is width-constrained and any excess viewport area appears above/below the centered game field.
-- The area outside the Phaser canvas is an intentional presentation backdrop, not a continuation of `bg.app`. Its production default is warm oat `#E7DCC8`; the game field remains warm ivory `#F5EEDF`.
-- The outer presentation backdrop contains no gameplay objects or interactive UI. A full-viewport WebGL canvas is not the production architecture; Phaser renders only the centered portrait game field.
+- Permanent canonical gameplay composition: `480×800`; portrait-first. Gameplay/UI coordinates remain authored inside that immutable safe composition.
+- Production scaling uses `Phaser.Scale.EXPAND` with the backing canvas width capped at the canonical portrait width (times render scale). The composition never stretches non-uniformly.
+- On ordinary landscape desktop viewports, the capped portrait canvas is height-constrained: it occupies the full available safe-area height, is horizontally centered, and leaves only symmetric left/right CSS presentation gutters. No desktop top/bottom margin or max-height is added.
+- On normal taller/narrower mobile viewports, Phaser expands the canvas vertically to the full available safe-area height while keeping the canonical `480×800` composition centered. The extra world area above/below contains background only; it is not new gameplay layout space.
+- The CSS area outside the Phaser canvas is an intentional presentation backdrop, not a continuation of `bg.app`. Its production default is warm oat `#E7DCC8`; the Phaser game field remains warm ivory `#F5EEDF`. On normal tall mobile there are no CSS top/bottom gutters because Phaser owns the full safe-area viewport.
+- A maximum logical canvas height of `1600` guards pathological aspect ratios and GPU fill-rate. A full-viewport WebGL canvas is intentionally avoided on wide desktop displays.
+- The outer CSS presentation backdrop contains no gameplay objects or interactive UI.
 - 100 Levels; 10 Chapters × 10 Levels.
 - `CELL_PITCH = 64`, `TILE_SIZE = 56`, intentional gap = `8` logical px.
 - Maximum board: `7×7`, footprint `448×448`, bounds `[16,196]..[464,644]`.

@@ -9,6 +9,7 @@ import { ArtworkGalleryScene } from "./game/ArtworkGalleryScene.js";
 import { ArtworkFullViewScene } from "./game/ArtworkFullViewScene.js";
 import {
   computeRenderScale, isLegacyRenderScaleDebugRequested, LOGICAL_GAME_HEIGHT, LOGICAL_GAME_WIDTH,
+  MAX_LOGICAL_VIEWPORT_HEIGHT,
 } from "./game/Display.js";
 import { WebPlatform } from "./platform/WebPlatform.js";
 import { WebProgressStore } from "./platform/WebProgressStore.js";
@@ -42,9 +43,13 @@ new Phaser.Game({
     new SymbolGalleryScene(renderScale),
   ],
   scale: {
-    mode: Phaser.Scale.FIT,
+    mode: Phaser.Scale.EXPAND,
     autoCenter: Phaser.Scale.CENTER_BOTH,
     width: LOGICAL_GAME_WIDTH * renderScale,
     height: LOGICAL_GAME_HEIGHT * renderScale,
+    max: {
+      width: LOGICAL_GAME_WIDTH * renderScale,
+      height: MAX_LOGICAL_VIEWPORT_HEIGHT * renderScale,
+    },
   },
 });
