@@ -29,24 +29,34 @@ export const VISUAL_COLORS = Object.freeze({
   secondaryPressed: color("#CBDDD8"),
 });
 
-export const FONT_FAMILY = '"Manrope", system-ui, -apple-system, "Segoe UI", Arial, sans-serif';
+export const FONT_DISPLAY_FAMILY = '"Literata", Georgia, "Times New Roman", serif';
+export const FONT_UI_FAMILY = '"Onest", system-ui, -apple-system, "Segoe UI", Arial, sans-serif';
 
-const typeRole = (weight: number, size: number, lineHeight: number, tracking = 0, align: "left" | "center" = "left") =>
-  Object.freeze({ weight, size, lineHeight, tracking, align });
+export type TypographyFamilyRole = "display" | "ui";
+
+const typeRole = (
+  family: TypographyFamilyRole,
+  weight: number,
+  size: number,
+  lineHeight: number,
+  tracking = 0,
+  align: "left" | "center" = "left",
+) => Object.freeze({ family, weight, size, lineHeight, tracking, align });
 
 export const TYPOGRAPHY = Object.freeze({
-  displayBrand: typeRole(800, 36, 42, -0.5, "center"),
-  screenTitle: typeRole(800, 30, 36, -0.3, "center"),
-  chapterHeading: typeRole(750, 24, 30, -0.2, "center"),
-  sectionHeading: typeRole(700, 22, 28),
-  levelTitle: typeRole(700, 20, 26),
-  hudPrimary: typeRole(750, 20, 24),
-  hudSecondary: typeRole(650, 16, 20),
-  buttonPrimary: typeRole(750, 19, 24, 0, "center"),
-  buttonSecondary: typeRole(700, 17, 22, 0, "center"),
-  body: typeRole(500, 17, 24),
-  caption: typeRole(600, 15, 20, 0.1),
-  smallMetadata: typeRole(600, 14, 18, 0.1),
+  displayBrand: typeRole("display", 600, 36, 42, -0.5, "center"),
+  brandDescriptor: typeRole("ui", 600, 16, 20, 0, "center"),
+  screenTitle: typeRole("ui", 600, 30, 36, -0.3, "center"),
+  chapterHeading: typeRole("ui", 600, 24, 30, -0.2, "center"),
+  sectionHeading: typeRole("ui", 600, 22, 28),
+  levelTitle: typeRole("ui", 600, 20, 26),
+  hudPrimary: typeRole("ui", 600, 20, 24),
+  hudSecondary: typeRole("ui", 500, 16, 20),
+  buttonPrimary: typeRole("ui", 600, 19, 24, 0, "center"),
+  buttonSecondary: typeRole("ui", 600, 17, 22, 0, "center"),
+  body: typeRole("ui", 400, 17, 24),
+  caption: typeRole("ui", 500, 15, 20, 0.1),
+  smallMetadata: typeRole("ui", 500, 14, 18, 0.1),
 });
 export type TypographyRole = keyof typeof TYPOGRAPHY;
 

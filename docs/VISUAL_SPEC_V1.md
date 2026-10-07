@@ -162,50 +162,61 @@ All HEX values are sRGB. RGB is given as `r,g,b`. Alpha tokens are stated separa
 
 ## 5. Typography
 
-### 5.1 Family and licensing
+### 5.1 Production system and licensing
 
-**Recommended production family:** `Manrope`, variable weight `400–800`, with Cyrillic. It is open source under SIL Open Font License 1.1 and is suitable for redistribution in a free/commercial HTML5 game when the licence notice accompanies the font files. Use a pinned, self-hosted WOFF2 build; do not depend on a remote font CDN at runtime.
+**Production display family:** `Literata`, static SemiBold `600`, upright only.  
+**Production UI family:** `Onest`, variable weight `400–600`, upright only.
 
-Fallback stack:
+Both families are self-hosted as pinned WOFF2 assets with separate Cyrillic and Latin subsets and are licensed under **SIL Open Font License 1.1**. Their OFL/copyright notices ship under `public/assets/fonts/licenses/`.
+
+Fallback stacks:
 
 ```css
-"Manrope", system-ui, -apple-system, "Segoe UI", Arial, sans-serif
+/* Display */
+"Literata", Georgia, "Times New Roman", serif
+
+/* UI */
+"Onest", system-ui, -apple-system, "Segoe UI", Arial, sans-serif
 ```
 
-Performance default:
+Loading contract:
 
-- one variable WOFF2 containing required Cyrillic + Latin + digits;
-- preload only that file;
-- `font-display: swap` for HTML shell; Phaser must not enter player scenes until the chosen font is ready or must deterministically use the fallback for the full session;
-- retain OFL notice in third-party licences;
-- measure real WOFF2 bytes during the pilot; do not add the dependency in this stage.
-
-If font loading proves visually unstable or materially increases startup time, the approved fallback is system UI only. Do not substitute a decorative serif or condensed display face.
+- no remote font CDN at runtime;
+- `@font-face` uses the pinned uploaded WOFF2 binaries and `unicode-range`;
+- Literata ships only weight 600;
+- Onest ships one variable file per script subset and production roles are constrained to 400/500/600;
+- the app explicitly waits on the Font Loading API before constructing `Phaser.Game`;
+- loading failure falls back to the documented stacks rather than blocking startup indefinitely;
+- no custom glyph subsetting in the first production integration;
+- no synthetic 700/750/800 typography roles.
 
 ### 5.2 Type roles at 480×800 logical resolution
 
-| Role | Weight | Size / line-height | Tracking | Use |
-|---|---:|---:|---:|---|
-| Display / Brand | 800 | `36 / 42` | `-0.5 px` | Main Menu short brand only |
-| Screen title | 750–800 | `30 / 36` | `-0.3 px` | Gallery, Levels, Reward |
-| Section heading | 700 | `22 / 28` | `0` | chapter/card headings, modal title |
-| Level title | 700 | `20 / 26` | `0` | chapter label or artwork title |
-| HUD primary | 750 | `20 / 24` | `0` | Level, pairs remaining |
-| HUD secondary | 650 | `16 / 20` | `0` | Stage, compact state |
-| Button primary | 750 | `19 / 24` | `0` | primary/secondary buttons |
-| Button secondary | 700 | `17 / 22` | `0` | tertiary/compact controls |
-| Body | 500 | `17 / 24` | `0` | descriptions, confirmation copy |
-| Caption | 600 | `15 / 20` | `0.1 px` | thumbnail state, progress note |
-| Small metadata | 600 | `14 / 18` | `0.1 px` | non-critical Level number or chapter count |
+| Role | Family | Weight | Size / line-height | Tracking | Use |
+|---|---|---:|---:|---:|---|
+| Display / Brand | Literata | 600 | `36 / 42` | `-0.5 px` | Main Menu short brand only |
+| Brand descriptor | Onest | 600 | `16 / 20` | `0` | `Соедини пары` / `Pair Connect` |
+| Screen title | Onest | 600 | `30 / 36` | `-0.3 px` | Gallery, Levels, Reward |
+| Chapter heading | Onest | 600 | `24 / 30` | `-0.2 px` | chapter title |
+| Section heading | Onest | 600 | `22 / 28` | `0` | card/modal headings |
+| Level title | Onest | 600 | `20 / 26` | `0` | chapter label or artwork title |
+| HUD primary | Onest | 600 | `20 / 24` | `0` | Level, pairs remaining |
+| HUD secondary | Onest | 500 | `16 / 20` | `0` | Stage, compact state |
+| Button primary | Onest | 600 | `19 / 24` | `0` | primary action |
+| Button secondary | Onest | 600 | `17 / 22` | `0` | secondary/compact controls |
+| Body | Onest | 400 | `17 / 24` | `0` | descriptions, confirmation copy |
+| Caption | Onest | 500 | `15 / 20` | `0.1 px` | thumbnail state, progress note |
+| Small metadata | Onest | 500 | `14 / 18` | `0.1 px` | non-critical Level number or chapter count |
 
 Rules:
 
+- Main Menu visual lockup is the short brand `Уютная галерея` / `Cozy Gallery` in Literata 600 plus the mechanic descriptor `Соедини пары` / `Pair Connect` in Onest 600. The full catalog title is metadata, not a single in-product logo line.
 - No critical label below `16 px`; no production text below `14 px`.
-- Numerals use tabular figures when available (`font-variant-numeric: tabular-nums` conceptually; verify Phaser support or use equal measured boxes).
+- Numerals use tabular figures only after explicit Phaser/browser QA; do not enable the feature by assumption.
 - Avoid all-caps Russian UI strings.
 - Maximum body line length inside the 480 px viewport: about 34–38 Cyrillic characters.
 - Button labels remain one line. Shorten copy before reducing font size.
-- `needs real-device QA`: Manrope’s actual Phaser metrics at renderScale 1 and 2, especially `Уровень 100`, `Осталось: 22 пары`, and bold Cyrillic at 17–20 px.
+- `needs real-device QA`: final Literata/Onest metrics at renderScale 1 and 2, including RU/EN Main Menu, `Уровень 100`, `Осталось: 22 пары`, confirmation copy, Reward, Gallery, and long chapter titles.
 
 ---
 
@@ -295,7 +306,7 @@ centres coincide, and input does not extend beyond any visual edge.
 ### 8.1 Primary
 
 - Height `56 px`; Main Menu dominant `64 px`; width follows layout, minimum `200 px`.
-- Padding `20 px`; radius `16 px`; label `19/24`, weight 750.
+- Padding `20 px`; radius `16 px`; label `19/24`, weight 600.
 - Default: `primary.teal`, white label, no border, `shadow.card`.
 - Hover: lighten visual fill by at most 4% and raise `1 px`.
 - Pressed: `primary.tealPressed`, translate down `2 px`, shadow removed.
@@ -304,7 +315,7 @@ centres coincide, and input does not extend beyond any visual edge.
 
 ### 8.2 Secondary
 
-- Height `52–56 px`; radius `16`; label `17–19 px`, weight 700.
+- Height `52–56 px`; radius `16`; label `17–19 px`, weight 600.
 - Default: `surface.card`, `2 px border.strong`, `text.primary`.
 - Hover: `state.selectedFill`.
 - Pressed: translate `2 px`, fill `#CBDDD8`.
@@ -575,8 +586,8 @@ Remove the large `Уютная галерея` brand from active gameplay. The s
 
 ### 16.3 Hierarchy
 
-- Level and pairs: HUD primary `20/24`, weight 750.
-- Stage: HUD secondary `16/20`, weight 650.
+- Level and pairs: HUD primary `20/24`, weight 600.
+- Stage: HUD secondary `16/20`, weight 500.
 - Pause/Hint labels: button secondary `17/22`; icons 22 px.
 - No seed, debug metric, chapter title, timer, score, or progress bar in production gameplay.
 - Pair grammar must localize correctly in future; v1 Russian examples are layout strings, not a localization implementation request.
@@ -597,8 +608,8 @@ left identity rail, bottom accent rail, and small corner chip replace abstract o
 
 | Element | Bounds / rule |
 |---|---|
-| Brand | x 24..456, y 28..72; centered, `36/42` |
-| Tagline | y 78..102; `16/20`, secondary; optional after first session |
+| Brand | x 24..456, y 28..70; centered Literata 600, `36/42` |
+| Descriptor | y 82..102; Onest 600, `16/20`, secondary; always shows the mechanic phrase |
 | Chapter preview | x 24, y 124, `432×232`; artwork crop is prohibited—use contained square/approved wide derivative only. For v1 use a framed square/letterboxed composition, not arbitrary crop |
 | Chapter badge | inset 16 from preview top/left, opaque card |
 | Primary action | x 24, y 380, `432×64` |
@@ -630,7 +641,7 @@ The chapter banner shares Main Menu's static code-only builder and makes no artw
 ### 18.1 Layout
 
 - Header x `24..456` is three intentionally split lines: chapter label at y `22` in HUD secondary,
-  localized chapter title at y `46` in dedicated `24/30`, weight 750 chapter heading, then global
+  localized chapter title at y `46` in dedicated `24/30`, weight 600 chapter heading, then global
   progress at y `82` in body/secondary. Long localized titles must remain comfortably inside the
   screen margins and must not be recombined into a 30 px screen title.
 - Chapter banner x `24`, y `116`, `432×164`, radius 20. It is a deterministic chapter identity card,
@@ -727,7 +738,7 @@ This is one continuous transformation from gameplay artwork into Reward artwork,
 
 - Backdrop: `overlay.modal` covering 480×800, input-blocking.
 - Modal: width `416 px`, centered near y `400`; height adapts to content (`360–440 px`), fill `surface.elevated`, radius 24, 2 px `border.soft`, `shadow.modal`.
-- Padding `24 px`; title `24/30` weight 750; body `17/24`.
+- Padding `24 px`; title `24/30` weight 600; body `17/24`.
 
 ### 21.2 Pause menu
 
@@ -1220,7 +1231,7 @@ Do not design or source audio in this phase.
 
 | Component / condition | Risk | Mitigation | QA method |
 |---|---|---|---|
-| Cohort 45–64 | small/low-weight text, slower scan | 14 px absolute floor; critical ≥16; weights 500–800; clear hierarchy | Android at arm’s length; `nice-to-have user validation` |
+| Cohort 45–64 | small/low-weight text, slower scan | 14 px absolute floor; critical ≥16; weights 400–600; clear hierarchy | Android at arm’s length; `nice-to-have user validation` |
 | Low brightness | borders/states disappear | 2–3 px structural borders; dark charcoal; opaque cards | 20–30% brightness in dim room |
 | Daylight | pale UI washes out | ≥4.5:1 text; strong board frame; no pastel-only control | outdoor/bright-window device test |
 | Colour vision deficiency | teal/gold/coral states merge | glyph + border pattern + fill + label; no colour-only state | protanopia/deuteranopia/tritanopia simulation + grayscale |

@@ -39,7 +39,8 @@ import {
   ARTWORK_FULL_VIEW_LAYOUT, ARTWORK_GALLERY_LAYOUT, ARTWORK_GALLERY_THUMBNAIL, getArtworkGallerySlotBounds,
 } from "../.test-dist/game/ArtworkGalleryVisualPolicy.js";
 import {
-  BORDERS, COMPONENT_RADII, MOTION, RADII, SPACING, TYPOGRAPHY, VISUAL_COLORS,
+  BORDERS, COMPONENT_RADII, FONT_DISPLAY_FAMILY, FONT_UI_FAMILY, MOTION, RADII, SPACING, TYPOGRAPHY,
+  VISUAL_COLORS,
 } from "../.test-dist/game/VisualTokens.js";
 import { createButtonHitArea, resolveButtonVisual } from "../.test-dist/game/UiPolicy.js";
 import { GAMEPLAY_HUD, formatRemainingPairs } from "../.test-dist/game/GameplayHudPolicy.js";
@@ -56,6 +57,7 @@ import {
 import { formatPrimaryMenuAction, getMainMenuBrandLayout, MAIN_MENU_LAYOUT, progressRatio } from "../.test-dist/game/MainMenuVisualPolicy.js";
 import { canNavigateChapter, getLevelCardBounds, getLevelCardGeometry, LEVEL_SELECT_LAYOUT, resolveLevelCardVisual } from "../.test-dist/game/LevelSelectVisualPolicy.js";
 import { getPrimaryMenuAction } from "../.test-dist/game/CampaignNavigation.js";
+import { getProductionFontProbes } from "../.test-dist/game/TypographyAssets.js";
 import {
   COMPLETE_LAYOUT, getRewardMotionPolicy, REWARD_LAYOUT, REWARD_TRANSITION_DIM_ALPHA,
 } from "../.test-dist/game/RewardVisualPolicy.js";
@@ -66,7 +68,7 @@ const progressAt = (completedThroughLevel) => ({ version: 1, completedThroughLev
 test("Phase 4 localization dictionaries have equivalent complete shapes", () => {
   assert.deepEqual(Object.keys(UI_STRINGS).sort(), ["en", "ru"]);
   assert.deepEqual(Object.keys(UI_STRINGS.ru).sort(), Object.keys(UI_STRINGS.en).sort());
-  const required = ["gameTitle", "tagline", "play", "continueLevel", "playAgainLevel", "levels", "gallery",
+  const required = ["gameTitle", "brandTitle", "brandDescriptor", "tagline", "play", "continueLevel", "playAgainLevel", "levels", "gallery",
     "openedProgress", "collectionComplete", "chapterLabel", "chapterHeader", "globalProgress", "backToMenu",
     "galleryChapterProgress", "levelLabel", "gallerySoon", "galleryLoading", "galleryUnavailable", "back",
     "artworkLoading", "artworkUnavailable",
@@ -77,6 +79,10 @@ test("Phase 4 localization dictionaries have equivalent complete shapes", () => 
   assert.deepEqual(Object.keys(UI_STRINGS.ru).sort(), required.sort());
   assert.equal(UI_STRINGS.ru.chapterTitles.length, 10);
   assert.equal(UI_STRINGS.en.chapterTitles.length, 10);
+  assert.equal(getUiStrings("ru").brandTitle, "Уютная галерея");
+  assert.equal(getUiStrings("ru").brandDescriptor, "Соедини пары");
+  assert.equal(getUiStrings("en").brandTitle, "Cozy Gallery");
+  assert.equal(getUiStrings("en").brandDescriptor, "Pair Connect");
   assert.equal(getUiStrings("ru").continueLevel(30), "Продолжить · Уровень 30");
   assert.equal(getUiStrings("en").continueLevel(30), "Continue · Level 30");
   assert.equal(getUiStrings("ru").openedProgress(29, 100), "Открыто 29 из 100");
@@ -189,19 +195,62 @@ test("main menu production geometry, progress, and localized primary actions are
   }
 });
 
-test("main menu bilingual brand composition cannot overlap tagline or preview", () => {
+test("main menu locked brand plus descriptor composition clears the preview in both locales", () => {
   for (const locale of ["ru", "en"]) {
     const layout = getMainMenuBrandLayout(locale);
-    const brandBottom = layout.titleTops.at(-1) + layout.titleLineHeight;
-    if (layout.taglineTop === null) assert.ok(brandBottom < MAIN_MENU_LAYOUT.preview.y);
-    else {
-      assert.ok(brandBottom < layout.taglineTop);
-      assert.ok(layout.taglineTop + layout.taglineLineHeight < MAIN_MENU_LAYOUT.preview.y);
-    }
+    assert.ok(layout.titleTop + layout.titleLineHeight < layout.descriptorTop);
+    assert.ok(layout.descriptorTop + layout.descriptorLineHeight < MAIN_MENU_LAYOUT.preview.y);
+    assert.equal(layout.titleRole, "displayBrand");
+    assert.equal(layout.descriptorRole, "brandDescriptor");
   }
-  assert.equal(getMainMenuBrandLayout("ru").taglineTop, null);
-  assert.equal(getMainMenuBrandLayout("ru").titleRole, "screenTitle");
-  assert.equal(getMainMenuBrandLayout("en").titleRole, "displayBrand");
+});
+
+test("production typography roles use Literata only for brand and Onest 400 through 600 for UI", () => {
+  assert.equal(FONT_DISPLAY_FAMILY, '"Literata", Georgia, "Times New Roman", serif');
+  assert.equal(FONT_UI_FAMILY, '"Onest", system-ui, -apple-system, "Segoe UI", Arial, sans-serif');
+  assert.deepEqual(
+    Object.fromEntries(Object.entries(TYPOGRAPHY).map(([role, token]) => [role, [token.family, token.weight]])),
+    {
+      displayBrand: ["display", 600],
+      brandDescriptor: ["ui", 600],
+      screenTitle: ["ui", 600],
+      chapterHeading: ["ui", 600],
+      sectionHeading: ["ui", 600],
+      levelTitle: ["ui", 600],
+      hudPrimary: ["ui", 600],
+      hudSecondary: ["ui", 500],
+      buttonPrimary: ["ui", 600],
+      buttonSecondary: ["ui", 600],
+      body: ["ui", 400],
+      caption: ["ui", 500],
+      smallMetadata: ["ui", 500],
+    },
+  );
+});
+
+test("production font probes cover active locale and every shipped UI weight", () => {
+  const ru = getProductionFontProbes("ru");
+  const en = getProductionFontProbes("en");
+  assert.deepEqual(ru.map(({ family, weight }) => [family, weight]),
+    [["Literata", 600], ["Onest", 400], ["Onest", 500], ["Onest", 600]]);
+  assert.deepEqual(en.map(({ family, weight }) => [family, weight]),
+    [["Literata", 600], ["Onest", 400], ["Onest", 500], ["Onest", 600]]);
+  assert.ok(ru.some(({ text }) => /[А-Яа-яЁё]/.test(text)));
+  assert.ok(en.every(({ text }) => !/[А-Яа-яЁё]/.test(text)));
+});
+
+test("production font CSS references the exact pinned uploaded WOFF2 files and both licenses exist", async () => {
+  const css = await readFile(new URL("../public/styles.css", import.meta.url), "utf8");
+  for (const path of [
+    "literata/literata_5.3.0_cyrillic-600-normal.woff2",
+    "literata/literata_5.3.0_latin-600-normal.woff2",
+    "onest/onest_5.3.1_cyrillic-wght-normal.woff2",
+    "onest/onest_5.3.1_latin-wght-normal.woff2",
+  ]) assert.ok(css.includes(path), `missing production font asset reference: ${path}`);
+  for (const license of ["Literata-OFL.txt", "Onest-OFL.txt"]) {
+    const text = await readFile(new URL(`../public/assets/fonts/licenses/${license}`, import.meta.url), "utf8");
+    assert.match(text, /SIL OPEN FONT LICENSE Version 1\.1/);
+  }
 });
 
 test("production chapter banner mapping is complete, explicit, and deterministic", () => {
@@ -333,14 +382,16 @@ test("production visual tokens protect core palette and layout invariants", () =
 });
 
 test("typography roles preserve production floors and valid metrics", () => {
-  assert.equal(Object.keys(TYPOGRAPHY).length, 12);
+  assert.equal(Object.keys(TYPOGRAPHY).length, 13);
   for (const role of Object.values(TYPOGRAPHY)) {
-    assert.ok(role.weight > 0);
+    assert.ok(role.weight >= 400 && role.weight <= 600);
     assert.ok(role.size >= 14);
     assert.ok(role.lineHeight >= role.size);
+    assert.ok(role.family === "display" || role.family === "ui");
   }
   assert.equal(TYPOGRAPHY.hudSecondary.size, 16);
-  assert.deepEqual(TYPOGRAPHY.chapterHeading, { weight: 750, size: 24, lineHeight: 30, tracking: -0.2, align: "center" });
+  assert.deepEqual(TYPOGRAPHY.chapterHeading,
+    { family: "ui", weight: 600, size: 24, lineHeight: 30, tracking: -0.2, align: "center" });
   assert.equal(TYPOGRAPHY.buttonPrimary.size, 19);
 });
 

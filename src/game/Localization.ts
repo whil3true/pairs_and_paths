@@ -4,6 +4,8 @@ export const DEFAULT_LOCALE: SupportedLocale = "ru";
 
 export interface UiStrings {
   readonly gameTitle: string;
+  readonly brandTitle: string;
+  readonly brandDescriptor: string;
   readonly tagline: string;
   readonly play: string;
   readonly continueLevel: (level: number) => string;
@@ -48,6 +50,8 @@ export interface UiStrings {
 
 const ru = Object.freeze<UiStrings>({
     gameTitle: "Соедини пары: Уютная галерея",
+    brandTitle: "Уютная галерея",
+    brandDescriptor: "Соедини пары",
     tagline: "Открывайте уютные картины, соединяя пары",
     play: "Играть",
     continueLevel: (level) => `Продолжить · Уровень ${level}`,
@@ -94,6 +98,8 @@ const ru = Object.freeze<UiStrings>({
   });
 const en = Object.freeze<UiStrings>({
     gameTitle: "Pair Connect: Cozy Gallery",
+    brandTitle: "Cozy Gallery",
+    brandDescriptor: "Pair Connect",
     tagline: "Connect pairs and uncover cozy artwork",
     play: "Play",
     continueLevel: (level) => `Continue · Level ${level}`,

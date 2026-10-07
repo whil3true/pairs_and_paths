@@ -1,6 +1,6 @@
 import { preloadTileSymbols, TILE_SYMBOLS } from "./TileSymbols.js";
 import { TileVisual } from "./TileVisual.js";
-import { FONT_FAMILY, VISUAL_COLORS } from "./VisualTokens.js";
+import { FONT_UI_FAMILY, VISUAL_COLORS } from "./VisualTokens.js";
 import {
   configureLogicalCamera, LOGICAL_GAME_HEIGHT, LOGICAL_GAME_WIDTH, setHiDpiTextResolution,
 } from "./Display.js";
@@ -21,7 +21,7 @@ export class SymbolGalleryScene extends Phaser.Scene {
     ensureBoardRuntimeAtlas(this, this.renderScale);
     this.cameras.main.setBackgroundColor(VISUAL_COLORS.bg.app.phaser);
     setHiDpiTextResolution(this.add.text(240, 28, "Tile symbol gallery", {
-      color: VISUAL_COLORS.text.primary.hex, fontFamily: FONT_FAMILY, fontSize: "26px", fontStyle: "bold",
+      color: VISUAL_COLORS.text.primary.hex, fontFamily: FONT_UI_FAMILY, fontSize: "26px", fontStyle: "600",
     }).setOrigin(0.5), this.renderScale);
 
     const columns = 5;
@@ -34,7 +34,7 @@ export class SymbolGalleryScene extends Phaser.Scene {
       const y = startY + Math.floor(index / columns) * rowPitch;
       new TileVisual(this, x, y, definition, this.renderScale);
       setHiDpiTextResolution(this.add.text(x, y + 45, `${index + 1}. ${definition.name}`, {
-        color: VISUAL_COLORS.text.secondary.hex, fontFamily: FONT_FAMILY, fontSize: "11px",
+        color: VISUAL_COLORS.text.secondary.hex, fontFamily: FONT_UI_FAMILY, fontSize: "11px",
       }).setOrigin(0.5), this.renderScale);
     });
 
