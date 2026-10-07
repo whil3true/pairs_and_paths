@@ -11,6 +11,7 @@ import {
   computeRenderScale, isLegacyRenderScaleDebugRequested, LOGICAL_GAME_HEIGHT, LOGICAL_GAME_WIDTH,
   MAX_LOGICAL_VIEWPORT_HEIGHT,
 } from "./game/Display.js";
+import { loadProductionFonts } from "./game/TypographyAssets.js";
 import { WebPlatform } from "./platform/WebPlatform.js";
 import { WebProgressStore } from "./platform/WebProgressStore.js";
 import { VISUAL_COLORS } from "./game/VisualTokens.js";
@@ -29,27 +30,34 @@ const automaticRenderScale = computeRenderScale(window.devicePixelRatio || 1);
 const renderScale = isLegacyRenderScaleDebugRequested(search) ? 1 : automaticRenderScale;
 const locale = parseDebugLocale(search);
 
-new Phaser.Game({
-  type: Phaser.AUTO,
-  parent: "game",
-  backgroundColor: VISUAL_COLORS.bg.app.hex,
-  scene: [
-    new BootScene(route),
-    new MainMenuScene(progressStore, renderScale, locale),
-    new LevelSelectScene(progressStore, renderScale, locale),
-    new ArtworkGalleryScene(progressStore, renderScale, locale),
-    new ArtworkFullViewScene(progressStore, renderScale, locale),
-    new PlayScene(platform, progressStore, renderScale, locale),
-    new SymbolGalleryScene(renderScale),
-  ],
-  scale: {
-    mode: Phaser.Scale.EXPAND,
-    autoCenter: Phaser.Scale.CENTER_BOTH,
-    width: LOGICAL_GAME_WIDTH * renderScale,
-    height: LOGICAL_GAME_HEIGHT * renderScale,
-    max: {
+document.documentElement.lang = locale;
+
+const startGame = async (): Promise<void> => {
+  await loadProductionFonts(locale);
+  new Phaser.Game({
+    type: Phaser.AUTO,
+    parent: "game",
+    backgroundColor: VISUAL_COLORS.bg.app.hex,
+    scene: [
+      new BootScene(route),
+      new MainMenuScene(progressStore, renderScale, locale),
+      new LevelSelectScene(progressStore, renderScale, locale),
+      new ArtworkGalleryScene(progressStore, renderScale, locale),
+      new ArtworkFullViewScene(progressStore, renderScale, locale),
+      new PlayScene(platform, progressStore, renderScale, locale),
+      new SymbolGalleryScene(renderScale),
+    ],
+    scale: {
+      mode: Phaser.Scale.EXPAND,
+      autoCenter: Phaser.Scale.CENTER_BOTH,
       width: LOGICAL_GAME_WIDTH * renderScale,
-      height: MAX_LOGICAL_VIEWPORT_HEIGHT * renderScale,
+      height: LOGICAL_GAME_HEIGHT * renderScale,
+      max: {
+        width: LOGICAL_GAME_WIDTH * renderScale,
+        height: MAX_LOGICAL_VIEWPORT_HEIGHT * renderScale,
+      },
     },
-  },
-});
+  });
+};
+
+void startGame();
