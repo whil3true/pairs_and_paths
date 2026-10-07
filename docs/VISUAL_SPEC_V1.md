@@ -37,6 +37,11 @@ The redesign must not change these invariants:
 
 - Phaser 4 + TypeScript, HTML5, Yandex Games target.
 - Permanent logical viewport: `480×800`; portrait-first. Desktop is a centered portrait game with gutters, not a desktop layout.
+- Production scaling remains uniform contain / `Phaser.Scale.FIT`; the game field never stretches non-uniformly and gameplay coordinates never expand beyond `480×800`.
+- On ordinary landscape desktop viewports, the portrait game field is height-constrained: it occupies the full available safe-area height, is horizontally centered, and leaves only symmetric left/right gutters. No desktop top/bottom margin or max-height is added.
+- On taller/narrower mobile viewports, the game field is width-constrained and any excess viewport area appears above/below the centered game field.
+- The area outside the Phaser canvas is an intentional presentation backdrop, not a continuation of `bg.app`. Its production default is warm oat `#E7DCC8`; the game field remains warm ivory `#F5EEDF`.
+- The outer presentation backdrop contains no gameplay objects or interactive UI. A full-viewport WebGL canvas is not the production architecture; Phaser renders only the centered portrait game field.
 - 100 Levels; 10 Chapters × 10 Levels.
 - `CELL_PITCH = 64`, `TILE_SIZE = 56`, intentional gap = `8` logical px.
 - Maximum board: `7×7`, footprint `448×448`, bounds `[16,196]..[464,644]`.

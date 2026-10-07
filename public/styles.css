@@ -1,16 +1,17 @@
 :root {
+  --page-backdrop-color: #E7DCC8;
   --page-dim-opacity: 0;
   --page-dim-transition: 0ms;
   color-scheme: light;
   font-family: "Manrope", system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
-  background-color: #F5EEDF;
+  background-color: var(--page-backdrop-color);
 }
 * { box-sizing: border-box; }
 html, body { width: 100%; min-height: 100%; margin: 0; }
 body {
   min-height: 100dvh;
   overflow: hidden;
-  background-color: #F5EEDF;
+  background-color: var(--page-backdrop-color);
   isolation: isolate;
 }
 /* Mirrors VISUAL_COLORS.overlay.modal.hex behind the Phaser safe-area frame. */
@@ -29,5 +30,6 @@ body {
   inset: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px)
     env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
   z-index: 1;
+  background: transparent;
 }
 #game canvas { display: block; }
