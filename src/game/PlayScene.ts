@@ -12,7 +12,7 @@ import type { PlayStartData } from "./SceneStart.js";
 import { createLevelStage, getStageClearOutcome, getStageCount, hasNextLevel } from "./LevelSequence.js";
 import { getTileSymbol, preloadTileSymbols } from "./TileSymbols.js";
 import {
-  configureLogicalCamera, LOGICAL_GAME_HEIGHT, LOGICAL_GAME_WIDTH, MAX_LOGICAL_VIEWPORT_HEIGHT,
+  configureLogicalCamera, LOGICAL_GAME_HEIGHT, LOGICAL_GAME_WIDTH,
 } from "./Display.js";
 import { getHintMove } from "./Hint.js";
 import { computeContainedSquarePlacement, getLevelArtwork, isArtworkRevealStage } from "./LevelArtwork.js";
@@ -24,7 +24,8 @@ import {
   createPolylineMetrics, GAMEPLAY_FEEDBACK, partialPolylineFromMetrics,
 } from "./GameplayFeedbackPolicy.js";
 import {
-  createDangerButton, createModalShell, createPrimaryButton, createSecondaryButton, createUiText, type UiButton,
+  createDangerButton, createModalShell, createPrimaryButton, createSecondaryButton, createUiText,
+  createViewportBackdrop, type UiButton,
 } from "./UiPrimitives.js";
 import { BORDERS, VISUAL_COLORS } from "./VisualTokens.js";
 import { DEFAULT_LOCALE, getChapterTitle, getUiStrings, type SupportedLocale } from "./Localization.js";
@@ -621,18 +622,15 @@ export class PlayScene extends Phaser.Scene {
     this.rewardTimer = this.time.delayedCall(motion.holdDuration, () => {
       this.rewardTimer = null;
       if (!this.sys.isActive() || this.artworkPresentation !== null) return;
-      const backdrop = this.add.rectangle(
-        LOGICAL_GAME_WIDTH / 2, LOGICAL_GAME_HEIGHT / 2,
-        LOGICAL_GAME_WIDTH, MAX_LOGICAL_VIEWPORT_HEIGHT, VISUAL_COLORS.bg.app.phaser,
+      const backdrop = createViewportBackdrop(
+        this, VISUAL_COLORS.bg.app.phaser,
       ).setAlpha(0).setInteractive();
-      const settledDim = this.add.rectangle(
-        LOGICAL_GAME_WIDTH / 2, LOGICAL_GAME_HEIGHT / 2,
-        LOGICAL_GAME_WIDTH, MAX_LOGICAL_VIEWPORT_HEIGHT, VISUAL_COLORS.overlay.modal.phaser,
+      const settledDim = createViewportBackdrop(
+        this, VISUAL_COLORS.overlay.modal.phaser,
       ).setAlpha(0).setInteractive();
       this.artworkPresentation = this.add.container(0, 0, [backdrop, settledDim]).setDepth(40);
-      const transitionDim = this.add.rectangle(
-        LOGICAL_GAME_WIDTH / 2, LOGICAL_GAME_HEIGHT / 2,
-        LOGICAL_GAME_WIDTH, MAX_LOGICAL_VIEWPORT_HEIGHT, VISUAL_COLORS.overlay.modal.phaser,
+      const transitionDim = createViewportBackdrop(
+        this, VISUAL_COLORS.overlay.modal.phaser,
       ).setAlpha(0).setDepth(39).setInteractive();
       const transitionImage = this.add.image(
         motion.spatialTravel ? sourceBounds.centerX : REWARD_LAYOUT.artwork.centerX,

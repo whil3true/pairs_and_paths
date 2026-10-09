@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
+import { EventEmitter } from "node:events";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
 
@@ -43,6 +44,7 @@ import {
   VISUAL_COLORS,
 } from "../.test-dist/game/VisualTokens.js";
 import { createButtonHitArea, resolveButtonVisual } from "../.test-dist/game/UiPolicy.js";
+import { createViewportBackdrop } from "../.test-dist/game/UiPrimitives.js";
 import { GAMEPLAY_HUD } from "../.test-dist/game/GameplayHudPolicy.js";
 import {
   BLOCKER_VISUAL_STYLE, createPolylineMetrics, GAMEPLAY_FEEDBACK, partialPolyline,
@@ -870,7 +872,7 @@ test("game parent owns mobile viewport geometry while landscape keeps centered 4
   const main = await readFile(new URL("../src/main.ts", import.meta.url), "utf8");
 
   assert.match(css, /--page-backdrop-color:\s*#E7DCC8/);
-  assert.match(css, /#game\s*\{[\s\S]*inset:\s*0;[\s\S]*background:\s*#F5EEDF/);
+  assert.match(css, /#game\s*\{[^}]*inset:\s*0;[^}]*background:\s*transparent/);
   assert.match(css, /@media \(orientation: landscape\)[\s\S]*width:\s*min\(100dvw, calc\(100dvh \* 0\.6\)\)/);
   assert.match(css, /@media \(orientation: landscape\)[\s\S]*left:\s*50%[\s\S]*translateX\(-50%\)/);
   assert.match(html, /name="theme-color" content="#F5EEDF"/);
@@ -878,6 +880,85 @@ test("game parent owns mobile viewport geometry while landscape keeps centered 4
   assert.match(main, /autoCenter:\s*Phaser\.Scale\.NO_CENTER/);
   assert.match(main, /expandParent:\s*false/);
   assert.doesNotMatch(main, /scale:\s*\{[\s\S]*?max:\s*\{/);
+});
+
+test("transparent game parent exposes the fixed page dim while the canvas owns the game background", async () => {
+  const [css, html, main] = await Promise.all([
+    readFile(new URL("../public/styles.css", import.meta.url), "utf8"),
+    readFile(new URL("../public/index.html", import.meta.url), "utf8"),
+    readFile(new URL("../src/main.ts", import.meta.url), "utf8"),
+  ]);
+  const gameRules = [...css.matchAll(/#game\s*\{([^}]*)\}/g)].map((match) => match[1]);
+  assert.equal(gameRules.length, 2);
+  assert.match(gameRules[0], /background:\s*transparent;/);
+  assert.match(gameRules[0], /z-index:\s*1;/);
+  assert.doesNotMatch(gameRules[1], /background(?:-color)?:/);
+  const dim = css.match(/#page-dim\s*\{([^}]*)\}/)?.[1];
+  assert.ok(dim);
+  for (const declaration of [/position:\s*fixed;/, /inset:\s*0;/, /z-index:\s*0;/,
+    /pointer-events:\s*none;/, /opacity:\s*var\(--page-dim-opacity\);/]) {
+    assert.match(dim, declaration);
+  }
+  assert.match(dim, new RegExp(`background:\\s*${VISUAL_COLORS.overlay.modal.hex};`, "i"));
+  const rootRules = [...css.matchAll(/:root\s*\{([^}]*)\}/g)].map((match) => match[1]);
+  assert.equal(rootRules.length, 2);
+  assert.match(rootRules[0], /--page-backdrop-color:\s*#F5EEDF;/);
+  assert.match(rootRules[0], /background-color:\s*var\(--page-backdrop-color\);/);
+  assert.match(rootRules[1], /--page-backdrop-color:\s*#E7DCC8;/);
+  assert.match(css, /body\s*\{[^}]*background-color:\s*var\(--page-backdrop-color\);[^}]*isolation:\s*isolate;/);
+  assert.match(html, /id="page-dim"[^>]*aria-hidden="true"/);
+  assert.match(main, /backgroundColor:\s*VISUAL_COLORS\.bg\.app\.hex/);
+  assert.equal(VISUAL_COLORS.bg.app.hex, "#F5EEDF");
+  assert.doesNotMatch(css, /border(?:-[a-z]+)*-radius\s*:|clip-path\s*:/);
+  assert.doesNotMatch(html, /border-radius|clip-path/);
+  assert.doesNotMatch(css, /max-width\s*:|safe-area-inset/);
+});
+
+test("viewport backdrops cover expanded tablet and tall-phone space and release resize listeners", () => {
+  const previousPhaser = globalThis.Phaser;
+  globalThis.Phaser = { Scale: { Events: { RESIZE: "resize" } }, GameObjects: { Events: { DESTROY: "destroy" } } };
+  try {
+    const scale = Object.assign(new EventEmitter(), { gameSize: { width: 1200, height: 1600 } });
+    const scene = {
+      scale,
+      cameras: { main: { zoom: 2 } },
+      add: {
+        rectangle(x, y, width, height, color, alpha) {
+          return Object.assign(new EventEmitter(), {
+            x, y, width, height, color, alpha,
+            setSize(w, h) { this.width = w; this.height = h; return this; },
+          });
+        },
+      },
+    };
+    const backdrop = createViewportBackdrop(scene, VISUAL_COLORS.overlay.modal.phaser, 0.72);
+    assert.deepEqual([backdrop.x, backdrop.y, backdrop.width, backdrop.height], [240, 400, 600, 800]);
+    assert.equal(backdrop.alpha, 0.72);
+    assert.equal(backdrop.color, VISUAL_COLORS.overlay.modal.phaser);
+    assert.equal(scale.listenerCount("resize"), 1);
+    for (const [width, height, zoom, expectedWidth, expectedHeight] of [
+      [960, 2080, 2, 480, 1040],
+      [480, 800, 1, 480, 800],
+      [600, 800, 1, 600, 800],
+      [960, 4000, 2, 480, 2000],
+    ]) {
+      scale.gameSize = { width, height };
+      scene.cameras.main.zoom = zoom;
+      scale.emit("resize");
+      assert.deepEqual([backdrop.x, backdrop.y, backdrop.width, backdrop.height],
+        [240, 400, expectedWidth, expectedHeight]);
+    }
+    const replacement = createViewportBackdrop(scene, VISUAL_COLORS.bg.app.phaser);
+    assert.equal(replacement.alpha, 1);
+    assert.equal(scale.listenerCount("resize"), 2);
+    backdrop.emit("destroy");
+    assert.equal(scale.listenerCount("resize"), 1);
+    replacement.emit("destroy");
+    assert.equal(scale.listenerCount("resize"), 0);
+  } finally {
+    if (previousPhaser === undefined) delete globalThis.Phaser;
+    else globalThis.Phaser = previousPhaser;
+  }
 });
 
 test("pause and complete secondary actions use the dedicated modal contrast tone", async () => {

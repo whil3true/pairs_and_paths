@@ -47,7 +47,7 @@ body {
   background-color: var(--page-backdrop-color);
   isolation: isolate;
 }
-/* Mirrors VISUAL_COLORS.overlay.modal.hex behind the Phaser safe-area frame. */
+/* Dims the page backdrop; Phaser owns dimming inside its opaque canvas. */
 #page-dim {
   position: fixed;
   inset: 0;
@@ -57,12 +57,12 @@ body {
   pointer-events: none;
   z-index: 0;
 }
-/* Phaser fits only inside this safe-area frame, above the page-only dim layer. */
+/* Keep uncovered parent space transparent to the page-only dim layer below. */
 #game {
   position: fixed;
   inset: 0;
   z-index: 1;
-  background: #F5EEDF;
+  background: transparent;
 }
 #game canvas { display: block; }
 
