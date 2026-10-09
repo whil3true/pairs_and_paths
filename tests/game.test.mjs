@@ -13,7 +13,8 @@ import {
 } from "../.test-dist/game/BoardVisualPolicy.js";
 import { isSymbolGalleryRequested, parseDebugLocale, parseDebugStart } from "../.test-dist/game/DebugStart.js";
 import {
-  computePortraitFrame, computeRenderScale, isLegacyRenderScaleDebugRequested, MAX_LOGICAL_VIEWPORT_HEIGHT,
+  computePortraitFrame, computeRenderScale, isLegacyRenderScaleDebugRequested,
+  LOGICAL_GAME_HEIGHT, LOGICAL_GAME_WIDTH, MAX_LOGICAL_VIEWPORT_HEIGHT, MAX_RENDER_SCALE, MIN_RENDER_SCALE,
 } from "../.test-dist/game/Display.js";
 import { applyMove, findLegalMoves, findPath, solveBoard, validateGeneratedLevel } from "../.test-dist/domain/index.js";
 import {
@@ -1052,11 +1053,41 @@ test("canonical viewport stays exact and pathological tall ratios retain a fill-
   assert.equal(extreme.topBottomGutter, 200);
 });
 
-test("production render scale clamps finite DPR to 1 through 2", () => {
+test("production render scale preserves the finite 1 through 2 DPR baseline", () => {
   assert.deepEqual([0.75, 1, 1.5, 2, 2.5, 3].map(computeRenderScale), [1, 1, 1.5, 2, 2, 2]);
   assert.equal(computeRenderScale(Number.NaN), 1);
   assert.equal(computeRenderScale(Number.POSITIVE_INFINITY), 1);
   assert.equal(computeRenderScale(Number.NEGATIVE_INFINITY), 1);
+});
+
+test("production render density accounts for startup CSS presentation and remains bounded", () => {
+  const cases = [
+    { name: "Full-HD desktop DPR 1", width: 1920, height: 1080, dpr: 1, expected: 1.35 },
+    { name: "QHD desktop DPR 1", width: 2560, height: 1440, dpr: 1, expected: 1.8 },
+    { name: "portrait phone DPR 2", width: 390, height: 844, dpr: 2, expected: 2 },
+    { name: "portrait phone DPR 3", width: 390, height: 844, dpr: 3, expected: 2 },
+    { name: "tablet DPR 2", width: 768, height: 1024, dpr: 2, expected: 2 },
+    { name: "landscape phone DPR 2", width: 844, height: 390, dpr: 2, expected: 2 },
+  ];
+  for (const { name, width, height, dpr, expected } of cases) {
+    const scale = computeRenderScale(dpr, width, height);
+    assert.equal(scale, expected, name);
+    assert.ok(Number.isFinite(scale), name);
+    assert.ok(scale >= MIN_RENDER_SCALE, name);
+    assert.ok(scale <= MAX_RENDER_SCALE, name);
+  }
+
+  assert.equal(computeRenderScale(1, Number.NaN, 1080), 1);
+  assert.equal(computeRenderScale(1, 1920, Number.POSITIVE_INFINITY), 1);
+  assert.equal(computeRenderScale(1, 0, 1080), 1);
+  assert.equal(computeRenderScale(1, 3840, 2160), MAX_RENDER_SCALE);
+});
+
+test("render density does not alter the canonical authored composition", () => {
+  assert.equal(LOGICAL_GAME_WIDTH, 480);
+  assert.equal(LOGICAL_GAME_HEIGHT, 800);
+  assert.equal(MIN_RENDER_SCALE, 1);
+  assert.equal(MAX_RENDER_SCALE, 2);
 });
 
 test("only debug renderScale 1 requests the legacy render density", () => {

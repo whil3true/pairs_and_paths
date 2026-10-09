@@ -1,5 +1,7 @@
 export const LOGICAL_GAME_WIDTH = 480;
 export const LOGICAL_GAME_HEIGHT = 800;
+export const MIN_RENDER_SCALE = 1;
+export const MAX_RENDER_SCALE = 2;
 
 /**
  * Maximum logical height exposed by the adaptive portrait canvas. This is a
@@ -67,8 +69,29 @@ export const isLegacyRenderScaleDebugRequested = (search: string): boolean => {
   return params.get("debug") === "1" && params.get("renderScale") === "1";
 };
 
-export const computeRenderScale = (devicePixelRatio: number): number =>
-  Number.isFinite(devicePixelRatio) ? Math.min(2, Math.max(1, devicePixelRatio)) : 1;
+/**
+ * Chooses the renderer density once at startup. EXPAND can display the
+ * canonical field above its authored size even when DPR is 1, so DPR alone is
+ * not a sufficient backing-buffer policy. The production cap intentionally
+ * preserves the existing mobile ceiling while allowing desktop DPR-1 canvases
+ * to track their CSS presentation size through QHD.
+ */
+export const computeRenderScale = (
+  devicePixelRatio: number,
+  viewportWidth = LOGICAL_GAME_WIDTH,
+  viewportHeight = LOGICAL_GAME_HEIGHT,
+): number => {
+  const dpr = Number.isFinite(devicePixelRatio)
+    ? Math.max(MIN_RENDER_SCALE, devicePixelRatio)
+    : MIN_RENDER_SCALE;
+  const hasFiniteViewport = Number.isFinite(viewportWidth) && viewportWidth > 0
+    && Number.isFinite(viewportHeight) && viewportHeight > 0;
+  const presentationScale = hasFiniteViewport
+    ? computePortraitFrame(viewportWidth, viewportHeight).scale
+    : MIN_RENDER_SCALE;
+  const requiredScale = dpr * Math.max(MIN_RENDER_SCALE, presentationScale);
+  return Math.min(MAX_RENDER_SCALE, Math.max(MIN_RENDER_SCALE, requiredScale));
+};
 
 const logicalCameraResizeHandlers = new WeakMap<Phaser.Scene, () => void>();
 
