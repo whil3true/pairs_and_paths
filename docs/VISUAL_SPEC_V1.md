@@ -55,6 +55,18 @@ The redesign must not change these invariants:
 - Locked and unavailable Gallery assets are never loaded. Main Menu loads no artwork; active Gallery chapter loads only eligible unlocked thumbnails; Full View loads only the selected full image.
 - Reward is shown after progress has been persisted; Continue proceeds into the existing completion flow. Replays may show the reward again.
 
+### 2.1 Production render-density contract
+
+The canonical authored composition remains `480×800`, and the locked `EXPAND` / `NO_CENTER` viewport and page-backdrop architecture above is unchanged. Renderer density is selected once, before Phaser starts, from the launch viewport:
+
+`renderScale = clamp(DPR × max(1, portraitPresentationScale), 1, 2)`
+
+`portraitPresentationScale` is the uniform CSS scale returned by the production portrait-frame policy (`min(viewportWidth / 480, viewportHeight / 800)`). This accounts for desktop CSS upscaling that DPR alone misses. The lower bound retains one backing pixel per authored pixel; the `2` cap preserves the existing mobile WebGL ceiling. In particular, raw DPR 3 does not create a scale-3 buffer. `?debug=1&renderScale=1` continues to force the legacy scale for QA.
+
+The choice is intentionally startup-only. Resize and orientation events continue to re-center the logical camera, but do not rebuild the renderer, Phaser Text textures, or the immutable runtime tile atlas. Normal launch, including the Yandex Games shell, must expose the final viewport before game construction. DevTools device-mode changes after startup require a reload when comparing render density.
+
+The same `renderScale` is used for the Phaser backing dimensions, logical-camera zoom, Text resolution, and runtime tile-atlas rasterization. This keeps world/UI coordinates and board geometry unchanged while maintaining a coherent raster density. Android frame pacing and texture memory at the capped scale remain `needs real-device QA`.
+
 Forbidden copy: **never** state or imply `не более двух поворотов`.
 
 Approved short instruction:

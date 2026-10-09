@@ -26,7 +26,14 @@ else {
   if (setProgress !== null) progressStore.save({ version: 1, completedThroughLevel: setProgress });
 }
 const route = resolveStartupRoute(parseDebugStart(search), isSymbolGalleryRequested(search));
-const automaticRenderScale = computeRenderScale(window.devicePixelRatio || 1);
+// Renderer density is deliberately fixed for this game instance. Rebuilding
+// the WebGL backing buffer, Text objects and runtime atlas during resize would
+// be riskier than retaining the startup choice across orientation changes.
+const automaticRenderScale = computeRenderScale(
+  window.devicePixelRatio || 1,
+  window.innerWidth,
+  window.innerHeight,
+);
 const renderScale = isLegacyRenderScaleDebugRequested(search) ? 1 : automaticRenderScale;
 const locale = parseDebugLocale(search);
 
