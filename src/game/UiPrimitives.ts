@@ -1,4 +1,4 @@
-import { LOGICAL_GAME_HEIGHT, LOGICAL_GAME_WIDTH, MAX_LOGICAL_VIEWPORT_HEIGHT, setHiDpiTextResolution } from "./Display.js";
+import { LOGICAL_GAME_HEIGHT, LOGICAL_GAME_WIDTH, setHiDpiTextResolution } from "./Display.js";
 import { createButtonHitArea, resolveButtonVisual, type ButtonKind, type ButtonState } from "./UiPolicy.js";
 import {
   BORDERS, COMPONENT_RADII, FONT_DISPLAY_FAMILY, FONT_UI_FAMILY, SPACING, TYPOGRAPHY, VISUAL_COLORS,
@@ -155,14 +155,30 @@ export const createCard = (scene: Phaser.Scene, options: PanelOptions): Phaser.G
   return graphics;
 };
 
-export const createModalShell = (scene: Phaser.Scene, options: PanelOptions): Phaser.GameObjects.Container => {
+/** Covers background-only world space exposed by EXPAND, including tablet sides. */
+export const createViewportBackdrop = (
+  scene: Phaser.Scene,
+  color: number,
+  alpha = 1,
+): Phaser.GameObjects.Rectangle => {
   const backdrop = scene.add.rectangle(
-    LOGICAL_GAME_WIDTH / 2,
-    LOGICAL_GAME_HEIGHT / 2,
-    LOGICAL_GAME_WIDTH,
-    MAX_LOGICAL_VIEWPORT_HEIGHT,
-    VISUAL_COLORS.overlay.modal.phaser,
-    VISUAL_COLORS.overlay.modal.alpha,
+    LOGICAL_GAME_WIDTH / 2, LOGICAL_GAME_HEIGHT / 2, 1, 1, color, alpha,
+  );
+  const syncSize = (): void => {
+    const { zoom } = scene.cameras.main;
+    backdrop.setSize(scene.scale.gameSize.width / zoom, scene.scale.gameSize.height / zoom);
+  };
+  syncSize();
+  scene.scale.on(Phaser.Scale.Events.RESIZE, syncSize);
+  backdrop.once(Phaser.GameObjects.Events.DESTROY, () => {
+    scene.scale.off(Phaser.Scale.Events.RESIZE, syncSize);
+  });
+  return backdrop;
+};
+
+export const createModalShell = (scene: Phaser.Scene, options: PanelOptions): Phaser.GameObjects.Container => {
+  const backdrop = createViewportBackdrop(
+    scene, VISUAL_COLORS.overlay.modal.phaser, VISUAL_COLORS.overlay.modal.alpha,
   ).setInteractive();
   const panel = scene.add.graphics().fillStyle(VISUAL_COLORS.surface.elevated.phaser)
     .fillRoundedRect(options.x - options.width / 2, options.y - options.height / 2, options.width, options.height, COMPONENT_RADII.modal);
