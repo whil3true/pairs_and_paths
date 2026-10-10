@@ -1,6 +1,7 @@
 import type { ProgressStore } from "../progress/ProgressStore.js";
 import { getPrimaryMenuAction } from "./CampaignNavigation.js";
 import { createChapterBanner } from "./ChapterBannerVisual.js";
+import { computeMainMenuBrandPlacement, getMainMenuBrandAsset } from "./MainMenuBrandAssets.js";
 import { getChapterBannerAsset } from "./ChapterBannerAssets.js";
 import { getChapterNumber, TOTAL_LEVELS } from "./LevelSequence.js";
 import { configureLogicalCamera } from "./Display.js";
@@ -23,6 +24,8 @@ export class MainMenuScene extends Phaser.Scene {
     const primary = getPrimaryMenuAction(this.progressStore.load());
     const asset = getChapterBannerAsset(getChapterNumber(primary.levelNumber));
     if (!this.textures.exists(asset.assetKey)) this.load.image(asset.assetKey, asset.path);
+    const logo = getMainMenuBrandAsset(this.locale);
+    if (!this.textures.exists(logo.assetKey)) this.load.image(logo.assetKey, logo.path);
   }
 
   create(): void {
@@ -34,8 +37,19 @@ export class MainMenuScene extends Phaser.Scene {
     const previewChapter = getChapterNumber(primary.levelNumber);
 
     const brandLayout = getMainMenuBrandLayout(this.locale);
-    createUiText(this, this.renderScale, 240, brandLayout.titleTop, strings.brandTitle,
-      brandLayout.titleRole, { align: "center" }).setLetterSpacing(brandLayout.titleTracking).setOrigin(0.5, 0);
+    const logo = getMainMenuBrandAsset(this.locale);
+    const logoSource = this.textures.exists(logo.assetKey) ? this.textures.get(logo.assetKey).source[0] : undefined;
+    if (logoSource && logoSource.width > 0 && logoSource.height > 0) {
+      const placement = computeMainMenuBrandPlacement(
+        logoSource.width, logoSource.height, MAIN_MENU_LAYOUT.logo,
+      );
+      this.add.image(placement.x + placement.width / 2, placement.y + placement.height / 2, logo.assetKey)
+        .setDisplaySize(placement.width, placement.height);
+    } else {
+      // Keep Main Menu usable if a brand PNG is absent or fails to load.
+      createUiText(this, this.renderScale, 240, brandLayout.titleTop, strings.brandTitle,
+        brandLayout.titleRole, { align: "center" }).setLetterSpacing(brandLayout.titleTracking).setOrigin(0.5, 0);
+    }
     createUiText(this, this.renderScale, 240, brandLayout.descriptorTop, strings.brandDescriptor,
       brandLayout.descriptorRole, { color: VISUAL_COLORS.text.secondary.hex, align: "center" }).setOrigin(0.5, 0);
 
