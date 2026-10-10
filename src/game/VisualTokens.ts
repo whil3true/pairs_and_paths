@@ -9,8 +9,8 @@ export const VISUAL_COLORS = Object.freeze({
   bg: Object.freeze({ app: color("#F5EEDF") }),
   surface: Object.freeze({ elevated: color("#FFFDF8"), card: color("#FFFBF3"), board: color("#E7DCC8") }),
   primary: Object.freeze({
-    teal: color("#176B69"), tealHover: color("#20706F"),
-    tealPressed: color("#105452"), tealDisabled: color("#D3DED9"),
+    action: color("#A34F3B"), actionHover: color("#B05A44"),
+    actionPressed: color("#873E31"), actionDisabled: color("#E2CDBE"),
   }),
   text: Object.freeze({ primary: color("#26383A"), secondary: color("#586260"), tertiary: color("#606A67") }),
   accent: Object.freeze({ coral: color("#C96E5B"), gold: color("#D49A35") }),
@@ -26,7 +26,8 @@ export const VISUAL_COLORS = Object.freeze({
   overlay: Object.freeze({ modal: color("#1C2323", 0.72) }),
   white: color("#FFFFFF"),
   disabledLabel: color("#50605C"),
-  secondaryPressed: color("#CBDDD8"),
+  secondaryHover: color("#F3E2D5"),
+  secondaryPressed: color("#ECD4C3"),
 });
 
 export const FONT_DISPLAY_FAMILY = '"Literata", Georgia, "Times New Roman", serif';
