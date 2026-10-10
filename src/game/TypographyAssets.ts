@@ -12,13 +12,13 @@ export interface ProductionFontProbe {
 export const getProductionFontProbes = (locale: SupportedLocale): readonly ProductionFontProbe[] =>
   locale === "ru"
     ? Object.freeze([
-      Object.freeze({ family: "Literata", weight: 600, size: 36, text: "Уютная галерея" }),
+      Object.freeze({ family: "Onest", weight: 600, size: 38, text: "Уютная галерея" }),
       Object.freeze({ family: "Onest", weight: 400, size: 17, text: "Открыто 80 из 100" }),
       Object.freeze({ family: "Onest", weight: 500, size: 16, text: "Осталось: 12" }),
       Object.freeze({ family: "Onest", weight: 600, size: 19, text: "Продолжить" }),
     ])
     : Object.freeze([
-      Object.freeze({ family: "Literata", weight: 600, size: 36, text: "Cozy Gallery" }),
+      Object.freeze({ family: "Onest", weight: 600, size: 38, text: "Cozy Gallery" }),
       Object.freeze({ family: "Onest", weight: 400, size: 17, text: "Unlocked 80 of 100" }),
       Object.freeze({ family: "Onest", weight: 500, size: 16, text: "Remaining: 12" }),
       Object.freeze({ family: "Onest", weight: 600, size: 19, text: "Continue" }),

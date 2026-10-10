@@ -9,8 +9,8 @@ export const VISUAL_COLORS = Object.freeze({
   bg: Object.freeze({ app: color("#F5EEDF") }),
   surface: Object.freeze({ elevated: color("#FFFDF8"), card: color("#FFFBF3"), board: color("#E7DCC8") }),
   primary: Object.freeze({
-    action: color("#A34F3B"), actionHover: color("#B05A44"),
-    actionPressed: color("#873E31"), actionDisabled: color("#E2CDBE"),
+    action: color("#E6B58D"), actionHover: color("#EAC39B"),
+    actionPressed: color("#D8A17B"), actionDisabled: color("#E8E2DA"),
   }),
   text: Object.freeze({ primary: color("#26383A"), secondary: color("#586260"), tertiary: color("#606A67") }),
   accent: Object.freeze({ coral: color("#C96E5B"), gold: color("#D49A35") }),
@@ -45,7 +45,7 @@ const typeRole = (
 ) => Object.freeze({ family, weight, size, lineHeight, tracking, align });
 
 export const TYPOGRAPHY = Object.freeze({
-  displayBrand: typeRole("display", 600, 36, 42, -0.5, "center"),
+  displayBrand: typeRole("ui", 600, 38, 44, -0.4, "center"),
   brandDescriptor: typeRole("ui", 600, 16, 20, 0, "center"),
   screenTitle: typeRole("ui", 600, 30, 36, -0.3, "center"),
   chapterHeading: typeRole("ui", 600, 24, 30, -0.2, "center"),

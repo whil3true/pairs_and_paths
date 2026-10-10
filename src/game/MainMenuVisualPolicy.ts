@@ -28,16 +28,12 @@ export interface MainMenuBrandLayout {
 export const getMainMenuBrandLayout = (_locale: SupportedLocale): MainMenuBrandLayout => Object.freeze({
   titleTop: 28,
   titleRole: "displayBrand",
-  titleLineHeight: 42,
-  titleTracking: 0.35,
+  titleLineHeight: 44,
+  titleTracking: -0.4,
   descriptorTop: 82,
   descriptorRole: "brandDescriptor",
   descriptorLineHeight: 20,
 });
-
-/** Visual-only CAPS pilot; localized catalog/brand strings stay unchanged. */
-export const formatMainMenuBrandTitle = (value: string, locale: SupportedLocale): string =>
-  value.toLocaleUpperCase(locale);
 
 export const progressRatio = (completed: number, total: number): number =>
   total > 0 ? Math.min(1, Math.max(0, completed / total)) : 0;

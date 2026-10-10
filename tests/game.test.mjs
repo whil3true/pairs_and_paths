@@ -57,7 +57,7 @@ import { CHAPTER_BANNER_ASSETS, getChapterBannerAsset } from "../.test-dist/game
 import {
   computeContainedChapterBannerPlacement, getChapterBannerFallbackManifest, shouldOccludeChapterBannerCorners,
 } from "../.test-dist/game/ChapterBannerVisual.js";
-import { formatMainMenuBrandTitle, formatPrimaryMenuAction, getMainMenuBrandLayout, MAIN_MENU_BRAND_MOTIF, MAIN_MENU_LAYOUT, progressRatio } from "../.test-dist/game/MainMenuVisualPolicy.js";
+import { formatPrimaryMenuAction, getMainMenuBrandLayout, MAIN_MENU_BRAND_MOTIF, MAIN_MENU_LAYOUT, progressRatio } from "../.test-dist/game/MainMenuVisualPolicy.js";
 import { canNavigateChapter, getLevelCardBounds, getLevelCardGeometry, LEVEL_SELECT_LAYOUT, resolveLevelCardVisual } from "../.test-dist/game/LevelSelectVisualPolicy.js";
 import { getPrimaryMenuAction } from "../.test-dist/game/CampaignNavigation.js";
 import { getProductionFontProbes } from "../.test-dist/game/TypographyAssets.js";
@@ -134,6 +134,8 @@ test("danger button policy uses the production danger token and tactile press", 
   assert.equal(pressedVisual.fill, VISUAL_COLORS.state.danger.phaser);
   assert.equal(pressedVisual.offsetY, 2);
   assert.equal(resolveButtonVisual("primary", "default").fill, VISUAL_COLORS.primary.action.phaser);
+  assert.equal(resolveButtonVisual("primary", "default").label, VISUAL_COLORS.text.primary.hex);
+  assert.notEqual(resolveButtonVisual("primary", "default").fill, VISUAL_COLORS.state.danger.phaser);
   assert.equal(resolveButtonVisual("secondary", "default").fill, VISUAL_COLORS.surface.card.phaser);
 });
 
@@ -217,7 +219,8 @@ test("main menu locked brand plus descriptor composition clears the preview in b
     assert.ok(layout.titleTop + layout.titleLineHeight < layout.descriptorTop);
     assert.ok(layout.descriptorTop + layout.descriptorLineHeight < MAIN_MENU_LAYOUT.preview.y);
     assert.equal(layout.titleRole, "displayBrand");
-    assert.equal(layout.titleTracking, 0.35);
+    assert.equal(layout.titleTracking, -0.4);
+    assert.equal(layout.titleLineHeight, 44);
     assert.equal(layout.descriptorRole, "brandDescriptor");
   }
 });
@@ -232,20 +235,21 @@ test("Main Menu decorative pair motif stays within descriptor row and away from 
   assert.ok(MAIN_MENU_BRAND_MOTIF.rightX - 20 > 300);
 });
 
-test("Main Menu Literata CAPS pilot formats RU and EN without changing localized naming", () => {
-  assert.equal(formatMainMenuBrandTitle(UI_STRINGS.ru.brandTitle, "ru"), "УЮТНАЯ ГАЛЕРЕЯ");
-  assert.equal(formatMainMenuBrandTitle(UI_STRINGS.en.brandTitle, "en"), "COZY GALLERY");
+test("Main Menu Onest brand pilot renders localized sentence case without changing naming", async () => {
   assert.equal(UI_STRINGS.ru.brandTitle, "Уютная галерея");
   assert.equal(UI_STRINGS.en.brandTitle, "Cozy Gallery");
+  const source = await readFile(new URL("../src/game/MainMenuScene.ts", import.meta.url), "utf8");
+  assert.match(source, /brandLayout\.titleTop, strings\.brandTitle/);
+  assert.doesNotMatch(source, /formatMainMenuBrandTitle|toLocaleUpperCase/);
 });
 
-test("production typography roles use Literata only for brand and Onest 400 through 600 for UI", () => {
+test("Onest brand pilot retains shipped font families and UI weights", () => {
   assert.equal(FONT_DISPLAY_FAMILY, '"Literata", Georgia, "Times New Roman", serif');
   assert.equal(FONT_UI_FAMILY, '"Onest", system-ui, -apple-system, "Segoe UI", Arial, sans-serif');
   assert.deepEqual(
     Object.fromEntries(Object.entries(TYPOGRAPHY).map(([role, token]) => [role, [token.family, token.weight]])),
     {
-      displayBrand: ["display", 600],
+      displayBrand: ["ui", 600],
       brandDescriptor: ["ui", 600],
       screenTitle: ["ui", 600],
       chapterHeading: ["ui", 600],
@@ -266,9 +270,11 @@ test("production font probes cover active locale and every shipped UI weight", (
   const ru = getProductionFontProbes("ru");
   const en = getProductionFontProbes("en");
   assert.deepEqual(ru.map(({ family, weight }) => [family, weight]),
-    [["Literata", 600], ["Onest", 400], ["Onest", 500], ["Onest", 600]]);
+    [["Onest", 600], ["Onest", 400], ["Onest", 500], ["Onest", 600]]);
   assert.deepEqual(en.map(({ family, weight }) => [family, weight]),
-    [["Literata", 600], ["Onest", 400], ["Onest", 500], ["Onest", 600]]);
+    [["Onest", 600], ["Onest", 400], ["Onest", 500], ["Onest", 600]]);
+  assert.equal(ru[0].size, 38);
+  assert.equal(en[0].size, 38);
   assert.ok(ru.some(({ text }) => /[А-Яа-яЁё]/.test(text)));
   assert.ok(en.every(({ text }) => !/[А-Яа-яЁё]/.test(text)));
 });
@@ -443,9 +449,9 @@ test("debug locale override is gated, valid, non-persistent, and defaults to Rus
 test("production visual tokens protect core palette and layout invariants", () => {
   assert.equal(VISUAL_COLORS.bg.app.hex, "#F5EEDF");
   assert.equal(VISUAL_COLORS.bg.app.phaser, 0xf5eedf);
-  assert.equal(VISUAL_COLORS.primary.action.hex, "#A34F3B");
-  assert.equal(VISUAL_COLORS.primary.actionHover.hex, "#B05A44");
-  assert.equal(VISUAL_COLORS.primary.actionPressed.hex, "#873E31");
+  assert.equal(VISUAL_COLORS.primary.action.hex, "#E6B58D");
+  assert.equal(VISUAL_COLORS.primary.actionHover.hex, "#EAC39B");
+  assert.equal(VISUAL_COLORS.primary.actionPressed.hex, "#D8A17B");
   assert.equal(VISUAL_COLORS.route.core.hex, "#0B7475");
   assert.equal(VISUAL_COLORS.state.success.hex, "#2D7464");
   assert.equal(VISUAL_COLORS.state.danger.hex, "#A5423F");
@@ -469,6 +475,8 @@ test("typography roles preserve production floors and valid metrics", () => {
     assert.ok(role.lineHeight >= role.size);
     assert.ok(role.family === "display" || role.family === "ui");
   }
+  assert.equal(TYPOGRAPHY.displayBrand.size, 38);
+  assert.equal(TYPOGRAPHY.displayBrand.lineHeight, 44);
   assert.equal(TYPOGRAPHY.hudSecondary.size, 16);
   assert.deepEqual(TYPOGRAPHY.chapterHeading,
     { family: "ui", weight: 600, size: 24, lineHeight: 30, tracking: -0.2, align: "center" });

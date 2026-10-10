@@ -5,7 +5,7 @@ import { getChapterBannerAsset } from "./ChapterBannerAssets.js";
 import { getChapterNumber, TOTAL_LEVELS } from "./LevelSequence.js";
 import { configureLogicalCamera } from "./Display.js";
 import { DEFAULT_LOCALE, getChapterTitle, getUiStrings, type SupportedLocale } from "./Localization.js";
-import { formatMainMenuBrandTitle, formatPrimaryMenuAction, getMainMenuBrandLayout, MAIN_MENU_BRAND_MOTIF, MAIN_MENU_LAYOUT, progressRatio } from "./MainMenuVisualPolicy.js";
+import { formatPrimaryMenuAction, getMainMenuBrandLayout, MAIN_MENU_BRAND_MOTIF, MAIN_MENU_LAYOUT, progressRatio } from "./MainMenuVisualPolicy.js";
 import { playStartData } from "./SceneStart.js";
 import { createCard, createPrimaryButton, createSecondaryButton, createUiText } from "./UiPrimitives.js";
 import { BORDERS, COMPONENT_RADII, VISUAL_COLORS } from "./VisualTokens.js";
@@ -34,7 +34,7 @@ export class MainMenuScene extends Phaser.Scene {
     const previewChapter = getChapterNumber(primary.levelNumber);
 
     const brandLayout = getMainMenuBrandLayout(this.locale);
-    createUiText(this, this.renderScale, 240, brandLayout.titleTop, formatMainMenuBrandTitle(strings.brandTitle, this.locale),
+    createUiText(this, this.renderScale, 240, brandLayout.titleTop, strings.brandTitle,
       brandLayout.titleRole, { align: "center" }).setLetterSpacing(brandLayout.titleTracking).setOrigin(0.5, 0);
     createUiText(this, this.renderScale, 240, brandLayout.descriptorTop, strings.brandDescriptor,
       brandLayout.descriptorRole, { color: VISUAL_COLORS.text.secondary.hex, align: "center" }).setOrigin(0.5, 0);
