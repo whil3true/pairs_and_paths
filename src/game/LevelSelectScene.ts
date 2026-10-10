@@ -129,7 +129,7 @@ export class LevelSelectScene extends Phaser.Scene {
     const half = size / 2;
     const visual = resolveLevelCardVisual(state);
     const graphics = this.add.graphics();
-    if (focused) graphics.lineStyle(3, VISUAL_COLORS.primary.action.phaser)
+    if (focused) graphics.lineStyle(3, VISUAL_COLORS.text.primary.phaser)
       .strokeRoundedRect(-half - 4, -half - 4, size + 8, size + 8, COMPONENT_RADII.levelCard + 4);
     graphics.fillStyle(visual.fill).fillRoundedRect(-half, -half, size, size, COMPONENT_RADII.levelCard);
     if (visual.borderWidth > 0) graphics.lineStyle(visual.borderWidth, visual.border)
