@@ -79,7 +79,7 @@ const createButton = (
     if (visual.focusRing) {
       graphics.lineStyle(BORDERS.emphasized, VISUAL_COLORS.route.halo.phaser, 1)
         .strokeRoundedRect(-width / 2 - 5, -height / 2 - 5, width + 10, height + 10, radius + 5);
-      graphics.lineStyle(BORDERS.structural, VISUAL_COLORS.primary.actionPressed.phaser, 1)
+      graphics.lineStyle(BORDERS.structural, VISUAL_COLORS.text.primary.phaser, 1)
         .strokeRoundedRect(-width / 2 - 2, -height / 2 - 2, width + 4, height + 4, radius + 2);
     }
     const fill = options.tone === "modalSecondary" && kind === "secondary"
