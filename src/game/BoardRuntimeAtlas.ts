@@ -12,7 +12,7 @@ export const TILE_VISUAL_STYLE = Object.freeze({
   fill: VISUAL_COLORS.surface.card.phaser,
   pressedFill: VISUAL_COLORS.state.pressedFill.phaser,
   border: VISUAL_COLORS.divider.phaser,
-  selectedBorder: VISUAL_COLORS.primary.teal.phaser,
+  selectedBorder: VISUAL_COLORS.route.core.phaser,
   selectedFill: VISUAL_COLORS.state.selectedFill.phaser,
   selectedMarker: false,
   hintBorder: VISUAL_COLORS.state.hint.phaser,

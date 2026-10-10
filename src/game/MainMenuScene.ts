@@ -5,7 +5,7 @@ import { getChapterBannerAsset } from "./ChapterBannerAssets.js";
 import { getChapterNumber, TOTAL_LEVELS } from "./LevelSequence.js";
 import { configureLogicalCamera } from "./Display.js";
 import { DEFAULT_LOCALE, getChapterTitle, getUiStrings, type SupportedLocale } from "./Localization.js";
-import { formatMainMenuBrandTitle, formatPrimaryMenuAction, getMainMenuBrandLayout, MAIN_MENU_LAYOUT, progressRatio } from "./MainMenuVisualPolicy.js";
+import { formatMainMenuBrandTitle, formatPrimaryMenuAction, getMainMenuBrandLayout, MAIN_MENU_BRAND_MOTIF, MAIN_MENU_LAYOUT, progressRatio } from "./MainMenuVisualPolicy.js";
 import { playStartData } from "./SceneStart.js";
 import { createCard, createPrimaryButton, createSecondaryButton, createUiText } from "./UiPrimitives.js";
 import { BORDERS, COMPONENT_RADII, VISUAL_COLORS } from "./VisualTokens.js";
@@ -38,6 +38,21 @@ export class MainMenuScene extends Phaser.Scene {
       brandLayout.titleRole, { align: "center" }).setLetterSpacing(brandLayout.titleTracking).setOrigin(0.5, 0);
     createUiText(this, this.renderScale, 240, brandLayout.descriptorTop, strings.brandDescriptor,
       brandLayout.descriptorRole, { color: VISUAL_COLORS.text.secondary.hex, align: "center" }).setOrigin(0.5, 0);
+
+    // A quiet reference to the pair-connection mechanic, with no text/image assets or per-frame work.
+    for (const x of [MAIN_MENU_BRAND_MOTIF.leftX, MAIN_MENU_BRAND_MOTIF.rightX]) {
+      const y = MAIN_MENU_BRAND_MOTIF.y;
+      const motif = this.add.graphics();
+      motif.lineStyle(2, VISUAL_COLORS.accent.gold.phaser, 0.9)
+        .beginPath().moveTo(x - 15, y - 4).lineTo(x, y - 4)
+        .lineTo(x, y + 4).lineTo(x + 15, y + 4).strokePath();
+      motif.fillStyle(VISUAL_COLORS.surface.card.phaser)
+        .fillRoundedRect(x - 20, y - 9, 10, 10, 3)
+        .fillRoundedRect(x + 10, y - 1, 10, 10, 3);
+      motif.lineStyle(1.5, VISUAL_COLORS.accent.gold.phaser)
+        .strokeRoundedRect(x - 20, y - 9, 10, 10, 3)
+        .strokeRoundedRect(x + 10, y - 1, 10, 10, 3);
+    }
 
     const preview = MAIN_MENU_LAYOUT.preview;
     createChapterBanner(this, previewChapter, preview, false);

@@ -57,7 +57,7 @@ import { CHAPTER_BANNER_ASSETS, getChapterBannerAsset } from "../.test-dist/game
 import {
   computeContainedChapterBannerPlacement, getChapterBannerFallbackManifest, shouldOccludeChapterBannerCorners,
 } from "../.test-dist/game/ChapterBannerVisual.js";
-import { formatMainMenuBrandTitle, formatPrimaryMenuAction, getMainMenuBrandLayout, MAIN_MENU_LAYOUT, progressRatio } from "../.test-dist/game/MainMenuVisualPolicy.js";
+import { formatMainMenuBrandTitle, formatPrimaryMenuAction, getMainMenuBrandLayout, MAIN_MENU_BRAND_MOTIF, MAIN_MENU_LAYOUT, progressRatio } from "../.test-dist/game/MainMenuVisualPolicy.js";
 import { canNavigateChapter, getLevelCardBounds, getLevelCardGeometry, LEVEL_SELECT_LAYOUT, resolveLevelCardVisual } from "../.test-dist/game/LevelSelectVisualPolicy.js";
 import { getPrimaryMenuAction } from "../.test-dist/game/CampaignNavigation.js";
 import { getProductionFontProbes } from "../.test-dist/game/TypographyAssets.js";
@@ -133,7 +133,7 @@ test("danger button policy uses the production danger token and tactile press", 
   assert.equal(defaultVisual.label, VISUAL_COLORS.white.hex);
   assert.equal(pressedVisual.fill, VISUAL_COLORS.state.danger.phaser);
   assert.equal(pressedVisual.offsetY, 2);
-  assert.equal(resolveButtonVisual("primary", "default").fill, VISUAL_COLORS.primary.teal.phaser);
+  assert.equal(resolveButtonVisual("primary", "default").fill, VISUAL_COLORS.primary.action.phaser);
   assert.equal(resolveButtonVisual("secondary", "default").fill, VISUAL_COLORS.surface.card.phaser);
 });
 
@@ -220,6 +220,16 @@ test("main menu locked brand plus descriptor composition clears the preview in b
     assert.equal(layout.titleTracking, 0.35);
     assert.equal(layout.descriptorRole, "brandDescriptor");
   }
+});
+
+test("Main Menu decorative pair motif stays within descriptor row and away from text", () => {
+  for (const locale of ["ru", "en"]) {
+    const layout = getMainMenuBrandLayout(locale);
+    assert.ok(MAIN_MENU_BRAND_MOTIF.y - 9 >= layout.descriptorTop);
+    assert.ok(MAIN_MENU_BRAND_MOTIF.y + 9 <= layout.descriptorTop + layout.descriptorLineHeight);
+  }
+  assert.ok(MAIN_MENU_BRAND_MOTIF.leftX + 20 < 180);
+  assert.ok(MAIN_MENU_BRAND_MOTIF.rightX - 20 > 300);
 });
 
 test("Main Menu Literata CAPS pilot formats RU and EN without changing localized naming", () => {
@@ -433,7 +443,11 @@ test("debug locale override is gated, valid, non-persistent, and defaults to Rus
 test("production visual tokens protect core palette and layout invariants", () => {
   assert.equal(VISUAL_COLORS.bg.app.hex, "#F5EEDF");
   assert.equal(VISUAL_COLORS.bg.app.phaser, 0xf5eedf);
-  assert.equal(VISUAL_COLORS.primary.teal.hex, "#176B69");
+  assert.equal(VISUAL_COLORS.primary.action.hex, "#A34F3B");
+  assert.equal(VISUAL_COLORS.primary.actionHover.hex, "#B05A44");
+  assert.equal(VISUAL_COLORS.primary.actionPressed.hex, "#873E31");
+  assert.equal(VISUAL_COLORS.route.core.hex, "#0B7475");
+  assert.equal(VISUAL_COLORS.state.success.hex, "#2D7464");
   assert.equal(VISUAL_COLORS.state.danger.hex, "#A5423F");
   assert.equal("error" in VISUAL_COLORS, false);
   assert.equal(SPACING.minimumTouchTarget, 48);
@@ -462,15 +476,18 @@ test("typography roles preserve production floors and valid metrics", () => {
 });
 
 test("button visual policy is deterministic and exposes disabled and focus states", () => {
+  assert.equal(resolveButtonVisual("secondary", "hover").fill, VISUAL_COLORS.secondaryHover.phaser);
+  assert.equal(resolveButtonVisual("secondary", "pressed").fill, VISUAL_COLORS.secondaryPressed.phaser);
+  assert.equal(resolveButtonVisual("tertiary", "pressed").fill, VISUAL_COLORS.secondaryPressed.phaser);
   const primaryPressed = resolveButtonVisual("primary", "pressed");
   assert.deepEqual(resolveButtonVisual("primary", "pressed"), primaryPressed);
-  assert.equal(primaryPressed.fill, VISUAL_COLORS.primary.tealPressed.phaser);
+  assert.equal(primaryPressed.fill, VISUAL_COLORS.primary.actionPressed.phaser);
   assert.equal(primaryPressed.offsetY, 2);
   const primaryHover = resolveButtonVisual("primary", "hover");
-  assert.equal(primaryHover.fill, VISUAL_COLORS.primary.tealHover.phaser);
-  assert.notEqual(primaryHover.fill, VISUAL_COLORS.primary.teal.phaser);
+  assert.equal(primaryHover.fill, VISUAL_COLORS.primary.actionHover.phaser);
+  assert.notEqual(primaryHover.fill, VISUAL_COLORS.primary.action.phaser);
   assert.equal(primaryHover.offsetY, -1);
-  assert.equal(resolveButtonVisual("primary", "disabled").fill, VISUAL_COLORS.primary.tealDisabled.phaser);
+  assert.equal(resolveButtonVisual("primary", "disabled").fill, VISUAL_COLORS.primary.actionDisabled.phaser);
   assert.equal(resolveButtonVisual("primary", "disabled").offsetY, 0);
   assert.equal(resolveButtonVisual("secondary", "disabled").border, VISUAL_COLORS.state.locked.phaser);
   assert.equal(resolveButtonVisual("secondary", "disabled").borderWidth, 0);
@@ -1504,7 +1521,7 @@ test("production board and tile visual policies protect frozen geometry and toke
   assert.equal(TILE_VISUAL_STYLE.fill, VISUAL_COLORS.surface.card.phaser);
   assert.equal(TILE_VISUAL_STYLE.border, VISUAL_COLORS.divider.phaser);
   assert.equal(TILE_VISUAL_STYLE.borderWidth, BORDERS.divider);
-  assert.equal(TILE_VISUAL_STYLE.selectedBorder, VISUAL_COLORS.primary.teal.phaser);
+  assert.equal(TILE_VISUAL_STYLE.selectedBorder, VISUAL_COLORS.route.core.phaser);
   assert.equal(TILE_VISUAL_STYLE.selectedFill, VISUAL_COLORS.state.selectedFill.phaser);
   assert.equal(TILE_VISUAL_STYLE.hintBorder, VISUAL_COLORS.state.hint.phaser);
   assert.equal(TILE_VISUAL_STYLE.blockedBorder, VISUAL_COLORS.state.danger.phaser);
