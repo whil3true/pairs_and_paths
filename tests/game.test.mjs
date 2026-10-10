@@ -57,7 +57,7 @@ import { CHAPTER_BANNER_ASSETS, getChapterBannerAsset } from "../.test-dist/game
 import {
   computeContainedChapterBannerPlacement, getChapterBannerFallbackManifest, shouldOccludeChapterBannerCorners,
 } from "../.test-dist/game/ChapterBannerVisual.js";
-import { formatPrimaryMenuAction, getMainMenuBrandLayout, MAIN_MENU_LAYOUT, progressRatio } from "../.test-dist/game/MainMenuVisualPolicy.js";
+import { formatMainMenuBrandTitle, formatPrimaryMenuAction, getMainMenuBrandLayout, MAIN_MENU_LAYOUT, progressRatio } from "../.test-dist/game/MainMenuVisualPolicy.js";
 import { canNavigateChapter, getLevelCardBounds, getLevelCardGeometry, LEVEL_SELECT_LAYOUT, resolveLevelCardVisual } from "../.test-dist/game/LevelSelectVisualPolicy.js";
 import { getPrimaryMenuAction } from "../.test-dist/game/CampaignNavigation.js";
 import { getProductionFontProbes } from "../.test-dist/game/TypographyAssets.js";
@@ -217,8 +217,16 @@ test("main menu locked brand plus descriptor composition clears the preview in b
     assert.ok(layout.titleTop + layout.titleLineHeight < layout.descriptorTop);
     assert.ok(layout.descriptorTop + layout.descriptorLineHeight < MAIN_MENU_LAYOUT.preview.y);
     assert.equal(layout.titleRole, "displayBrand");
+    assert.equal(layout.titleTracking, 0.35);
     assert.equal(layout.descriptorRole, "brandDescriptor");
   }
+});
+
+test("Main Menu Literata CAPS pilot formats RU and EN without changing localized naming", () => {
+  assert.equal(formatMainMenuBrandTitle(UI_STRINGS.ru.brandTitle, "ru"), "УЮТНАЯ ГАЛЕРЕЯ");
+  assert.equal(formatMainMenuBrandTitle(UI_STRINGS.en.brandTitle, "en"), "COZY GALLERY");
+  assert.equal(UI_STRINGS.ru.brandTitle, "Уютная галерея");
+  assert.equal(UI_STRINGS.en.brandTitle, "Cozy Gallery");
 });
 
 test("production typography roles use Literata only for brand and Onest 400 through 600 for UI", () => {
