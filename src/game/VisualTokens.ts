@@ -21,9 +21,15 @@ export const VISUAL_COLORS = Object.freeze({
   }),
   // Level Select only: warmer state palette; shared gameplay success/route colors remain untouched.
   levelSelect: Object.freeze({
-    completedFill: color("#E0E7DA"), completedCheck: color("#667E68"),
-    lockedFill: color("#E9E3D8"), lockedIcon: color("#8B897F"),
-    lockedNumber: color("#686D67"),
+    completedFill: color("#E8E8D6"), completedCheck: color("#77805A"),
+    lockedFill: color("#EEE6D9"), lockedIcon: color("#8C8170"),
+    lockedNumber: color("#756C5C"),
+  }),
+  // Gallery slot treatment only; unavailable, loading, failed and locked states stay distinct.
+  gallery: Object.freeze({
+    soonFill: color("#FFF8EA"), soonBorder: color("#C5AD8B"),
+    soonGlyph: color("#A48A66"), soonLabel: color("#816F57"),
+    lockedFill: color("#EEE6D9"), lockedIcon: color("#8C8170"),
   }),
   route: Object.freeze({ core: color("#0B7475"), halo: color("#FFF3D2") }),
   blocker: Object.freeze({ fill: color("#62645E"), dark: color("#3F4543"), relief: color("#ECE4D3") }),
