@@ -135,15 +135,15 @@ export class LevelSelectScene extends Phaser.Scene {
     if (visual.borderWidth > 0) graphics.lineStyle(visual.borderWidth, visual.border)
       .strokeRoundedRect(-half, -half, size, size, COMPONENT_RADII.levelCard);
     const number = createUiText(this, this.renderScale, 0, 0, String(level), "sectionHeading", {
-      color: state === "locked" ? VISUAL_COLORS.text.tertiary.hex : VISUAL_COLORS.text.primary.hex, align: "center",
+      color: state === "locked" ? VISUAL_COLORS.levelSelect.lockedNumber.hex : VISUAL_COLORS.text.primary.hex, align: "center",
     }).setOrigin(0.5);
     if (visual.numberSize === 20) number.setFontSize(20);
-    if (visual.affordance === "check") graphics.lineStyle(2, VISUAL_COLORS.state.success.phaser)
+    if (visual.affordance === "check") graphics.lineStyle(2, VISUAL_COLORS.levelSelect.completedCheck.phaser)
       .beginPath().moveTo(17, -20).lineTo(21, -16).lineTo(28, -25).strokePath();
     else if (visual.affordance === "tab") graphics.fillStyle(VISUAL_COLORS.accent.gold.phaser)
       .fillTriangle(-6, 36, 6, 36, 0, 28);
     else {
-      graphics.lineStyle(2, VISUAL_COLORS.state.locked.phaser).strokeRoundedRect(17, -22, 11, 10, 2)
+      graphics.lineStyle(2, VISUAL_COLORS.levelSelect.lockedIcon.phaser).strokeRoundedRect(17, -22, 11, 10, 2)
         .beginPath().arc(22.5, -22, 4, Math.PI, 0).strokePath();
     }
     return this.add.container(centerX, centerY, [graphics, number]).setSize(size, size);
