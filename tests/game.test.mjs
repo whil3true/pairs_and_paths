@@ -57,7 +57,7 @@ import { CHAPTER_BANNER_ASSETS, getChapterBannerAsset } from "../.test-dist/game
 import {
   computeContainedChapterBannerPlacement, getChapterBannerFallbackManifest, shouldOccludeChapterBannerCorners,
 } from "../.test-dist/game/ChapterBannerVisual.js";
-import { formatPrimaryMenuAction, getMainMenuBrandLayout, MAIN_MENU_BRAND_MOTIF, MAIN_MENU_LAYOUT, progressRatio } from "../.test-dist/game/MainMenuVisualPolicy.js";
+import { formatPrimaryMenuAction, getMainMenuBrandLayout, MAIN_MENU_LAYOUT, progressRatio } from "../.test-dist/game/MainMenuVisualPolicy.js";
 import { computeMainMenuBrandPlacement, getMainMenuBrandAsset, MAIN_MENU_BRAND_ASSETS } from "../.test-dist/game/MainMenuBrandAssets.js";
 import { canNavigateChapter, getLevelCardBounds, getLevelCardGeometry, LEVEL_SELECT_LAYOUT, resolveLevelCardVisual } from "../.test-dist/game/LevelSelectVisualPolicy.js";
 import { getPrimaryMenuAction } from "../.test-dist/game/CampaignNavigation.js";
@@ -245,7 +245,12 @@ test("main menu locked brand plus descriptor composition clears the preview in b
   for (const locale of ["ru", "en"]) {
     const layout = getMainMenuBrandLayout(locale);
     assert.ok(layout.titleTop + layout.titleLineHeight < layout.descriptorTop);
-    assert.ok(MAIN_MENU_LAYOUT.logo.y + MAIN_MENU_LAYOUT.logo.height < layout.descriptorTop);
+    // Actual contained PNG paint occupies less height than its 152px layout box.
+    for (const height of [342, 327]) {
+      const image = computeMainMenuBrandPlacement(1296, height, MAIN_MENU_LAYOUT.logo);
+      assert.ok(image.y + image.height + 10 <= layout.descriptorTop);
+    }
+    assert.equal(layout.descriptorTop, 158);
     assert.ok(layout.descriptorTop + layout.descriptorLineHeight < MAIN_MENU_LAYOUT.preview.y);
     assert.ok(MAIN_MENU_LAYOUT.progress.y + MAIN_MENU_LAYOUT.progress.height <= 800);
     assert.equal(layout.titleRole, "displayBrand");
@@ -255,14 +260,14 @@ test("main menu locked brand plus descriptor composition clears the preview in b
   }
 });
 
-test("Main Menu decorative pair motif stays within descriptor row and away from text", () => {
+test("Main Menu keeps the descriptor alone, without distracting flanking pair motifs", async () => {
+  const source = await readFile(new URL("../src/game/MainMenuScene.ts", import.meta.url), "utf8");
+  assert.doesNotMatch(source, /MAIN_MENU_BRAND_MOTIF|motif\.lineStyle|motif\.fillStyle/);
   for (const locale of ["ru", "en"]) {
     const layout = getMainMenuBrandLayout(locale);
-    assert.ok(MAIN_MENU_BRAND_MOTIF.y - 9 >= layout.descriptorTop);
-    assert.ok(MAIN_MENU_BRAND_MOTIF.y + 9 <= layout.descriptorTop + layout.descriptorLineHeight);
+    assert.equal(layout.descriptorTop, 158);
+    assert.equal(layout.descriptorRole, "brandDescriptor");
   }
-  assert.ok(MAIN_MENU_BRAND_MOTIF.leftX + 20 < 180);
-  assert.ok(MAIN_MENU_BRAND_MOTIF.rightX - 20 > 300);
 });
 
 test("Main Menu Onest brand pilot renders localized sentence case without changing naming", async () => {
@@ -283,7 +288,7 @@ test("Onest brand pilot retains shipped font families and UI weights", () => {
     Object.fromEntries(Object.entries(TYPOGRAPHY).map(([role, token]) => [role, [token.family, token.weight]])),
     {
       displayBrand: ["ui", 600],
-      brandDescriptor: ["ui", 600],
+      brandDescriptor: ["ui", 500],
       screenTitle: ["ui", 600],
       chapterHeading: ["ui", 600],
       sectionHeading: ["ui", 600],
@@ -510,6 +515,8 @@ test("typography roles preserve production floors and valid metrics", () => {
   }
   assert.equal(TYPOGRAPHY.displayBrand.size, 38);
   assert.equal(TYPOGRAPHY.displayBrand.lineHeight, 44);
+  assert.deepEqual(TYPOGRAPHY.brandDescriptor,
+    { family: "ui", weight: 500, size: 15, lineHeight: 20, tracking: 0.1, align: "center" });
   assert.equal(TYPOGRAPHY.hudSecondary.size, 16);
   assert.deepEqual(TYPOGRAPHY.chapterHeading,
     { family: "ui", weight: 600, size: 24, lineHeight: 30, tracking: -0.2, align: "center" });
