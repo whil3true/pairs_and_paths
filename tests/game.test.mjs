@@ -490,7 +490,7 @@ test("level-select states remain distinct without structural borders", () => {
   assert.deepEqual([VISUAL_COLORS.levelSelect.completedFill.hex, VISUAL_COLORS.levelSelect.completedCheck.hex,
     VISUAL_COLORS.levelSelect.lockedFill.hex, VISUAL_COLORS.levelSelect.lockedIcon.hex,
     VISUAL_COLORS.levelSelect.lockedNumber.hex],
-  ["#E0E7DA", "#667E68", "#E9E3D8", "#8B897F", "#686D67"]);
+  ["#E8E8D6", "#77805A", "#EEE6D9", "#8C8170", "#756C5C"]);
   assert.equal(completed.border, VISUAL_COLORS.levelSelect.completedCheck.phaser);
   assert.equal(locked.border, VISUAL_COLORS.levelSelect.lockedIcon.phaser);
   assert.equal(VISUAL_COLORS.state.success.hex, "#2D7464");
@@ -784,6 +784,30 @@ test("production artwork Gallery and Full View geometry is stable", () => {
   assert.deepEqual(ARTWORK_FULL_VIEW_LAYOUT.artwork, { x: 40, y: 156, width: 400, height: 400 });
   assert.deepEqual(ARTWORK_FULL_VIEW_LAYOUT.back, { x: 24, y: 20, width: 48, height: 48 });
   for (const invalid of [-1, 10, 1.5]) assert.throws(() => getArtworkGallerySlotBounds(invalid), RangeError);
+});
+
+test("Gallery warm placeholders remain distinct from missing-artwork failures and loading states", async () => {
+  assert.deepEqual([
+    VISUAL_COLORS.gallery.soonFill.hex,
+    VISUAL_COLORS.gallery.soonBorder.hex,
+    VISUAL_COLORS.gallery.soonGlyph.hex,
+    VISUAL_COLORS.gallery.soonLabel.hex,
+    VISUAL_COLORS.gallery.lockedFill.hex,
+    VISUAL_COLORS.gallery.lockedIcon.hex,
+  ], ["#FFF8EA", "#C5AD8B", "#A48A66", "#816F57", "#EEE6D9", "#8C8170"]);
+  assert.equal(VISUAL_COLORS.surface.card.hex, "#FFFBF3");
+  assert.equal(VISUAL_COLORS.state.lockedFill.hex, "#E3E1DA");
+  assert.equal(VISUAL_COLORS.state.danger.hex, "#A5423F");
+  const source = await readFile(new URL("../src/game/ArtworkGalleryScene.ts", import.meta.url), "utf8");
+  assert.match(source, /state === "unavailable" \? VISUAL_COLORS\.gallery\.soonFill\.phaser : VISUAL_COLORS\.surface\.card\.phaser/);
+  assert.match(source, /if \(state === "unavailable"\) this\.drawSoonFlower\(graphics, x, y - 8\)/);
+  assert.match(source, /else if \(failed\) this\.drawImageGlyph\(graphics, x, y - 8, true\)/);
+  assert.match(source, /state === "unavailable" \? strings\.gallerySoon : failed \? strings\.galleryUnavailable : strings\.galleryLoading/);
+  assert.match(source, /if \(state === "locked"\)/);
+  assert.match(source, /VISUAL_COLORS\.gallery\.soonBorder\.phaser/);
+  assert.match(source, /VISUAL_COLORS\.gallery\.lockedIcon\.phaser/);
+  assert.match(source, /VISUAL_COLORS\.state\.danger\.phaser/);
+  assert.match(source, /artwork\.thumbnailAssetKey\)\.setDisplaySize\(thumbnail\.size, thumbnail\.size\)/);
 });
 
 test("production Gallery counts only implemented unlocked artwork out of 100 campaign slots", () => {
