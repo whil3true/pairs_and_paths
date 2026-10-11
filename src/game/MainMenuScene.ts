@@ -50,8 +50,6 @@ export class MainMenuScene extends Phaser.Scene {
       createUiText(this, this.renderScale, 240, brandLayout.titleTop, strings.brandTitle,
         brandLayout.titleRole, { align: "center" }).setLetterSpacing(brandLayout.titleTracking).setOrigin(0.5, 0);
     }
-    createUiText(this, this.renderScale, 240, brandLayout.descriptorTop, strings.brandDescriptor,
-      brandLayout.descriptorRole, { color: VISUAL_COLORS.text.secondary.hex, align: "center" }).setOrigin(0.5, 0);
 
     const preview = MAIN_MENU_LAYOUT.preview;
     createChapterBanner(this, previewChapter, preview, false);
