@@ -174,7 +174,7 @@ export class ArtworkGalleryScene extends Phaser.Scene {
   /** Friendly placeholder only for artwork that has not been produced yet. */
   private drawSoonFlower(g: Phaser.GameObjects.Graphics, x: number, y: number): void {
     g.fillStyle(VISUAL_COLORS.gallery.soonGlyph.phaser);
-    for (const [dx, dy] of [[0, -7], [7, 0], [0, 7], [-7, 0]]) g.fillCircle(x + dx, y + dy, 5);
+    for (const [dx, dy] of [[0, -7], [7, 0], [0, 7], [-7, 0]] as const) g.fillCircle(x + dx, y + dy, 5);
     g.fillStyle(VISUAL_COLORS.accent.gold.phaser).fillCircle(x, y, 3.5);
   }
   private drawImageGlyph(g: Phaser.GameObjects.Graphics, x: number, y: number, broken: boolean): void {
