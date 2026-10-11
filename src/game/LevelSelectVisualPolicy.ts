@@ -10,7 +10,7 @@ export const LEVEL_SELECT_LAYOUT = Object.freeze({
   previous: Object.freeze({ centerX: 48, centerY: 316, width: 48, height: 48 }),
   next: Object.freeze({ centerX: 432, centerY: 316, width: 48, height: 48 }),
   grid: Object.freeze({ x: 24, y: 352, columns: 5, rows: 2, cardSize: 72, columnGap: 18, rowGap: 24 }),
-  back: Object.freeze({ x: 24, y: 708, width: 432, height: 56 }),
+  back: Object.freeze({ x: 24, y: 548, width: 432, height: 56 }),
 });
 
 export const getLevelCardBounds = (index: number) => {
@@ -42,13 +42,13 @@ export interface LevelCardVisual {
 }
 
 export const resolveLevelCardVisual = (state: LevelState): LevelCardVisual => state === "completed" ? {
-  fill: VISUAL_COLORS.state.selectedFill.phaser, border: VISUAL_COLORS.state.success.phaser,
+  fill: VISUAL_COLORS.levelSelect.completedFill.phaser, border: VISUAL_COLORS.levelSelect.completedCheck.phaser,
   borderWidth: 0, affordance: "check", selectable: true, numberSize: 22,
 } : state === "available" ? {
   fill: VISUAL_COLORS.state.hintFill.phaser, border: VISUAL_COLORS.accent.gold.phaser,
   borderWidth: 0, affordance: "tab", selectable: true, numberSize: 22,
 } : {
-  fill: VISUAL_COLORS.state.lockedFill.phaser, border: VISUAL_COLORS.state.locked.phaser,
+  fill: VISUAL_COLORS.levelSelect.lockedFill.phaser, border: VISUAL_COLORS.levelSelect.lockedIcon.phaser,
   borderWidth: 0, affordance: "lock", selectable: false, numberSize: 20,
 };
 
