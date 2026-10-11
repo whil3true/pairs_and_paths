@@ -191,11 +191,11 @@ test("localized chapter names are exact and numbered one through ten", () => {
 
 test("main menu production geometry, progress, and localized primary actions are stable", () => {
   assert.deepEqual(MAIN_MENU_LAYOUT.logo, { x: 24, y: 12, width: 432, height: 152 });
-  assert.deepEqual(MAIN_MENU_LAYOUT.preview, { x: 24, y: 214, width: 432, height: 232 });
-  assert.deepEqual(MAIN_MENU_LAYOUT.primary, { x: 24, y: 470, width: 432, height: 64 });
-  assert.deepEqual(MAIN_MENU_LAYOUT.secondaryLeft, { x: 24, y: 550, width: 208, height: 56 });
-  assert.deepEqual(MAIN_MENU_LAYOUT.secondaryRight, { x: 248, y: 550, width: 208, height: 56 });
-  assert.deepEqual(MAIN_MENU_LAYOUT.progress, { x: 24, y: 630, width: 432, height: 104 });
+  assert.deepEqual(MAIN_MENU_LAYOUT.preview, { x: 24, y: 194, width: 432, height: 232 });
+  assert.deepEqual(MAIN_MENU_LAYOUT.primary, { x: 24, y: 450, width: 432, height: 64 });
+  assert.deepEqual(MAIN_MENU_LAYOUT.secondaryLeft, { x: 24, y: 530, width: 208, height: 56 });
+  assert.deepEqual(MAIN_MENU_LAYOUT.secondaryRight, { x: 248, y: 530, width: 208, height: 56 });
+  assert.deepEqual(MAIN_MENU_LAYOUT.progress, { x: 24, y: 610, width: 432, height: 104 });
   assert.deepEqual([0, 1, 50, 100].map((value) => progressRatio(value, 100)), [0, 0.01, 0.5, 1]);
   for (const [completed, ru, en, target] of [[0, "Играть", "Play", 1], [17, "Продолжить · Уровень 18", "Continue · Level 18", 18],
     [100, "Играть снова · Уровень 1", "Play Again · Level 1", 1]]) {
@@ -241,33 +241,38 @@ test("Main Menu brand PNG uses contain geometry and keeps aspect ratio", () => {
   }
 });
 
-test("main menu locked brand plus descriptor composition clears the preview in both locales", () => {
+test("Main Menu logo-only composition keeps fallback, artwork and actions in the safe authored area", () => {
+  const logo = MAIN_MENU_LAYOUT.logo;
+  const preview = MAIN_MENU_LAYOUT.preview;
+  const primary = MAIN_MENU_LAYOUT.primary;
+  const left = MAIN_MENU_LAYOUT.secondaryLeft;
+  const right = MAIN_MENU_LAYOUT.secondaryRight;
+  const progress = MAIN_MENU_LAYOUT.progress;
+  assert.equal(preview.y - (logo.y + logo.height), 30);
+  assert.equal(primary.y - (preview.y + preview.height), 24);
+  assert.equal(left.y - (primary.y + primary.height), 16);
+  assert.equal(right.y, left.y);
+  assert.equal(progress.y - (left.y + left.height), 24);
+  assert.ok(progress.y + progress.height <= 800);
   for (const locale of ["ru", "en"]) {
     const layout = getMainMenuBrandLayout(locale);
-    assert.ok(layout.titleTop + layout.titleLineHeight < layout.descriptorTop);
-    // Actual contained PNG paint occupies less height than its 152px layout box.
-    for (const height of [342, 327]) {
-      const image = computeMainMenuBrandPlacement(1296, height, MAIN_MENU_LAYOUT.logo);
-      assert.ok(image.y + image.height + 10 <= layout.descriptorTop);
-    }
-    assert.equal(layout.descriptorTop, 158);
-    assert.ok(layout.descriptorTop + layout.descriptorLineHeight < MAIN_MENU_LAYOUT.preview.y);
-    assert.ok(MAIN_MENU_LAYOUT.progress.y + MAIN_MENU_LAYOUT.progress.height <= 800);
+    assert.ok(layout.titleTop >= logo.y);
+    assert.ok(layout.titleTop + layout.titleLineHeight <= logo.y + logo.height);
     assert.equal(layout.titleRole, "displayBrand");
     assert.equal(layout.titleTracking, -0.4);
     assert.equal(layout.titleLineHeight, 44);
-    assert.equal(layout.descriptorRole, "brandDescriptor");
+    assert.equal("descriptorTop" in layout, false);
   }
 });
 
-test("Main Menu keeps the descriptor alone, without distracting flanking pair motifs", async () => {
+test("Main Menu renders only the localized logo or its text fallback, without a descriptor or motifs", async () => {
   const source = await readFile(new URL("../src/game/MainMenuScene.ts", import.meta.url), "utf8");
-  assert.doesNotMatch(source, /MAIN_MENU_BRAND_MOTIF|motif\.lineStyle|motif\.fillStyle/);
-  for (const locale of ["ru", "en"]) {
-    const layout = getMainMenuBrandLayout(locale);
-    assert.equal(layout.descriptorTop, 158);
-    assert.equal(layout.descriptorRole, "brandDescriptor");
-  }
+  assert.match(source, /brandLayout\.titleTop, strings\.brandTitle/);
+  assert.match(source, /computeMainMenuBrandPlacement/);
+  assert.doesNotMatch(source, /strings\.brandDescriptor|brandLayout\.descriptor|MAIN_MENU_BRAND_MOTIF|motif\.lineStyle|motif\.fillStyle/);
+  // Catalog and localization strings remain available independently of the Main Menu presentation.
+  assert.equal(UI_STRINGS.ru.brandDescriptor, "Соедини пары");
+  assert.equal(UI_STRINGS.en.brandDescriptor, "Pair Connect");
 });
 
 test("Main Menu Onest brand pilot renders localized sentence case without changing naming", async () => {

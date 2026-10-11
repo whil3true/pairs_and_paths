@@ -5,11 +5,11 @@ import type { TypographyRole } from "./VisualTokens.js";
 
 export const MAIN_MENU_LAYOUT = Object.freeze({
   logo: Object.freeze({ x: 24, y: 12, width: 432, height: 152 }),
-  preview: Object.freeze({ x: 24, y: 214, width: 432, height: 232 }),
-  primary: Object.freeze({ x: 24, y: 470, width: 432, height: 64 }),
-  secondaryLeft: Object.freeze({ x: 24, y: 550, width: 208, height: 56 }),
-  secondaryRight: Object.freeze({ x: 248, y: 550, width: 208, height: 56 }),
-  progress: Object.freeze({ x: 24, y: 630, width: 432, height: 104 }),
+  preview: Object.freeze({ x: 24, y: 194, width: 432, height: 232 }),
+  primary: Object.freeze({ x: 24, y: 450, width: 432, height: 64 }),
+  secondaryLeft: Object.freeze({ x: 24, y: 530, width: 208, height: 56 }),
+  secondaryRight: Object.freeze({ x: 248, y: 530, width: 208, height: 56 }),
+  progress: Object.freeze({ x: 24, y: 610, width: 432, height: 104 }),
 });
 
 export interface MainMenuBrandLayout {
@@ -17,20 +17,14 @@ export interface MainMenuBrandLayout {
   readonly titleRole: TypographyRole;
   readonly titleLineHeight: number;
   readonly titleTracking: number;
-  readonly descriptorTop: number;
-  readonly descriptorRole: TypographyRole;
-  readonly descriptorLineHeight: number;
 }
 
-/** Locked naming system: short visual brand plus mechanic descriptor in both locales. */
+/** Localized text fallback for the production RU/EN PNG logos. */
 export const getMainMenuBrandLayout = (_locale: SupportedLocale): MainMenuBrandLayout => Object.freeze({
   titleTop: 75,
   titleRole: "displayBrand",
   titleLineHeight: 44,
   titleTracking: -0.4,
-  descriptorTop: 158,
-  descriptorRole: "brandDescriptor",
-  descriptorLineHeight: 20,
 });
 
 export const progressRatio = (completed: number, total: number): number =>
