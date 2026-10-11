@@ -115,15 +115,16 @@ export class ArtworkGalleryScene extends Phaser.Scene {
     if (state === "locked" || !loaded) {
       const graphics = this.add.graphics(); objects.push(graphics);
       if (state === "locked") {
-        graphics.fillStyle(VISUAL_COLORS.state.lockedFill.phaser).fillRoundedRect(bounds.x, bounds.y, 72, 72, COMPONENT_RADII.levelCard)
-          .lineStyle(BORDERS.structural, VISUAL_COLORS.state.locked.phaser).strokeRoundedRect(bounds.x, bounds.y, 72, 72, COMPONENT_RADII.levelCard);
+        graphics.fillStyle(VISUAL_COLORS.gallery.lockedFill.phaser).fillRoundedRect(bounds.x, bounds.y, 72, 72, COMPONENT_RADII.levelCard)
+          .lineStyle(BORDERS.structural, VISUAL_COLORS.gallery.lockedIcon.phaser).strokeRoundedRect(bounds.x, bounds.y, 72, 72, COMPONENT_RADII.levelCard);
         this.drawLock(graphics, x, y);
       } else {
-        graphics.fillStyle(VISUAL_COLORS.surface.card.phaser).fillRoundedRect(bounds.x, bounds.y, 72, 72, COMPONENT_RADII.levelCard);
+        graphics.fillStyle(state === "unavailable" ? VISUAL_COLORS.gallery.soonFill.phaser : VISUAL_COLORS.surface.card.phaser)
+          .fillRoundedRect(bounds.x, bounds.y, 72, 72, COMPONENT_RADII.levelCard);
         if (state === "unavailable") this.drawDashedBorder(graphics, bounds.x, bounds.y, 72, 72);
         else if (failed) graphics.lineStyle(BORDERS.structural, VISUAL_COLORS.state.danger.phaser)
           .strokeRoundedRect(bounds.x, bounds.y, 72, 72, COMPONENT_RADII.levelCard);
-        if (state === "unavailable") this.drawImageGlyph(graphics, x, y - 8, false);
+        if (state === "unavailable") this.drawSoonFlower(graphics, x, y - 8);
         else if (failed) this.drawImageGlyph(graphics, x, y - 8, true);
         else graphics.lineStyle(3, VISUAL_COLORS.accent.gold.phaser).beginPath().arc(x, y - 7, 8, -1.2, 1.8).strokePath();
       }
@@ -137,7 +138,8 @@ export class ArtworkGalleryScene extends Phaser.Scene {
     }
     if (!loaded && state !== "locked") objects.push(createUiText(this, this.renderScale, x, y + 17,
       state === "unavailable" ? strings.gallerySoon : failed ? strings.galleryUnavailable : strings.galleryLoading,
-      "smallMetadata", { color: VISUAL_COLORS.text.secondary.hex, align: "center" }).setOrigin(0.5));
+      "smallMetadata", { color: state === "unavailable" ? VISUAL_COLORS.gallery.soonLabel.hex : VISUAL_COLORS.text.secondary.hex,
+        align: "center" }).setOrigin(0.5));
     objects.push(createUiText(this, this.renderScale, x, bounds.y + ARTWORK_GALLERY_LAYOUT.grid.labelOffset,
       strings.levelLabel(level), "smallMetadata", { color: VISUAL_COLORS.text.secondary.hex, align: "center" }).setOrigin(0.5));
     if (loaded && artwork !== undefined) {
@@ -165,8 +167,15 @@ export class ArtworkGalleryScene extends Phaser.Scene {
 
   private navigateChapter(delta: number): void { const next = this.chapter + delta; if (next >= 1 && next <= CHAPTER_COUNT) { this.chapter = next; this.renderChapter(); } }
   private drawLock(g: Phaser.GameObjects.Graphics, x: number, y: number): void {
-    g.lineStyle(3, VISUAL_COLORS.state.locked.phaser).strokeRoundedRect(x - 12, y - 3, 24, 20, 4)
-      .beginPath().arc(x, y - 3, 8, Math.PI, 0).strokePath().fillStyle(VISUAL_COLORS.state.locked.phaser).fillCircle(x, y + 6, 2.5);
+    g.lineStyle(3, VISUAL_COLORS.gallery.lockedIcon.phaser).strokeRoundedRect(x - 12, y - 3, 24, 20, 4)
+      .beginPath().arc(x, y - 3, 8, Math.PI, 0).strokePath()
+      .fillStyle(VISUAL_COLORS.gallery.lockedIcon.phaser).fillCircle(x, y + 6, 2.5);
+  }
+  /** Friendly placeholder only for artwork that has not been produced yet. */
+  private drawSoonFlower(g: Phaser.GameObjects.Graphics, x: number, y: number): void {
+    g.fillStyle(VISUAL_COLORS.gallery.soonGlyph.phaser);
+    for (const [dx, dy] of [[0, -7], [7, 0], [0, 7], [-7, 0]]) g.fillCircle(x + dx, y + dy, 5);
+    g.fillStyle(VISUAL_COLORS.accent.gold.phaser).fillCircle(x, y, 3.5);
   }
   private drawImageGlyph(g: Phaser.GameObjects.Graphics, x: number, y: number, broken: boolean): void {
     g.lineStyle(2, VISUAL_COLORS.text.tertiary.phaser).strokeRoundedRect(x - 13, y - 10, 26, 21, 3)
@@ -175,7 +184,7 @@ export class ArtworkGalleryScene extends Phaser.Scene {
     if (broken) g.lineStyle(2, VISUAL_COLORS.state.danger.phaser).beginPath().moveTo(x - 15, y - 13).lineTo(x + 15, y + 14).strokePath();
   }
   private drawDashedBorder(g: Phaser.GameObjects.Graphics, x: number, y: number, width: number, height: number): void {
-    g.lineStyle(2, VISUAL_COLORS.border.soft.phaser);
+    g.lineStyle(2, VISUAL_COLORS.gallery.soonBorder.phaser);
     for (let offset = 14; offset < width - 8; offset += 14) {
       g.beginPath().moveTo(x + offset, y).lineTo(x + Math.min(offset + 7, width - 8), y).strokePath()
         .beginPath().moveTo(x + offset, y + height).lineTo(x + Math.min(offset + 7, width - 8), y + height).strokePath();
