@@ -19,6 +19,12 @@ export const VISUAL_COLORS = Object.freeze({
     selectedFill: color("#D7E8E3"), hint: color("#C98519"), hintFill: color("#F2DDB5"),
     danger: color("#A5423F"), pressedFill: color("#F4EEE2"),
   }),
+  // Level Select only: warmer state palette; shared gameplay success/route colors remain untouched.
+  levelSelect: Object.freeze({
+    completedFill: color("#E0E7DA"), completedCheck: color("#667E68"),
+    lockedFill: color("#E9E3D8"), lockedIcon: color("#8B897F"),
+    lockedNumber: color("#686D67"),
+  }),
   route: Object.freeze({ core: color("#0B7475"), halo: color("#FFF3D2") }),
   blocker: Object.freeze({ fill: color("#62645E"), dark: color("#3F4543"), relief: color("#ECE4D3") }),
   border: Object.freeze({ strong: color("#344346"), soft: color("#C9BEAA") }),

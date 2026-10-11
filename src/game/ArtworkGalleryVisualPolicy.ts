@@ -12,7 +12,7 @@ export const ARTWORK_GALLERY_LAYOUT = Object.freeze({
   grid: Object.freeze({ columns: 5, rows: 2, cardSize: 72, firstCenterX: 60, columnStep: 90,
     rowTops: Object.freeze([176, 292] as const), labelOffset: 86 }),
   progress: Object.freeze({ x: 24, y: 432, width: 432, height: 104 }),
-  back: Object.freeze({ x: 24, y: 708, width: 432, height: 56 }),
+  back: Object.freeze({ x: 24, y: 560, width: 432, height: 56 }),
 });
 
 export const ARTWORK_GALLERY_THUMBNAIL = Object.freeze({ size: 72, radius: 16 });
