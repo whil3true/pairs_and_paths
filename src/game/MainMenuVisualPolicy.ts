@@ -3,9 +3,6 @@ import type { UiStrings } from "./Localization.js";
 import type { SupportedLocale } from "./Localization.js";
 import type { TypographyRole } from "./VisualTokens.js";
 
-/** Small static paired-tile ornaments alongside the mechanic descriptor, not part of hit geometry. */
-export const MAIN_MENU_BRAND_MOTIF = Object.freeze({ leftX: 143, rightX: 337, y: 184 });
-
 export const MAIN_MENU_LAYOUT = Object.freeze({
   logo: Object.freeze({ x: 24, y: 12, width: 432, height: 152 }),
   preview: Object.freeze({ x: 24, y: 214, width: 432, height: 232 }),
@@ -31,7 +28,7 @@ export const getMainMenuBrandLayout = (_locale: SupportedLocale): MainMenuBrandL
   titleRole: "displayBrand",
   titleLineHeight: 44,
   titleTracking: -0.4,
-  descriptorTop: 174,
+  descriptorTop: 158,
   descriptorRole: "brandDescriptor",
   descriptorLineHeight: 20,
 });
