@@ -46,7 +46,7 @@ const typeRole = (
 
 export const TYPOGRAPHY = Object.freeze({
   displayBrand: typeRole("ui", 600, 38, 44, -0.4, "center"),
-  brandDescriptor: typeRole("ui", 600, 16, 20, 0, "center"),
+  brandDescriptor: typeRole("ui", 500, 15, 20, 0.1, "center"),
   screenTitle: typeRole("ui", 600, 30, 36, -0.3, "center"),
   chapterHeading: typeRole("ui", 600, 24, 30, -0.2, "center"),
   sectionHeading: typeRole("ui", 600, 22, 28),
