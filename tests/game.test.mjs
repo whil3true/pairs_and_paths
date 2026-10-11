@@ -410,7 +410,7 @@ test("level select geometry, navigation boundaries, and semantic cards are stabl
   assert.deepEqual(LEVEL_SELECT_LAYOUT.banner, { x: 24, y: 116, width: 432, height: 164 });
   assert.deepEqual(LEVEL_SELECT_LAYOUT.previous, { centerX: 48, centerY: 316, width: 48, height: 48 });
   assert.deepEqual(LEVEL_SELECT_LAYOUT.next, { centerX: 432, centerY: 316, width: 48, height: 48 });
-  assert.deepEqual(LEVEL_SELECT_LAYOUT.back, { x: 24, y: 708, width: 432, height: 56 });
+  assert.deepEqual(LEVEL_SELECT_LAYOUT.back, { x: 24, y: 548, width: 432, height: 56 });
   const header = LEVEL_SELECT_LAYOUT.header;
   assert.ok(header.chapterLabelTop + header.chapterLabelLineHeight <= header.chapterTitleTop);
   assert.ok(header.chapterTitleTop + header.chapterTitleLineHeight <= header.progressTop);
@@ -427,6 +427,9 @@ test("level select geometry, navigation boundaries, and semantic cards are stabl
   assert.deepEqual(cards[4], { x: 384, y: 352, width: 72, height: 72 });
   assert.deepEqual(cards[5], { x: 24, y: 448, width: 72, height: 72 });
   assert.deepEqual(cards[9], { x: 384, y: 448, width: 72, height: 72 });
+  // Navigation sits under the second row, not at the viewport floor.
+  assert.equal(LEVEL_SELECT_LAYOUT.back.y - (cards[9].y + cards[9].height), 28);
+  assert.ok(LEVEL_SELECT_LAYOUT.back.y + LEVEL_SELECT_LAYOUT.back.height <= 800);
   assert.deepEqual(getLevelCardGeometry(cards[0]), {
     centerX: 60, centerY: 388, interactiveWidth: 72, interactiveHeight: 72,
   });
@@ -436,6 +439,14 @@ test("level select geometry, navigation boundaries, and semantic cards are stabl
     const visual = resolveLevelCardVisual(state);
     return [visual.affordance, visual.selectable, visual.numberSize, visual.borderWidth];
   }), [["check", true, 22, 0], ["tab", true, 22, 0], ["lock", false, 20, 0]]);
+});
+
+test("Level Select semantic icons use the warm local palette, without changing tap geometry", async () => {
+  const source = await readFile(new URL("../src/game/LevelSelectScene.ts", import.meta.url), "utf8");
+  assert.match(source, /VISUAL_COLORS\.levelSelect\.completedCheck\.phaser/);
+  assert.match(source, /VISUAL_COLORS\.levelSelect\.lockedIcon\.phaser/);
+  assert.match(source, /VISUAL_COLORS\.levelSelect\.lockedNumber\.hex/);
+  assert.match(source, /new Phaser\.Geom\.Rectangle\(0, 0, geometry\.interactiveWidth, geometry\.interactiveHeight\)/);
 });
 
 test("level-card release navigation survives pointerout after a confirmed tap", async () => {
@@ -473,9 +484,19 @@ test("level-select states remain distinct without structural borders", () => {
   const completed = resolveLevelCardVisual("completed");
   const available = resolveLevelCardVisual("available");
   const locked = resolveLevelCardVisual("locked");
-  assert.equal(completed.fill, VISUAL_COLORS.state.selectedFill.phaser);
+  assert.equal(completed.fill, VISUAL_COLORS.levelSelect.completedFill.phaser);
   assert.equal(available.fill, VISUAL_COLORS.state.hintFill.phaser);
-  assert.equal(locked.fill, VISUAL_COLORS.state.lockedFill.phaser);
+  assert.equal(locked.fill, VISUAL_COLORS.levelSelect.lockedFill.phaser);
+  assert.deepEqual([VISUAL_COLORS.levelSelect.completedFill.hex, VISUAL_COLORS.levelSelect.completedCheck.hex,
+    VISUAL_COLORS.levelSelect.lockedFill.hex, VISUAL_COLORS.levelSelect.lockedIcon.hex,
+    VISUAL_COLORS.levelSelect.lockedNumber.hex],
+  ["#E0E7DA", "#667E68", "#E9E3D8", "#8B897F", "#686D67"]);
+  assert.equal(completed.border, VISUAL_COLORS.levelSelect.completedCheck.phaser);
+  assert.equal(locked.border, VISUAL_COLORS.levelSelect.lockedIcon.phaser);
+  assert.equal(VISUAL_COLORS.state.success.hex, "#2D7464");
+  assert.equal(VISUAL_COLORS.state.selectedFill.hex, "#D7E8E3");
+  assert.equal(VISUAL_COLORS.state.lockedFill.hex, "#E3E1DA");
+  assert.equal(VISUAL_COLORS.route.core.hex, "#0B7475");
   assert.deepEqual([completed.borderWidth, available.borderWidth, locked.borderWidth], [0, 0, 0]);
   assert.deepEqual([completed.affordance, available.affordance, locked.affordance], ["check", "tab", "lock"]);
 });
@@ -756,6 +777,10 @@ test("production artwork Gallery and Full View geometry is stable", () => {
   assert.deepEqual(slots.map(({ y }) => y), [176, 176, 176, 176, 176, 292, 292, 292, 292, 292]);
   assert.ok(slots.every(({ width, height }) => width === 72 && height === 72));
   assert.deepEqual(ARTWORK_GALLERY_THUMBNAIL, { size: 72, radius: 16 });
+  assert.deepEqual(ARTWORK_GALLERY_LAYOUT.back, { x: 24, y: 560, width: 432, height: 56 });
+  const galleryProgress = ARTWORK_GALLERY_LAYOUT.progress;
+  assert.equal(ARTWORK_GALLERY_LAYOUT.back.y - (galleryProgress.y + galleryProgress.height), 24);
+  assert.ok(ARTWORK_GALLERY_LAYOUT.back.y + ARTWORK_GALLERY_LAYOUT.back.height <= 800);
   assert.deepEqual(ARTWORK_FULL_VIEW_LAYOUT.artwork, { x: 40, y: 156, width: 400, height: 400 });
   assert.deepEqual(ARTWORK_FULL_VIEW_LAYOUT.back, { x: 24, y: 20, width: 48, height: 48 });
   for (const invalid of [-1, 10, 1.5]) assert.throws(() => getArtworkGallerySlotBounds(invalid), RangeError);
