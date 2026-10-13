@@ -24,7 +24,8 @@ test("gameplay attaches the sound-plan to semantic moves without doubled second-
   const source = await read("../src/game/PlayScene.ts");
   assert.match(source, /if \(this\.selected === null\) \{\s*playAudioEffect\("tileFirst"\)/);
   assert.match(source, /if \(samePoint\(this\.selected, point\)\) \{\s*playAudioEffect\("tileSecond"\)/);
-  assert.match(source, /if \(tileId !== null && path !== null\) \{[\s\S]*?playAudioEffect\("pairSuccess"\);\s*this\.completeMove/);
+  assert.match(source, /if \(tileId !== null && path !== null\) \{[\s\S]*?playAudioEffect\("tileSecond"\);\s*this\.completeMove/);
+  assert.match(source, /private animateTileRemoval\([\s\S]*?playAudioEffect\("pairSuccess"\);[\s\S]*?this\.removalTween = this\.tweens\.add/);
   assert.match(source, /if \(tileId !== null && tileId === this\.board\.tileAt\(point\)\) \{[\s\S]*?playAudioEffect\("pairInvalid"\);\s*this\.showBlockedPair/);
   assert.match(source, /if \(outcome\.kind === "level-complete"\) \{[\s\S]*?playAudioEffect\("levelComplete"\);/);
   assert.equal((source.match(/playAudioEffect\("pairSuccess"\)/g) ?? []).length, 1);
@@ -44,6 +45,8 @@ test("browser unlock precedes Phaser canvas's first tile tap", async () => {
   const source = await read("../src/audio/BrowserAudioLifecycle.ts");
   assert.match(source, /addEventListener\("pointerdown", unlock, \{ passive: true, capture: true \}\)/);
   assert.match(source, /manager\.retryPlaybackFromGesture\(\)/);
+  assert.match(source, /addEventListener\("pointerup", retryOnRelease, true\)/);
+  assert.match(source, /removeEventListener\("pointerup", retryOnRelease, true\)/);
   assert.match(source, /addEventListener\("pagehide", pagehide\)/);
   assert.match(source, /addEventListener\("pageshow", pageshow\)/);
   assert.match(source, /removeEventListener\("pointerdown", unlock, true\)/);
