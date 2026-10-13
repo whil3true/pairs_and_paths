@@ -1,4 +1,4 @@
-/** Approved sound-plan filenames. Assets will be committed in the dedicated binary-asset PR. */
+/** Approved sound-plan filenames committed under public/assets/audio/. */
 export const AUDIO_EFFECTS = Object.freeze({
   uiClick: "assets/audio/click_003.ogg",
   tileFirst: "assets/audio/drop_003.ogg",
