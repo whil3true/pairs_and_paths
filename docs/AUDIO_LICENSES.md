@@ -1,6 +1,6 @@
 # Audio provenance and licensing register
 
-Working record for future audio integration. **No audio files are shipped by the foundation PR.** Do not mark unverified third-party source attribution as confirmed.
+Provenance register for the user-supplied files now included under `public/assets/audio/` in PR #94. Do not mark unverified third-party source attribution as confirmed.
 
 ## Music
 

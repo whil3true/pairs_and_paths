@@ -39,7 +39,7 @@ Six SFX files total ~43 KiB; the two music files together ~7.1 MiB. The 10 ms UI
 ## Planned PR sequence
 
 - **PR 1 — foundation**: pure audio settings model, resilient browser store, automated unit tests, this plan. No audio playback or visible settings controls yet.
-- **PR 2 — sound engine + assets**: add reviewed licensed audio files from archive, manifest and manager; autoplay/focus policies; SFX wiring, background music policy fixed after review, test playback event mapping. Store provenance in `docs/AUDIO_LICENSES.md`.
+- **PR 2 — sound engine**: manifest, manager and browser playback policy landed in PR #93. PR #94 wires game events and the startup lifecycle, and the user uploaded all eight binary assets to `public/assets/audio/`. Android listening tests remain necessary before release. Store provenance in `docs/AUDIO_LICENSES.md`.
 - **PR 3 — UI controls**: two inline sliders in Pause and Main Menu access; persistent synchronized values, touch hit-testing, localization, scene transitions and Android verification.
 - **PR 4 only if needed**: small mastering/compression or gapless-loop correction. Avoid cosmetic redesign.
 

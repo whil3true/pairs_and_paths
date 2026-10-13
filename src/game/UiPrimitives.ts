@@ -1,3 +1,4 @@
+import { playAudioEffect } from "../audio/AudioRuntime.js";
 import { LOGICAL_GAME_HEIGHT, LOGICAL_GAME_WIDTH, setHiDpiTextResolution } from "./Display.js";
 import { createButtonHitArea, resolveButtonVisual, type ButtonKind, type ButtonState } from "./UiPolicy.js";
 import {
@@ -112,6 +113,7 @@ const createButton = (
     if (disabled || !armed) return;
     armed = false;
     render();
+    playAudioEffect("uiClick");
     options.onActivate();
   });
   render();

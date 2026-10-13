@@ -1,3 +1,4 @@
+import { playAudioEffect } from "../audio/AudioRuntime.js";
 import { applyMove, findPath, type Board, type GridPoint, type LegalMove } from "../domain/index.js";
 import type { PlatformService } from "../platform/PlatformService.js";
 import { resetPageDim, setPageDim } from "../platform/PageBackdrop.js";
@@ -397,10 +398,12 @@ export class PlayScene extends Phaser.Scene {
     }
     this.tiles.get(keyOf(point))?.press(this.tweens);
     if (this.selected === null) {
+      playAudioEffect("tileFirst");
       this.setSelected(point);
       return;
     }
     if (samePoint(this.selected, point)) {
+      playAudioEffect("tileSecond");
       this.setSelected(null);
       return;
     }
@@ -408,10 +411,15 @@ export class PlayScene extends Phaser.Scene {
     const tileId = this.board.tileAt(start);
     const path = tileId === this.board.tileAt(point) ? findPath(this.board, start, point) : null;
     if (tileId !== null && path !== null) {
+      // Success replaces the second-tile tap, avoiding a double sound.
+      playAudioEffect("pairSuccess");
       this.completeMove({ tileId, start, end: point, path });
     } else if (tileId !== null && tileId === this.board.tileAt(point)) {
+      // Identical but unreachable tiles: the only genuinely invalid pair.
+      playAudioEffect("pairInvalid");
       this.showBlockedPair(start, point);
     } else {
+      playAudioEffect("tileSecond");
       this.setSelected(point);
     }
   }
@@ -575,6 +583,8 @@ export class PlayScene extends Phaser.Scene {
   private finishStage(): void {
     const outcome = getStageClearOutcome(this.currentLevelNumber, this.currentStageIndex);
     if (outcome.kind === "level-complete") {
+      // One jingle per finished level, never for intermediate short stages.
+      playAudioEffect("levelComplete");
       if (this.persistenceEnabled) {
         const completion = recordStageCompletion(
           this.progress, this.currentLevelNumber, this.currentStageIndex,
