@@ -1,3 +1,8 @@
+import { AudioManager } from "./audio/AudioManager.js";
+import { configureAudioRuntime } from "./audio/AudioRuntime.js";
+import { HtmlAudioOutput } from "./audio/HtmlAudioOutput.js";
+import { attachBrowserAudioLifecycle } from "./audio/BrowserAudioLifecycle.js";
+import { WebAudioSettingsStore } from "./platform/WebAudioSettingsStore.js";
 import { BootScene } from "./game/BootScene.js";
 import { resolveStartupRoute } from "./game/CampaignStartup.js";
 import { isProgressResetRequested, isSymbolGalleryRequested, parseDebugLocale, parseDebugSetProgress, parseDebugStart } from "./game/DebugStart.js";
@@ -18,6 +23,10 @@ import { VISUAL_COLORS } from "./game/VisualTokens.js";
 
 const platform = new WebPlatform();
 const progressStore = new WebProgressStore();
+// One audio service for the entire game. Scene navigation must not restart music.
+const audioManager = new AudioManager(new HtmlAudioOutput(), new WebAudioSettingsStore());
+configureAudioRuntime(audioManager);
+attachBrowserAudioLifecycle(audioManager);
 const search = window.location.search;
 const resetProgress = isProgressResetRequested(search);
 if (resetProgress) progressStore.clear();
