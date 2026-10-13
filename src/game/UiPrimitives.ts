@@ -108,12 +108,17 @@ const createButton = (
   };
   container.on("pointerover", () => { if (!disabled) { hovered = true; render(); } });
   container.on("pointerout", () => { hovered = false; armed = false; render(); });
-  container.on("pointerdown", () => { if (!disabled) { armed = true; render("pressed"); } });
+  container.on("pointerdown", () => {
+    if (!disabled) {
+      armed = true;
+      render("pressed");
+      playAudioEffect("uiClick");
+    }
+  });
   container.on("pointerup", () => {
     if (disabled || !armed) return;
     armed = false;
     render();
-    playAudioEffect("uiClick");
     options.onActivate();
   });
   render();
