@@ -15,14 +15,15 @@ export const attachBrowserAudioLifecycle = (
   const blur = (): void => { focused = false; sync(); };
   const focus = (): void => { focused = true; sync(); };
   const visibility = (): void => { if (doc.hidden) focused = false; else focused = true; sync(); };
-  win.addEventListener("pointerdown", unlock, { passive: true });
+  // Capture unlock before Phaser's canvas pointerdown handler, so first-tile SFX is audible.
+  win.addEventListener("pointerdown", unlock, { passive: true, capture: true });
   win.addEventListener("keydown", unlock);
   win.addEventListener("blur", blur);
   win.addEventListener("focus", focus);
   doc.addEventListener("visibilitychange", visibility);
   sync();
   return () => {
-    win.removeEventListener("pointerdown", unlock);
+    win.removeEventListener("pointerdown", unlock, true);
     win.removeEventListener("keydown", unlock);
     win.removeEventListener("blur", blur);
     win.removeEventListener("focus", focus);
