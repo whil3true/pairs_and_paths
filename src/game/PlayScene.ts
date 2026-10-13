@@ -411,8 +411,9 @@ export class PlayScene extends Phaser.Scene {
     const tileId = this.board.tileAt(start);
     const path = tileId === this.board.tileAt(point) ? findPath(this.board, start, point) : null;
     if (tileId !== null && path !== null) {
-      // Success replaces the second-tile tap, avoiding a double sound.
-      playAudioEffect("pairSuccess");
+      // The touch has its own tap feedback; the success sound belongs to
+      // the later tile-removal animation, after the route has completed.
+      playAudioEffect("tileSecond");
       this.completeMove({ tileId, start, end: point, path });
     } else if (tileId !== null && tileId === this.board.tileAt(point)) {
       // Identical but unreachable tiles: the only genuinely invalid pair.
@@ -544,6 +545,8 @@ export class PlayScene extends Phaser.Scene {
   }
 
   private animateTileRemoval(first: GridPoint, second: GridPoint, onComplete: () => void): void {
+    // Starts with the disappearance, not the earlier connection-line animation.
+    playAudioEffect("pairSuccess");
     const entries = [first, second].map((point) => [keyOf(point), this.tiles.get(keyOf(point))] as const)
       .filter((entry): entry is readonly [string, TileVisual] => entry[1] !== undefined);
     this.removalTween = this.tweens.add({
