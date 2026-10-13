@@ -11,7 +11,13 @@ export const attachBrowserAudioLifecycle = (
 ): (() => void) => {
   let focused = true;
   const sync = (): void => manager.setPageVisible(!doc.hidden && focused);
-  const unlock = (): void => manager.unlock();
+  const unlock = (): void => {
+    // A real user gesture on the visible page is a stronger signal than stale blur.
+    if (!doc.hidden) focused = true;
+    sync();
+    manager.unlock();
+    manager.retryPlaybackFromGesture();
+  };
   const blur = (): void => { focused = false; sync(); };
   const focus = (): void => { focused = true; sync(); };
   const visibility = (): void => { if (doc.hidden) focused = false; else focused = true; sync(); };

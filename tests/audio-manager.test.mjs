@@ -113,3 +113,16 @@ test("muted start defers playback; dispose invalidates old completion callbacks"
   manager.unlock();
   assert.deepEqual(calls, ["music", "stop"]);
 });
+
+test("fresh gesture retries music without changing track or restarting after stale blur", () => {
+  const s = setup();
+  s.manager.unlock();
+  s.manager.retryPlaybackFromGesture();
+  assert.deepEqual(s.calls.at(-1), ["resume"]);
+  assert.equal(s.calls.filter((x) => x[0] === "music").length, 1);
+  s.manager.setPageVisible(false);
+  s.manager.retryPlaybackFromGesture();
+  assert.equal(s.calls.filter((x) => x[0] === "resume").length, 1);
+  s.manager.setPageVisible(true);
+  assert.equal(s.calls.filter((x) => x[0] === "resume").length, 2);
+});

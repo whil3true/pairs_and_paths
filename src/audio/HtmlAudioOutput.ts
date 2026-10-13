@@ -1,4 +1,5 @@
 import type { AudioOutput } from "./AudioManager.js";
+import { AUDIO_EFFECTS } from "./AudioAssetManifest.js";
 
 /**
  * Browser implementation of the small audio output seam.
@@ -8,6 +9,16 @@ import type { AudioOutput } from "./AudioManager.js";
 export class HtmlAudioOutput implements AudioOutput {
   private music: HTMLAudioElement | null = null;
   private readonly effectPools = new Map<string, HTMLAudioElement[]>();
+
+  constructor() {
+    // Preload small effects before the first interaction, rather than fetching on tap.
+    for (const path of Object.values(AUDIO_EFFECTS)) {
+      const player = new Audio(path);
+      player.preload = "auto";
+      player.load();
+      this.effectPools.set(path, [player]);
+    }
+  }
 
   playEffect(path: string, volume: number): void {
     try {
