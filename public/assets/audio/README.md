@@ -1,19 +1,19 @@
-# Audio assets (awaiting user-provided binaries)
+# Audio assets
 
-The audio integration PR deliberately does not ship binary assets until the verified
-source files from the supplied `Sounds_confrim.zip` are uploaded to this folder.
+The eight user-approved files from `Sounds_confrim.zip` are stored in this directory,
+with case-sensitive names matching `src/audio/AudioAssetManifest.ts`:
 
-Required filenames (case-sensitive):
-- click_003.ogg
-- drop_003.ogg
-- drop_002.ogg
-- drop_004.ogg
-- bong_001.ogg
-- jingles_PIZZI10.ogg
-- forget_me_not_in_f_major_looped.ogg
-- porcelain_hours.mp3
+- `click_003.ogg` — shared UI button click
+- `drop_003.ogg` — first tile tap
+- `drop_002.ogg` — second tile tap
+- `drop_004.ogg` — successful pair
+- `bong_001.ogg` — blocked matching pair
+- `jingles_PIZZI10.ogg` — completed level
+- `forget_me_not_in_f_major_looped.ogg` — music track A
+- `porcelain_hours.mp3` — music track B
 
-These are already referenced by `src/audio/AudioAssetManifest.ts`.
-Without the files, requests return 404 and the game will have no sound.
-**Do not merge/deploy the integration PR before adding all eight files.**
-Licensing notes: `docs/AUDIO_LICENSES.md`.
+The CI suite verifies that all manifest targets exist and have nonempty audio
+files. Run Android playback QA after this PR is merged; CI cannot prove that
+device codecs, autoplay policies or music-loop transitions sound correct.
+
+For provenance and licensing, see `docs/AUDIO_LICENSES.md`.
