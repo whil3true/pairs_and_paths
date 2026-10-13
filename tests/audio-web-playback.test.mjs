@@ -20,6 +20,8 @@ test("music starts from a preloaded first track and failed play can be retried",
   assert.match(output, /path === AUDIO_MUSIC\[0\]!\.path \? prepared : new Audio\(path\)/);
   assert.match(output, /this\.musicNeedsRetry = true/);
   assert.match(output, /this\.musicPlayPending/);
+  assert.match(output, /if \(!this\.music\.paused && !this\.musicNeedsRetry\) return/);
+  assert.doesNotMatch(output, /if \(this\.music !== player \|\| this\.musicPlayPending\) return/);
 });
 
 test("pagehide, blur and hidden document suspend both playback channels", async () => {

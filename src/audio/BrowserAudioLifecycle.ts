@@ -18,6 +18,11 @@ export const attachBrowserAudioLifecycle = (
     focused = true; // Android may lose focus without a matching focus event.
     sync();
     manager.unlock();
+  };
+  const retryOnRelease = (): void => {
+    // pointerup is a second user-activation opportunity within the SAME tap.
+    // Some mobile browsers reject or defer play() on pointerdown while loading.
+    if (pageGone || doc.hidden || !focused) return;
     manager.retryPlaybackFromGesture();
   };
   const blur = (): void => { focused = false; sync(); };
@@ -28,6 +33,7 @@ export const attachBrowserAudioLifecycle = (
 
   // Capture before Phaser's button/tile pointerdown handler.
   win.addEventListener("pointerdown", unlock, { passive: true, capture: true });
+  win.addEventListener("pointerup", retryOnRelease, true);
   win.addEventListener("keydown", unlock, true);
   win.addEventListener("blur", blur);
   win.addEventListener("focus", focus);
@@ -37,6 +43,7 @@ export const attachBrowserAudioLifecycle = (
   sync();
   return () => {
     win.removeEventListener("pointerdown", unlock, true);
+    win.removeEventListener("pointerup", retryOnRelease, true);
     win.removeEventListener("keydown", unlock, true);
     win.removeEventListener("blur", blur);
     win.removeEventListener("focus", focus);
