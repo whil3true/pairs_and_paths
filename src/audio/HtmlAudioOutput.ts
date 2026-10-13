@@ -15,6 +15,12 @@ export class HtmlAudioOutput implements AudioOutput {
   private musicPlayPending = false;
   private musicNeedsRetry = false;
   private musicPlayToken = 0;
+  // Retain the logical soundtrack state independently of the media element.
+  // Android may keep a system media card for an HTMLAudioElement that is only paused.
+  private musicPath: string | null = null;
+  private musicVolume = 1;
+  private musicPosition = 0;
+  private musicEnded: (() => void) | null = null;
 
   constructor() {
     this.prepareMusic();
@@ -133,53 +139,110 @@ export class HtmlAudioOutput implements AudioOutput {
 
   startMusic(path: string, volume: number, onEnded: () => void): void {
     this.stopMusic();
+    this.musicPath = path;
+    this.musicVolume = Math.max(0, Math.min(1, volume));
+    this.musicPosition = 0;
+    this.musicEnded = onEnded;
+    this.createMusicPlayer();
+  }
+
+  setMusicVolume(volume: number): void {
+    this.musicVolume = Math.max(0, Math.min(1, volume));
+    if (this.music) this.music.volume = this.musicVolume;
+  }
+
+  pauseMusic(): void {
+    // pause() alone leaves Android Chrome's media notification associated with
+    // this source. Release it on blur/pagehide/ad pause/mute, retaining progress.
+    const player = this.music;
+    if (player) {
+      const position = player.currentTime;
+      if (Number.isFinite(position) && position >= 0) this.musicPosition = position;
+    }
+    this.releaseMusicElement();
+    this.clearMediaSession();
+  }
+
+  resumeMusic(): void {
+    if (!this.music) {
+      // The manager checks focus, ads and volume before reaching this method.
+      // A new element has no stale media session or system playback controls.
+      if (this.musicPath !== null) this.createMusicPlayer();
+      return;
+    }
+    // A pending play() does NOT mean audio is actually playing. On Android it
+    // can still be waiting for media data or user activation.
+    if (!this.music.paused && !this.musicNeedsRetry) return;
+    this.tryPlayMusic(this.music);
+  }
+
+  stopMusic(): void {
+    this.releaseMusicElement();
+    this.musicPath = null;
+    this.musicEnded = null;
+    this.musicPosition = 0;
+    this.clearMediaSession();
+  }
+
+  private createMusicPlayer(): void {
+    const path = this.musicPath;
+    if (path === null) return;
     try {
       const prepared = this.preparedFirstTrack;
       const player = prepared && path === AUDIO_MUSIC[0]!.path ? prepared : new Audio(path);
       this.preparedFirstTrack = null;
       player.preload = "auto";
       player.loop = false;
-      player.volume = Math.max(0, Math.min(1, volume));
+      player.volume = this.musicVolume;
       player.addEventListener("ended", () => {
-        if (this.music === player) onEnded();
+        if (this.music === player) this.musicEnded?.();
       });
       this.music = player;
-      this.tryPlayMusic(player);
+      const position = this.musicPosition;
+      if (position > 0) {
+        const seekAndPlay = (): void => {
+          if (this.music !== player) return; // page hidden again while loading
+          try { player.currentTime = position; } catch { /* unsupported seek */ }
+          this.tryPlayMusic(player);
+        };
+        if (player.readyState >= 1) seekAndPlay();
+        else {
+          player.addEventListener("loadedmetadata", seekAndPlay, { once: true });
+          player.load();
+        }
+      } else {
+        this.tryPlayMusic(player);
+      }
     } catch {
-      // Playback may be blocked by browser, codec or network.
+      // Keep the logical soundtrack so a later trusted gesture can retry it.
     }
   }
 
-  setMusicVolume(volume: number): void {
-    if (this.music) this.music.volume = Math.max(0, Math.min(1, volume));
-  }
-
-  pauseMusic(): void {
+  private releaseMusicElement(): void {
     ++this.musicPlayToken;
     this.musicPlayPending = false;
     this.musicNeedsRetry = false;
-    this.music?.pause();
-  }
-
-  resumeMusic(): void {
-    if (!this.music) return;
-    // A pending play() does NOT mean audio is actually playing. On Android it
-    // can still be waiting for media data or user activation. A second play()
-    // on pointerup of the SAME tap is allowed while the element stays paused.
-    if (!this.music.paused && !this.musicNeedsRetry) return;
-    this.tryPlayMusic(this.music);
-  }
-
-  stopMusic(): void {
-    ++this.musicPlayToken;
-    this.musicPlayPending = false;
-    this.musicNeedsRetry = false;
-    if (this.music) {
-      this.music.pause();
-      this.music.removeAttribute("src");
-      this.music.load();
+    const player = this.music;
+    this.music = null; // Ignore stale play/ended/metadata callbacks.
+    if (!player) return;
+    try {
+      player.pause();
+      player.removeAttribute("src");
+      player.load(); // Release the OS media session, not just audible playback.
+    } catch {
+      // Some mobile browsers can throw during media teardown.
     }
-    this.music = null;
+  }
+
+  private clearMediaSession(): void {
+    try {
+      if (typeof navigator !== "undefined" && navigator.mediaSession) {
+        navigator.mediaSession.playbackState = "none";
+        navigator.mediaSession.metadata = null;
+      }
+    } catch {
+      // Clearing the HTMLAudioElement source above is the primary mechanism.
+    }
   }
 
   private tryPlayMusic(player: HTMLAudioElement): void {
