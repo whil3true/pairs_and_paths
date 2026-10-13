@@ -1,38 +1,47 @@
 import type { AudioManager } from "./AudioManager.js";
 
 /**
- * Browser focus / gesture binding. Call once at game bootstrap and dispose at shutdown.
- * Platform ad events should call manager.setAdActive() from the future SDK adapter.
+ * Platform-independent fallback for focus, tab switching and mobile page lifecycle.
+ * SDK game_api_pause/resume needs an additional subscription when Yandex is integrated.
  */
 export const attachBrowserAudioLifecycle = (
   manager: AudioManager,
   win: Window = window,
   doc: Document = document,
 ): (() => void) => {
-  let focused = true;
-  const sync = (): void => manager.setPageVisible(!doc.hidden && focused);
+  let focused = !doc.hidden;
+  let pageGone = false;
+  const sync = (): void => manager.setPageVisible(!pageGone && !doc.hidden && focused);
   const unlock = (): void => {
-    // A real user gesture on the visible page is a stronger signal than stale blur.
-    if (!doc.hidden) focused = true;
+    // Ignore gestures in a background page: audio must stay silent off-screen.
+    if (pageGone || doc.hidden) return;
+    focused = true; // Android may lose focus without a matching focus event.
     sync();
     manager.unlock();
     manager.retryPlaybackFromGesture();
   };
   const blur = (): void => { focused = false; sync(); };
   const focus = (): void => { focused = true; sync(); };
-  const visibility = (): void => { if (doc.hidden) focused = false; else focused = true; sync(); };
-  // Capture unlock before Phaser's canvas pointerdown handler, so first-tile SFX is audible.
+  const visibility = (): void => { focused = !doc.hidden; sync(); };
+  const pagehide = (): void => { pageGone = true; focused = false; sync(); };
+  const pageshow = (): void => { pageGone = false; focused = !doc.hidden; sync(); };
+
+  // Capture before Phaser's button/tile pointerdown handler.
   win.addEventListener("pointerdown", unlock, { passive: true, capture: true });
-  win.addEventListener("keydown", unlock);
+  win.addEventListener("keydown", unlock, true);
   win.addEventListener("blur", blur);
   win.addEventListener("focus", focus);
+  win.addEventListener("pagehide", pagehide);
+  win.addEventListener("pageshow", pageshow);
   doc.addEventListener("visibilitychange", visibility);
   sync();
   return () => {
     win.removeEventListener("pointerdown", unlock, true);
-    win.removeEventListener("keydown", unlock);
+    win.removeEventListener("keydown", unlock, true);
     win.removeEventListener("blur", blur);
     win.removeEventListener("focus", focus);
+    win.removeEventListener("pagehide", pagehide);
+    win.removeEventListener("pageshow", pageshow);
     doc.removeEventListener("visibilitychange", visibility);
   };
 };
