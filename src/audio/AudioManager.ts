@@ -70,6 +70,9 @@ export class AudioManager {
     this.syncEffects();
     this.output.onUserGesture?.();
     if (firstUnlock) this.syncMusic();
+    // On every later pointerdown, retry only if the browser has not started
+    // the media element. The release of the first tap has its own retry hook.
+    else this.retryPlaybackFromGesture();
   }
 
   /** Retry browser-rejected media.play() synchronously on a fresh trusted gesture. */
