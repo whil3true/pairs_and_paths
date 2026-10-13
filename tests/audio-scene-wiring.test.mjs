@@ -44,6 +44,8 @@ test("browser unlock precedes Phaser canvas's first tile tap", async () => {
   const source = await read("../src/audio/BrowserAudioLifecycle.ts");
   assert.match(source, /addEventListener\("pointerdown", unlock, \{ passive: true, capture: true \}\)/);
   assert.match(source, /manager\.retryPlaybackFromGesture\(\)/);
+  assert.match(source, /addEventListener\("pagehide", pagehide\)/);
+  assert.match(source, /addEventListener\("pageshow", pageshow\)/);
   assert.match(source, /removeEventListener\("pointerdown", unlock, true\)/);
 });
 

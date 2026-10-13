@@ -8,6 +8,10 @@ export interface AudioSettingsRepository {
 
 /** Injectable playback seam. Browser implementation owns HTMLAudioElement lifetimes. */
 export interface AudioOutput {
+  /** AudioContext resume must happen within the trusted user gesture. */
+  onUserGesture?(): void;
+  /** Suspend Web Audio and any effect fallback when hidden or advertising. */
+  setEffectsActive?(active: boolean): void;
   playEffect(path: string, volume: number): void;
   startMusic(path: string, volume: number, onEnded: () => void): void;
   setMusicVolume(volume: number): void;
@@ -55,12 +59,17 @@ export class AudioManager {
     if (this.disposed) return;
     this.settings = createAudioSettings(this.settings.musicVolume, volume);
     this.repository.save(this.settings);
+    this.syncEffects();
   }
 
   unlock(): void {
-    if (this.disposed || this.unlocked) return;
+    if (this.disposed) return;
+    // Called in capture phase on the FIRST pointerdown, while activation is valid.
+    const firstUnlock = !this.unlocked;
     this.unlocked = true;
-    this.syncMusic();
+    this.syncEffects();
+    this.output.onUserGesture?.();
+    if (firstUnlock) this.syncMusic();
   }
 
   /** Retry browser-rejected media.play() synchronously on a fresh trusted gesture. */
@@ -72,12 +81,14 @@ export class AudioManager {
   setPageVisible(visible: boolean): void {
     if (this.disposed) return;
     this.pageVisible = visible;
+    this.syncEffects();
     this.syncMusic();
   }
 
   setAdActive(active: boolean): void {
     if (this.disposed) return;
     this.adActive = active;
+    this.syncEffects();
     this.syncMusic();
   }
 
@@ -96,8 +107,15 @@ export class AudioManager {
     if (this.disposed) return;
     this.disposed = true;
     this.generation += 1;
+    this.output.setEffectsActive?.(false);
     this.output.stopMusic();
     this.status = "idle";
+  }
+
+  private syncEffects(): void {
+    this.output.setEffectsActive?.(
+      !this.disposed && this.unlocked && this.pageVisible && !this.adActive && this.settings.sfxVolume > 0,
+    );
   }
 
   private syncMusic(): void {
