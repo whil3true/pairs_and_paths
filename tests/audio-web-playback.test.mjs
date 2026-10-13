@@ -33,4 +33,6 @@ test("pagehide, blur and hidden document suspend both playback channels", async 
   assert.match(manager, /this\.output\.pauseMusic\(\)/);
   const output = await read("HtmlAudioOutput.ts");
   assert.match(output, /context\.suspend\(\)/);
+  assert.match(output, /player\.removeAttribute\("src"\)/);
+  assert.match(output, /navigator\.mediaSession\.playbackState = "none"/);
 });
