@@ -162,7 +162,10 @@ export class HtmlAudioOutput implements AudioOutput {
   }
 
   resumeMusic(): void {
-    if (!this.music || this.musicPlayPending) return;
+    if (!this.music) return;
+    // A pending play() does NOT mean audio is actually playing. On Android it
+    // can still be waiting for media data or user activation. A second play()
+    // on pointerup of the SAME tap is allowed while the element stays paused.
     if (!this.music.paused && !this.musicNeedsRetry) return;
     this.tryPlayMusic(this.music);
   }
@@ -180,7 +183,7 @@ export class HtmlAudioOutput implements AudioOutput {
   }
 
   private tryPlayMusic(player: HTMLAudioElement): void {
-    if (this.music !== player || this.musicPlayPending) return;
+    if (this.music !== player) return;
     const token = ++this.musicPlayToken;
     this.musicNeedsRetry = false;
     this.musicPlayPending = true;
