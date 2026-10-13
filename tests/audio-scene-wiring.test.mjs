@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { readFile } from "node:fs/promises";
+import { open, stat } from "node:fs/promises";
 import { AUDIO_EFFECTS, AUDIO_MUSIC } from "../.test-dist/audio/AudioAssetManifest.js";
 
 const read = (relativePath) => readFile(new URL(relativePath, import.meta.url), "utf8");
@@ -41,4 +42,28 @@ test("browser unlock precedes Phaser canvas's first tile tap", async () => {
   const source = await read("../src/audio/BrowserAudioLifecycle.ts");
   assert.match(source, /addEventListener\("pointerdown", unlock, \{ passive: true, capture: true \}\)/);
   assert.match(source, /removeEventListener\("pointerdown", unlock, true\)/);
+});
+
+test("every approved audio manifest file is present in public with valid nonempty media", async () => {
+  const paths = [...Object.values(AUDIO_EFFECTS), ...AUDIO_MUSIC.map((track) => track.path)];
+  assert.equal(paths.length, 8);
+  assert.equal(new Set(paths).size, paths.length);
+  for (const path of paths) {
+    assert.match(path, /^assets\/audio\/[\w.-]+\.(ogg|mp3)$/);
+    const url = new URL(`../public/${path}`, import.meta.url);
+    const metadata = await stat(url);
+    assert.ok(metadata.isFile(), `${path}: expected a file`);
+    assert.ok(metadata.size > 100, `${path}: missing or empty sound data`);
+    const handle = await open(url, "r");
+    try {
+      const header = Buffer.alloc(4);
+      const { bytesRead } = await handle.read(header, 0, header.length, 0);
+      assert.equal(bytesRead, 4, `${path}: missing media header`);
+      if (path.endsWith(".ogg")) assert.equal(header.toString("ascii"), "OggS", `${path}: invalid Ogg container`);
+      else assert.ok(header.toString("ascii", 0, 3) === "ID3" || (header[0] === 0xff && (header[1] & 0xe0) === 0xe0),
+        `${path}: invalid MP3 header`);
+    } finally {
+      await handle.close();
+    }
+  }
 });
