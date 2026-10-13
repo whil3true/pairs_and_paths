@@ -63,6 +63,12 @@ export class AudioManager {
     this.syncMusic();
   }
 
+  /** Retry browser-rejected media.play() synchronously on a fresh trusted gesture. */
+  retryPlaybackFromGesture(): void {
+    if (this.disposed || !this.unlocked || !this.pageVisible || this.adActive || this.settings.musicVolume === 0) return;
+    if (this.status === "playing") this.output.resumeMusic();
+  }
+
   setPageVisible(visible: boolean): void {
     if (this.disposed) return;
     this.pageVisible = visible;
