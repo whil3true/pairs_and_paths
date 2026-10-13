@@ -13,9 +13,11 @@ test("game bootstrap owns exactly one scene-independent audio manager", async ()
   assert.match(source, /attachBrowserAudioLifecycle\(audioManager\)/);
 });
 
-test("UI activation plays a single shared click only when a button is released while armed", async () => {
+test("UI clicks respond on pointerdown while button actions stay release-confirmed", async () => {
   const source = await read("../src/game/UiPrimitives.ts");
-  assert.match(source, /if \(disabled \|\| !armed\) return;[\s\S]*?playAudioEffect\("uiClick"\);[\s\S]*?options\.onActivate\(\)/);
+  assert.match(source, /container\.on\("pointerdown",[\s\S]*?playAudioEffect\("uiClick"\)/);
+  assert.match(source, /container\.on\("pointerup",[\s\S]*?if \(disabled \|\| !armed\) return;[\s\S]*?options\.onActivate\(\)/);
+  assert.equal((source.match(/playAudioEffect\("uiClick"\)/g) ?? []).length, 1);
 });
 
 test("gameplay attaches the sound-plan to semantic moves without doubled second-tap sound", async () => {
@@ -41,6 +43,7 @@ test("asset mapping follows supplied filenames without invented hint or artwork 
 test("browser unlock precedes Phaser canvas's first tile tap", async () => {
   const source = await read("../src/audio/BrowserAudioLifecycle.ts");
   assert.match(source, /addEventListener\("pointerdown", unlock, \{ passive: true, capture: true \}\)/);
+  assert.match(source, /manager\.retryPlaybackFromGesture\(\)/);
   assert.match(source, /removeEventListener\("pointerdown", unlock, true\)/);
 });
 
