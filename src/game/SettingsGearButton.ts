@@ -22,7 +22,8 @@ export const createSettingsGearButton = (
   const image = scene.textures.exists(SETTINGS_GEAR_TEXTURE_KEY)
     ? scene.add.image(0, 0, SETTINGS_GEAR_TEXTURE_KEY)
       .setDisplaySize(options.iconSize, options.iconSize)
-      .setTintFill(VISUAL_COLORS.surface.elevated.phaser)
+      .setTint(VISUAL_COLORS.surface.elevated.phaser)
+      .setTintMode(Phaser.TintModes.FILL)
     : createUiText(scene, renderScale, 0, 0, "⚙", "sectionHeading", {
       align: "center", color: VISUAL_COLORS.surface.elevated.hex,
     }).setOrigin(0.5);
