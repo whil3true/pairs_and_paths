@@ -77,7 +77,8 @@ test("Phase 4 localization dictionaries have equivalent complete shapes", () => 
     "galleryChapterProgress", "levelLabel", "gallerySoon", "galleryLoading", "galleryUnavailable", "back",
     "artworkLoading", "artworkUnavailable",
     "rewardHeading", "rewardContinue", "levelComplete", "campaignComplete", "nextLevel", "restartFromLevelOne",
-    "replayLevel", "menu", "audioSettings", "audioMusic", "audioEffects", "audioClose",
+    "replayLevel", "menu", "audioSettings", "settingsTitle", "settingsLanguage",
+    "audioMusic", "audioEffects", "audioClose",
     "pauseTitle", "pauseResume", "pauseRestart", "pauseExit",
     "restartConfirmTitle", "restartConfirmBody", "restartConfirmAction", "exitConfirmTitle",
     "exitConfirmBody", "exitConfirmAction", "cancel", "chapterTitles"];
