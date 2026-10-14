@@ -6,6 +6,7 @@ import { CHAPTER_BANNER_ASSETS } from "./ChapterBannerAssets.js";
 import { CHAPTER_COUNT, TOTAL_LEVELS } from "./LevelSequence.js";
 import { configureLogicalCamera } from "./Display.js";
 import { DEFAULT_LOCALE, getChapterTitle, getUiStrings, type SupportedLocale } from "./Localization.js";
+import { getActiveUiLocale } from "./UiLocaleRuntime.js";
 import {
   canNavigateChapter, getLevelCardBounds, getLevelCardGeometry, LEVEL_SELECT_LAYOUT, resolveLevelCardVisual,
 } from "./LevelSelectVisualPolicy.js";
@@ -21,10 +22,12 @@ export class LevelSelectScene extends Phaser.Scene {
   constructor(
     private readonly progressStore: ProgressStore,
     private readonly renderScale = 1,
-    private readonly locale: SupportedLocale = DEFAULT_LOCALE,
+    private readonly initialLocale: SupportedLocale = DEFAULT_LOCALE,
   ) {
     super({ key: "LevelSelectScene" });
   }
+
+  private get locale(): SupportedLocale { return getActiveUiLocale(this.initialLocale); }
 
   preload(): void {
     for (const asset of CHAPTER_BANNER_ASSETS) {
