@@ -20,6 +20,10 @@ test("Main Menu sound access uses the same volume store without moving existing 
   assert.match(menu, /MAIN_MENU_LAYOUT\.audioSettingsButton/);
   assert.match(menu, /createSettingsGearButton\(this/);
   assert.match(menu, /SETTINGS_GEAR_PNG_PATH/);
+  const gear = await source("game/SettingsGearButton.ts");
+  assert.match(gear, /setTintFill\(VISUAL_COLORS\.surface\.elevated\.phaser\)/);
+  assert.match(gear, /fillStyle\(VISUAL_COLORS\.accent\.coral\.phaser/);
+  assert.match(gear, /settings-gear\.png/);
   assert.match(menu, /private selectLocale\(next: SupportedLocale\)/);
   assert.match(menu, /localeStore\.save\(next\)/);
   assert.match(menu, /private openAudioSettings\(\)/);
