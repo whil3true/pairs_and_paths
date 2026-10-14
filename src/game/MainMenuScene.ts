@@ -10,6 +10,7 @@ import { getChapterBannerAsset } from "./ChapterBannerAssets.js";
 import { getChapterNumber, TOTAL_LEVELS } from "./LevelSequence.js";
 import { configureLogicalCamera } from "./Display.js";
 import { DEFAULT_LOCALE, getChapterTitle, getUiStrings, type SupportedLocale } from "./Localization.js";
+import { getActiveUiLocale } from "./UiLocaleRuntime.js";
 import { formatPrimaryMenuAction, getMainMenuBrandLayout, MAIN_MENU_LAYOUT, progressRatio } from "./MainMenuVisualPolicy.js";
 import { playStartData } from "./SceneStart.js";
 import { createCard, createModalShell, createPrimaryButton, createSecondaryButton, createUiText } from "./UiPrimitives.js";
@@ -21,11 +22,13 @@ export class MainMenuScene extends Phaser.Scene {
   constructor(
     private readonly progressStore: ProgressStore,
     private readonly renderScale = 1,
-    private readonly locale: SupportedLocale = DEFAULT_LOCALE,
+    private readonly initialLocale: SupportedLocale = DEFAULT_LOCALE,
     private readonly localeStore: WebLocaleStore = new WebLocaleStore(),
   ) {
     super({ key: "MainMenuScene" });
   }
+
+  private get locale(): SupportedLocale { return getActiveUiLocale(this.initialLocale); }
 
   preload(): void {
     const primary = getPrimaryMenuAction(this.progressStore.load());
