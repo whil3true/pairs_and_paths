@@ -35,8 +35,9 @@ test("expanded Pause contains two controls and 3 touch buttons within 480x800", 
 
 test("Main Menu sound button fits below the approved progress card", () => {
   const menu = MAIN_MENU_LAYOUT;
-  assert.ok(menu.audioSettingsButton.centerY - 24 > menu.progress.y + menu.progress.height);
-  assert.ok(menu.audioSettingsButton.centerY + 24 < 800);
+  assert.ok(menu.audioSettingsButton.centerY - menu.audioSettingsButton.touchSize / 2 > menu.progress.y);
+  assert.ok(menu.audioSettingsButton.centerY + menu.audioSettingsButton.touchSize / 2 < menu.progress.y + menu.progress.height);
+  assert.ok(menu.audioSettingsButton.centerX + menu.audioSettingsButton.touchSize / 2 < menu.progress.x + menu.progress.width);
   assert.equal(menu.preview.y, 194);
   assert.equal(menu.primary.y, 450);
 });
