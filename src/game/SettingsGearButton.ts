@@ -20,18 +20,23 @@ export const createSettingsGearButton = (
 ): Phaser.GameObjects.Container => {
   const graphics = scene.add.graphics();
   const image = scene.textures.exists(SETTINGS_GEAR_TEXTURE_KEY)
-    ? scene.add.image(0, 0, SETTINGS_GEAR_TEXTURE_KEY).setDisplaySize(options.iconSize, options.iconSize)
-    : createUiText(scene, renderScale, 0, 0, "⚙", "sectionHeading", { align: "center" }).setOrigin(0.5);
+    ? scene.add.image(0, 0, SETTINGS_GEAR_TEXTURE_KEY)
+      .setDisplaySize(options.iconSize, options.iconSize)
+      .setTintFill(VISUAL_COLORS.surface.elevated.phaser)
+    : createUiText(scene, renderScale, 0, 0, "⚙", "sectionHeading", {
+      align: "center", color: VISUAL_COLORS.surface.elevated.hex,
+    }).setOrigin(0.5);
   const touch = scene.add.zone(0, 0, options.touchSize, options.touchSize)
     .setInteractive({ useHandCursor: true });
   const button = scene.add.container(options.x, options.y, [graphics, image, touch]);
   let armed = false;
   let hovered = false;
   const render = (): void => {
-    const fill = armed ? VISUAL_COLORS.secondaryPressed.phaser
-      : hovered ? VISUAL_COLORS.gallery.soonFill.phaser
-        : VISUAL_COLORS.surface.elevated.phaser;
-    graphics.clear().fillStyle(fill, 1).fillCircle(0, 0, options.backgroundSize / 2);
+    // Muted coral disc gives the ivory-tinted PNG a visible silhouette.
+    // Preserve the same hit area and pressed feedback without altering the PNG.
+    const alpha = armed ? 0.82 : hovered ? 0.92 : 1;
+    graphics.clear().fillStyle(VISUAL_COLORS.accent.coral.phaser, alpha)
+      .fillCircle(0, 0, options.backgroundSize / 2);
     image.setY(armed ? 1 : 0);
   };
   touch.on("pointerover", () => { hovered = true; render(); });
