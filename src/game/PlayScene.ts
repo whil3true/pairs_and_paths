@@ -1,4 +1,6 @@
 import { playAudioEffect } from "../audio/AudioRuntime.js";
+import { getAudioSettings, setMusicVolume, setSfxVolume } from "../audio/AudioRuntime.js";
+import { createAudioVolumeSlider } from "./AudioVolumeSlider.js";
 import { applyMove, findPath, type Board, type GridPoint, type LegalMove } from "../domain/index.js";
 import type { PlatformService } from "../platform/PlatformService.js";
 import { resetPageDim, setPageDim } from "../platform/PageBackdrop.js";
@@ -835,13 +837,32 @@ export class PlayScene extends Phaser.Scene {
     animateEntry = false,
   ): void {
     if (this.pauseClosing) return;
+    const ordinaryPause = message === undefined;
+    const bounds = ordinaryPause ? PAUSE_LAYOUT.audioPanel : PAUSE_LAYOUT.panel;
     const shell = createModalShell(this, {
-      x: PAUSE_LAYOUT.panel.centerX, y: PAUSE_LAYOUT.panel.centerY,
-      width: PAUSE_LAYOUT.panel.width, height: PAUSE_LAYOUT.panel.height, borderRole: "soft",
+      x: bounds.centerX, y: bounds.centerY,
+      width: bounds.width, height: bounds.height, borderRole: "soft",
     });
     const title = createUiText(this, this.renderScale, PAUSE_LAYOUT.title.centerX,
-      PAUSE_LAYOUT.title.centerY, titleCopy, "sectionHeading", { align: "center" }).setOrigin(0.5);
+      ordinaryPause ? PAUSE_LAYOUT.audioTitleY : PAUSE_LAYOUT.title.centerY,
+      titleCopy, "sectionHeading", { align: "center" }).setOrigin(0.5);
     const contentObjects: Phaser.GameObjects.GameObject[] = [title];
+    if (ordinaryPause) {
+      const strings = getUiStrings(this.locale);
+      const settings = getAudioSettings();
+      contentObjects.push(
+        createAudioVolumeSlider(this, this.renderScale, {
+          x: PAUSE_LAYOUT.panel.centerX, y: PAUSE_LAYOUT.audioSliderCenters[0],
+          width: 336, label: strings.audioMusic, value: settings.musicVolume,
+          onChange: setMusicVolume,
+        }),
+        createAudioVolumeSlider(this, this.renderScale, {
+          x: PAUSE_LAYOUT.panel.centerX, y: PAUSE_LAYOUT.audioSliderCenters[1],
+          width: 336, label: strings.audioEffects, value: settings.sfxVolume,
+          onChange: setSfxVolume,
+        }),
+      );
+    }
     if (message !== undefined) {
       contentObjects.push(createUiText(this, this.renderScale, PAUSE_LAYOUT.body.centerX,
         PAUSE_LAYOUT.body.centerY, message, "body", {
@@ -849,8 +870,8 @@ export class PlayScene extends Phaser.Scene {
         }).setOrigin(0.5));
     }
     actions.forEach(({ label, kind, action }, index) => {
-      const y = message === undefined
-        ? PAUSE_LAYOUT.pauseButtonCenters[index]!
+      const y = ordinaryPause
+        ? PAUSE_LAYOUT.audioButtonCenters[index]!
         : index === 0 ? PAUSE_LAYOUT.confirmationButtonCenters.safe : PAUSE_LAYOUT.confirmationButtonCenters.danger;
       const factory = kind === "primary" ? createPrimaryButton
         : kind === "danger" ? createDangerButton : createSecondaryButton;
