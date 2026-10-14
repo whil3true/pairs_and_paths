@@ -236,8 +236,15 @@ test("Main Menu brand PNG uses contain geometry and keeps aspect ratio", () => {
     assert.ok(result.y + result.height <= region.y + region.height + 1e-9);
     assert.ok(Math.abs(result.width / result.height - width / height) < 1e-9);
   }
-  assert.deepEqual(computeMainMenuBrandPlacement(1296, 428, region),
-    { x: 24, y: 64 + (120 - 432 * 428 / 1296) / 2, width: 432, height: 432 * 428 / 1296 });
+  // Test the actual production PNG dimensions, not obsolete concept art.
+  // Both 1296px-wide logos fit at full intended 432px width in the new strip.
+  for (const imageHeight of [342, 327]) {
+    const displayedHeight = 432 * imageHeight / 1296;
+    assert.deepEqual(computeMainMenuBrandPlacement(1296, imageHeight, region), {
+      x: 24, y: region.y + (region.height - displayedHeight) / 2,
+      width: 432, height: displayedHeight,
+    });
+  }
   for (const [w, h] of [[0, 100], [-1, 50], [100, 0], [Infinity, 20], [20, NaN]]) {
     assert.throws(() => computeMainMenuBrandPlacement(w, h, region), RangeError);
   }
