@@ -10,11 +10,14 @@ export const MAIN_MENU_LAYOUT = Object.freeze({
   secondaryLeft: Object.freeze({ x: 24, y: 530, width: 208, height: 56 }),
   secondaryRight: Object.freeze({ x: 248, y: 530, width: 208, height: 56 }),
   progress: Object.freeze({ x: 24, y: 610, width: 432, height: 104 }),
-  // Below the progress card without moving approved brand/preview/navigation blocks.
-  audioSettingsButton: Object.freeze({ centerX: 240, centerY: 755, width: 192, height: 48 }),
+  // PNG settings icon inside progress card, leaving the screen bottom free.
+  audioSettingsButton: Object.freeze({
+    centerX: 417, centerY: 644, touchSize: 56, backgroundSize: 48, iconSize: 34,
+  }),
   audioSettingsModal: Object.freeze({
-    centerX: 240, centerY: 400, width: 416, height: 380,
-    titleY: 264, sliderCenters: [349, 435] as const, closeY: 522,
+    centerX: 240, centerY: 400, width: 416, height: 500,
+    titleY: 205, sliderCenters: [292, 378] as const,
+    languageLabelY: 443, languageButtonsY: 496, closeY: 582,
   }),
 });
 
