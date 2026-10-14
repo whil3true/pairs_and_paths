@@ -4,7 +4,7 @@ import type { SupportedLocale } from "./Localization.js";
 import type { TypographyRole } from "./VisualTokens.js";
 
 export const MAIN_MENU_LAYOUT = Object.freeze({
-  logo: Object.freeze({ x: 24, y: 12, width: 432, height: 152 }),
+  logo: Object.freeze({ x: 24, y: 64, width: 432, height: 120 }),
   preview: Object.freeze({ x: 24, y: 194, width: 432, height: 232 }),
   primary: Object.freeze({ x: 24, y: 450, width: 432, height: 64 }),
   secondaryLeft: Object.freeze({ x: 24, y: 530, width: 208, height: 56 }),
@@ -31,7 +31,7 @@ export interface MainMenuBrandLayout {
 
 /** Localized text fallback for the production RU/EN PNG logos. */
 export const getMainMenuBrandLayout = (_locale: SupportedLocale): MainMenuBrandLayout => Object.freeze({
-  titleTop: 75,
+  titleTop: 92,
   titleRole: "displayBrand",
   titleLineHeight: 44,
   titleTracking: -0.4,
