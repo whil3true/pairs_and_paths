@@ -1,3 +1,4 @@
+import { DEFAULT_AUDIO_SETTINGS, type AudioSettings } from "./AudioSettings.js";
 import type { AudioEffect } from "./AudioAssetManifest.js";
 import type { AudioManager } from "./AudioManager.js";
 
@@ -12,3 +13,10 @@ export const configureAudioRuntime = (manager: AudioManager): void => {
 export const playAudioEffect = (effect: AudioEffect): void => {
   activeManager?.playEffect(effect);
 };
+
+/** Shared across all scenes; the manager retains changes if browser storage is blocked. */
+export const getAudioSettings = (): AudioSettings =>
+  activeManager?.getSettings() ?? DEFAULT_AUDIO_SETTINGS;
+
+export const setMusicVolume = (value: number): void => { activeManager?.setMusicVolume(value); };
+export const setSfxVolume = (value: number): void => { activeManager?.setSfxVolume(value); };

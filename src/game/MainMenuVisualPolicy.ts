@@ -10,6 +10,12 @@ export const MAIN_MENU_LAYOUT = Object.freeze({
   secondaryLeft: Object.freeze({ x: 24, y: 530, width: 208, height: 56 }),
   secondaryRight: Object.freeze({ x: 248, y: 530, width: 208, height: 56 }),
   progress: Object.freeze({ x: 24, y: 610, width: 432, height: 104 }),
+  // Below the progress card without moving approved brand/preview/navigation blocks.
+  audioSettingsButton: Object.freeze({ centerX: 240, centerY: 755, width: 192, height: 48 }),
+  audioSettingsModal: Object.freeze({
+    centerX: 240, centerY: 400, width: 416, height: 380,
+    titleY: 264, sliderCenters: [349, 435] as const, closeY: 522,
+  }),
 });
 
 export interface MainMenuBrandLayout {

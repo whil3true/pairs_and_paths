@@ -1,4 +1,6 @@
+import { getAudioSettings, setMusicVolume, setSfxVolume } from "../audio/AudioRuntime.js";
 import type { ProgressStore } from "../progress/ProgressStore.js";
+import { createAudioVolumeSlider } from "./AudioVolumeSlider.js";
 import { getPrimaryMenuAction } from "./CampaignNavigation.js";
 import { createChapterBanner } from "./ChapterBannerVisual.js";
 import { computeMainMenuBrandPlacement, getMainMenuBrandAsset } from "./MainMenuBrandAssets.js";
@@ -8,10 +10,12 @@ import { configureLogicalCamera } from "./Display.js";
 import { DEFAULT_LOCALE, getChapterTitle, getUiStrings, type SupportedLocale } from "./Localization.js";
 import { formatPrimaryMenuAction, getMainMenuBrandLayout, MAIN_MENU_LAYOUT, progressRatio } from "./MainMenuVisualPolicy.js";
 import { playStartData } from "./SceneStart.js";
-import { createCard, createPrimaryButton, createSecondaryButton, createUiText } from "./UiPrimitives.js";
+import { createCard, createModalShell, createPrimaryButton, createSecondaryButton, createUiText } from "./UiPrimitives.js";
 import { BORDERS, COMPONENT_RADII, VISUAL_COLORS } from "./VisualTokens.js";
 
 export class MainMenuScene extends Phaser.Scene {
+  private audioSettingsOverlay: Phaser.GameObjects.Container | null = null;
+
   constructor(
     private readonly progressStore: ProgressStore,
     private readonly renderScale = 1,
@@ -95,5 +99,50 @@ export class MainMenuScene extends Phaser.Scene {
         .beginPath().moveTo(card.x + card.width - 33, card.y + 31)
         .lineTo(card.x + card.width - 29, card.y + 35).lineTo(card.x + card.width - 22, card.y + 27).strokePath();
     }
+
+    const audioButton = MAIN_MENU_LAYOUT.audioSettingsButton;
+    createSecondaryButton(this, this.renderScale, {
+      x: audioButton.centerX, y: audioButton.centerY,
+      width: audioButton.width, height: audioButton.height,
+      label: strings.audioSettings, borderless: true,
+      onActivate: () => this.openAudioSettings(),
+    });
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.audioSettingsOverlay?.destroy(true);
+      this.audioSettingsOverlay = null;
+    });
+  }
+
+  private openAudioSettings(): void {
+    if (this.audioSettingsOverlay !== null) return;
+    const layout = MAIN_MENU_LAYOUT.audioSettingsModal;
+    const strings = getUiStrings(this.locale);
+    const settings = getAudioSettings();
+    const shell = createModalShell(this, {
+      x: layout.centerX, y: layout.centerY, width: layout.width, height: layout.height,
+    });
+    const title = createUiText(this, this.renderScale, layout.centerX, layout.titleY,
+      strings.audioSettings, "sectionHeading", { align: "center" }).setOrigin(0.5);
+    const sliders = [
+      createAudioVolumeSlider(this, this.renderScale, {
+        x: layout.centerX, y: layout.sliderCenters[0], width: 336,
+        label: strings.audioMusic, value: settings.musicVolume, onChange: setMusicVolume,
+      }),
+      createAudioVolumeSlider(this, this.renderScale, {
+        x: layout.centerX, y: layout.sliderCenters[1], width: 336,
+        label: strings.audioEffects, value: settings.sfxVolume, onChange: setSfxVolume,
+      }),
+    ];
+    const close = createPrimaryButton(this, this.renderScale, {
+      x: layout.centerX, y: layout.closeY, width: 336, height: 52,
+      label: strings.audioClose,
+      onActivate: () => {
+        this.audioSettingsOverlay?.destroy(true);
+        this.audioSettingsOverlay = null;
+      },
+    });
+    this.audioSettingsOverlay = this.add.container(0, 0, [
+      shell, title, ...sliders, close.container,
+    ]).setDepth(50);
   }
 }
