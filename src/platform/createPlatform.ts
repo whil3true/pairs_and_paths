@@ -55,13 +55,26 @@ export const loadYandexSdk = async (
     throw new YandexSdkUnavailableError("Yandex SDK script loaded without YaGames");
   }
   // Distinguish a genuine SDK initialization failure from an absent SDK script.
-  return await Promise.race([
-    global.YaGames.init(),
-    new Promise<never>((_resolve, reject) => {
-      // This timer is unref'd only in Node test environment; browser handles it.
-      setTimeout(() => reject(new Error("Yandex SDK initialization timed out")), SDK_INIT_TIMEOUT_MS);
-    }),
-  ]);
+  return await new Promise<YandexSdk>((resolve, reject) => {
+    let finished = false;
+    const done = (result: { sdk?: YandexSdk; error?: unknown }): void => {
+      if (finished) return;
+      finished = true;
+      clearTimeout(timer);
+      if (result.sdk) resolve(result.sdk);
+      else reject(result.error ?? new Error("Yandex SDK initialization returned no instance"));
+    };
+    const timer = setTimeout(
+      () => done({ error: new Error("Yandex SDK initialization timed out") }),
+      SDK_INIT_TIMEOUT_MS,
+    );
+    try {
+      void global.YaGames!.init().then(
+        (sdk) => done({ sdk }),
+        (error: unknown) => done({ error }),
+      );
+    } catch (error) { done({ error }); }
+  });
 };
 
 export interface CreatePlatformOptions {
