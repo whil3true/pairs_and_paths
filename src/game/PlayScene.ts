@@ -720,7 +720,7 @@ export class PlayScene extends Phaser.Scene {
     const continueButton = createPrimaryButton(this, this.renderScale, {
       x: REWARD_LAYOUT.continueButton.centerX, y: REWARD_LAYOUT.continueButton.centerY,
       width: REWARD_LAYOUT.continueButton.width, height: REWARD_LAYOUT.continueButton.height,
-      label: strings.rewardContinue, onActivate: () => {
+      label: strings.rewardContinue, tone: "rewardLight", onActivate: () => {
         this.cleanupRewardPresentation(false);
         this.showComplete();
       },
