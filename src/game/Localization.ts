@@ -44,6 +44,10 @@ export interface UiStrings {
   readonly restartFromLevelOne: string;
   readonly replayLevel: string;
   readonly menu: string;
+  readonly audioSettings: string;
+  readonly audioMusic: string;
+  readonly audioEffects: string;
+  readonly audioClose: string;
   readonly pauseTitle: string;
   readonly pauseResume: string;
   readonly pauseRestart: string;
@@ -94,6 +98,10 @@ const ru = Object.freeze<UiStrings>({
     restartFromLevelOne: "Начать с уровня 1",
     replayLevel: "Переиграть уровень",
     menu: "Меню",
+    audioSettings: "Звук",
+    audioMusic: "Музыка",
+    audioEffects: "Эффекты",
+    audioClose: "Закрыть",
     pauseTitle: "Пауза",
     pauseResume: "Продолжить",
     pauseRestart: "Начать уровень заново",
@@ -146,6 +154,10 @@ const en = Object.freeze<UiStrings>({
     restartFromLevelOne: "Restart from Level 1",
     replayLevel: "Replay level",
     menu: "Menu",
+    audioSettings: "Sound",
+    audioMusic: "Music",
+    audioEffects: "Effects",
+    audioClose: "Close",
     pauseTitle: "Paused",
     pauseResume: "Resume",
     pauseRestart: "Restart level",
