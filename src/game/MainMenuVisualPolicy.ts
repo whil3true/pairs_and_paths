@@ -10,9 +10,10 @@ export const MAIN_MENU_LAYOUT = Object.freeze({
   secondaryLeft: Object.freeze({ x: 24, y: 530, width: 208, height: 56 }),
   secondaryRight: Object.freeze({ x: 248, y: 530, width: 208, height: 56 }),
   progress: Object.freeze({ x: 24, y: 610, width: 432, height: 104 }),
-  // PNG settings icon inside progress card, leaving the screen bottom free.
+  // The PNG gear belongs to global settings, not the campaign progress card.
+  // Top-right header position leaves the approved logo/preview and bottom ad-safe area intact.
   audioSettingsButton: Object.freeze({
-    centerX: 417, centerY: 644, touchSize: 56, backgroundSize: 48, iconSize: 34,
+    centerX: 432, centerY: 44, touchSize: 56, backgroundSize: 48, iconSize: 34,
   }),
   audioSettingsModal: Object.freeze({
     centerX: 240, centerY: 400, width: 416, height: 500,
