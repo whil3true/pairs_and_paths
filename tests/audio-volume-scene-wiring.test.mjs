@@ -28,6 +28,9 @@ test("Main Menu sound access uses the same volume store without moving existing 
   assert.match(gear, /settings-gear\.png/);
   assert.match(menu, /private selectLocale\(next: SupportedLocale\)/);
   assert.match(menu, /localeStore\.save\(next\)/);
+  assert.match(menu, /configureUiLocale\(next\)/);
+  assert.match(menu, /this\.scene\.restart\(\)/);
+  assert.doesNotMatch(menu, /window\.location\.reload\(\)/);
   assert.match(menu, /private openAudioSettings\(\)/);
   assert.match(menu, /const settings = getAudioSettings\(\)/);
   assert.equal((menu.match(/createAudioVolumeSlider\(this/g) ?? []).length, 2);
