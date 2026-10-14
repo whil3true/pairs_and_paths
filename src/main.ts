@@ -3,9 +3,10 @@ import { configureAudioRuntime } from "./audio/AudioRuntime.js";
 import { HtmlAudioOutput } from "./audio/HtmlAudioOutput.js";
 import { attachBrowserAudioLifecycle } from "./audio/BrowserAudioLifecycle.js";
 import { WebAudioSettingsStore } from "./platform/WebAudioSettingsStore.js";
+import { resolveStartupLocale, WebLocaleStore } from "./platform/WebLocaleStore.js";
 import { BootScene } from "./game/BootScene.js";
 import { resolveStartupRoute } from "./game/CampaignStartup.js";
-import { isProgressResetRequested, isSymbolGalleryRequested, parseDebugLocale, parseDebugSetProgress, parseDebugStart } from "./game/DebugStart.js";
+import { isProgressResetRequested, isSymbolGalleryRequested, parseDebugSetProgress, parseDebugStart } from "./game/DebugStart.js";
 import { MainMenuScene } from "./game/MainMenuScene.js";
 import { LevelSelectScene } from "./game/LevelSelectScene.js";
 import { PlayScene } from "./game/PlayScene.js";
@@ -23,6 +24,7 @@ import { VISUAL_COLORS } from "./game/VisualTokens.js";
 
 const platform = new WebPlatform();
 const progressStore = new WebProgressStore();
+const localeStore = new WebLocaleStore();
 // One audio service for the entire game. Scene navigation must not restart music.
 const audioManager = new AudioManager(new HtmlAudioOutput(), new WebAudioSettingsStore());
 configureAudioRuntime(audioManager);
@@ -44,7 +46,7 @@ const automaticRenderScale = computeRenderScale(
   window.innerHeight,
 );
 const renderScale = isLegacyRenderScaleDebugRequested(search) ? 1 : automaticRenderScale;
-const locale = parseDebugLocale(search);
+const locale = resolveStartupLocale(search, localeStore.load());
 
 document.documentElement.lang = locale;
 
@@ -56,7 +58,7 @@ const startGame = async (): Promise<void> => {
     backgroundColor: VISUAL_COLORS.bg.app.hex,
     scene: [
       new BootScene(route),
-      new MainMenuScene(progressStore, renderScale, locale),
+      new MainMenuScene(progressStore, renderScale, locale, localeStore),
       new LevelSelectScene(progressStore, renderScale, locale),
       new ArtworkGalleryScene(progressStore, renderScale, locale),
       new ArtworkFullViewScene(progressStore, renderScale, locale),
