@@ -24,7 +24,7 @@ export const attachGameReady = (game: Phaser.Game, platform: PlatformService): (
     platform.ready();
   };
   game.events.on(Phaser.Core.Events.POST_RENDER, onPostRender);
-  const detach = (): void => game.events.off(Phaser.Core.Events.POST_RENDER, onPostRender);
+  const detach = (): void => { game.events.off(Phaser.Core.Events.POST_RENDER, onPostRender); };
   game.events.once(Phaser.Core.Events.DESTROY, detach);
   return detach;
 };
