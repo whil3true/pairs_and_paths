@@ -77,7 +77,8 @@ test("Phase 4 localization dictionaries have equivalent complete shapes", () => 
     "galleryChapterProgress", "levelLabel", "gallerySoon", "galleryLoading", "galleryUnavailable", "back",
     "artworkLoading", "artworkUnavailable",
     "rewardHeading", "rewardContinue", "levelComplete", "campaignComplete", "nextLevel", "restartFromLevelOne",
-    "replayLevel", "menu", "pauseTitle", "pauseResume", "pauseRestart", "pauseExit",
+    "replayLevel", "menu", "audioSettings", "audioMusic", "audioEffects", "audioClose",
+    "pauseTitle", "pauseResume", "pauseRestart", "pauseExit",
     "restartConfirmTitle", "restartConfirmBody", "restartConfirmAction", "exitConfirmTitle",
     "exitConfirmBody", "exitConfirmAction", "cancel", "chapterTitles"];
   assert.deepEqual(Object.keys(UI_STRINGS.ru).sort(), required.sort());
