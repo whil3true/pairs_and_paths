@@ -1,6 +1,8 @@
 import { getAudioSettings, setMusicVolume, setSfxVolume } from "../audio/AudioRuntime.js";
 import type { ProgressStore } from "../progress/ProgressStore.js";
 import { createAudioVolumeSlider } from "./AudioVolumeSlider.js";
+import { createSettingsGearButton, SETTINGS_GEAR_PNG_PATH, SETTINGS_GEAR_TEXTURE_KEY } from "./SettingsGearButton.js";
+import { WebLocaleStore } from "../platform/WebLocaleStore.js";
 import { getPrimaryMenuAction } from "./CampaignNavigation.js";
 import { createChapterBanner } from "./ChapterBannerVisual.js";
 import { computeMainMenuBrandPlacement, getMainMenuBrandAsset } from "./MainMenuBrandAssets.js";
@@ -20,6 +22,7 @@ export class MainMenuScene extends Phaser.Scene {
     private readonly progressStore: ProgressStore,
     private readonly renderScale = 1,
     private readonly locale: SupportedLocale = DEFAULT_LOCALE,
+    private readonly localeStore: WebLocaleStore = new WebLocaleStore(),
   ) {
     super({ key: "MainMenuScene" });
   }
@@ -30,6 +33,9 @@ export class MainMenuScene extends Phaser.Scene {
     if (!this.textures.exists(asset.assetKey)) this.load.image(asset.assetKey, asset.path);
     const logo = getMainMenuBrandAsset(this.locale);
     if (!this.textures.exists(logo.assetKey)) this.load.image(logo.assetKey, logo.path);
+    if (!this.textures.exists(SETTINGS_GEAR_TEXTURE_KEY)) {
+      this.load.image(SETTINGS_GEAR_TEXTURE_KEY, SETTINGS_GEAR_PNG_PATH);
+    }
   }
 
   create(): void {
@@ -100,11 +106,12 @@ export class MainMenuScene extends Phaser.Scene {
         .lineTo(card.x + card.width - 29, card.y + 35).lineTo(card.x + card.width - 22, card.y + 27).strokePath();
     }
 
-    const audioButton = MAIN_MENU_LAYOUT.audioSettingsButton;
-    createSecondaryButton(this, this.renderScale, {
-      x: audioButton.centerX, y: audioButton.centerY,
-      width: audioButton.width, height: audioButton.height,
-      label: strings.audioSettings, borderless: true,
+    createSettingsGearButton(this, this.renderScale, {
+      x: MAIN_MENU_LAYOUT.audioSettingsButton.centerX,
+      y: MAIN_MENU_LAYOUT.audioSettingsButton.centerY,
+      touchSize: MAIN_MENU_LAYOUT.audioSettingsButton.touchSize,
+      backgroundSize: MAIN_MENU_LAYOUT.audioSettingsButton.backgroundSize,
+      iconSize: MAIN_MENU_LAYOUT.audioSettingsButton.iconSize,
       onActivate: () => this.openAudioSettings(),
     });
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
@@ -122,7 +129,7 @@ export class MainMenuScene extends Phaser.Scene {
       x: layout.centerX, y: layout.centerY, width: layout.width, height: layout.height,
     });
     const title = createUiText(this, this.renderScale, layout.centerX, layout.titleY,
-      strings.audioSettings, "sectionHeading", { align: "center" }).setOrigin(0.5);
+      strings.settingsTitle, "sectionHeading", { align: "center" }).setOrigin(0.5);
     const sliders = [
       createAudioVolumeSlider(this, this.renderScale, {
         x: layout.centerX, y: layout.sliderCenters[0], width: 336,
@@ -133,6 +140,21 @@ export class MainMenuScene extends Phaser.Scene {
         label: strings.audioEffects, value: settings.sfxVolume, onChange: setSfxVolume,
       }),
     ];
+    const languageLabel = createUiText(this, this.renderScale,
+      layout.centerX - 160, layout.languageLabelY,
+      strings.settingsLanguage, "caption").setOrigin(0, 0.5);
+    const languageButtons = ([
+      { locale: "ru", label: "Русский", centerX: layout.centerX - 86 },
+      { locale: "en", label: "English", centerX: layout.centerX + 86 },
+    ] as const).map(({ locale, label, centerX }) => {
+      const button = (locale === this.locale ? createPrimaryButton : createSecondaryButton)(
+        this, this.renderScale, {
+          x: centerX, y: layout.languageButtonsY, width: 160, height: 52, label,
+          onActivate: () => this.selectLocale(locale),
+        },
+      );
+      return button.container;
+    });
     const close = createPrimaryButton(this, this.renderScale, {
       x: layout.centerX, y: layout.closeY, width: 336, height: 52,
       label: strings.audioClose,
@@ -142,7 +164,22 @@ export class MainMenuScene extends Phaser.Scene {
       },
     });
     this.audioSettingsOverlay = this.add.container(0, 0, [
-      shell, title, ...sliders, close.container,
+      shell, title, ...sliders, languageLabel, ...languageButtons, close.container,
     ]).setDepth(50);
+  }
+
+  private selectLocale(next: SupportedLocale): void {
+    if (next === this.locale) return;
+    // Re-create all scenes through the regular bootstrap so no screen retains
+    // stale constructor-injected strings, without touching progress/audio keys.
+    if (!this.localeStore.save(next)) return;
+    const url = new URL(window.location.href);
+    // Developer QA URLs must not override a newly selected language forever.
+    if (url.searchParams.get("debug") === "1" && url.searchParams.has("locale")) {
+      url.searchParams.delete("locale");
+      window.location.replace(url.toString());
+    } else {
+      window.location.reload();
+    }
   }
 }
