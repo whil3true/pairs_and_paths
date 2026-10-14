@@ -33,13 +33,19 @@ test("expanded Pause contains two controls and 3 touch buttons within 480x800", 
   assert.equal(PAUSE_LAYOUT.panel.height, 360, "confirmation panel stays unchanged");
 });
 
-test("Main Menu sound button fits below the approved progress card", () => {
+test("global settings gear sits in the top-right header, away from progress and preview", () => {
   const menu = MAIN_MENU_LAYOUT;
-  assert.ok(menu.audioSettingsButton.centerY - menu.audioSettingsButton.touchSize / 2 > menu.progress.y);
-  assert.ok(menu.audioSettingsButton.centerY + menu.audioSettingsButton.touchSize / 2 < menu.progress.y + menu.progress.height);
-  assert.ok(menu.audioSettingsButton.centerX + menu.audioSettingsButton.touchSize / 2 < menu.progress.x + menu.progress.width);
+  const gear = menu.audioSettingsButton;
+  assert.equal(gear.touchSize, 56, "generous phone touch target");
+  assert.equal(gear.iconSize, 34);
+  assert.ok(gear.centerX - gear.touchSize / 2 >= 0);
+  assert.ok(gear.centerX + gear.touchSize / 2 <= 480);
+  assert.ok(gear.centerY - gear.touchSize / 2 >= 0);
+  assert.ok(gear.centerY + gear.touchSize / 2 < menu.preview.y);
+  assert.ok(gear.centerY + gear.touchSize / 2 < menu.progress.y);
   assert.equal(menu.preview.y, 194);
   assert.equal(menu.primary.y, 450);
+  assert.equal(menu.progress.y, 610);
 });
 
 test("audio labels are localized in RU/EN", () => {
