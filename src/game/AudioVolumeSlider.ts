@@ -35,11 +35,11 @@ export const createAudioVolumeSlider = (
     const filled = trackWidth * value;
     graphics.fillStyle(VISUAL_COLORS.divider.phaser)
       .fillRoundedRect(left, 6, trackWidth, 12, 6);
-    if (filled > 0) graphics.fillStyle(VISUAL_COLORS.route.core.phaser)
+    if (filled > 0) graphics.fillStyle(VISUAL_COLORS.accent.gold.phaser)
       .fillRoundedRect(left, 6, filled, 12, Math.min(6, filled / 2));
     const thumbX = left + filled;
     graphics.fillStyle(VISUAL_COLORS.surface.elevated.phaser).fillCircle(thumbX, 12, 12);
-    graphics.lineStyle(3, VISUAL_COLORS.route.core.phaser).strokeCircle(thumbX, 12, 12);
+    graphics.lineStyle(3, VISUAL_COLORS.accent.gold.phaser).strokeCircle(thumbX, 12, 12);
     percent.setText(`${Math.round(value * 100)}%`);
   };
   const update = (pointer: Phaser.Input.Pointer): void => {

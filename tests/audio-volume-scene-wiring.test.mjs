@@ -18,6 +18,10 @@ test("Pause embeds two sliders directly and retains three original actions", asy
 test("Main Menu sound access uses the same volume store without moving existing blocks", async () => {
   const menu = await source("game/MainMenuScene.ts");
   assert.match(menu, /MAIN_MENU_LAYOUT\.audioSettingsButton/);
+  assert.match(menu, /createSettingsGearButton\(this/);
+  assert.match(menu, /SETTINGS_GEAR_PNG_PATH/);
+  assert.match(menu, /private selectLocale\(next: SupportedLocale\)/);
+  assert.match(menu, /localeStore\.save\(next\)/);
   assert.match(menu, /private openAudioSettings\(\)/);
   assert.match(menu, /const settings = getAudioSettings\(\)/);
   assert.equal((menu.match(/createAudioVolumeSlider\(this/g) ?? []).length, 2);

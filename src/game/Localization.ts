@@ -45,6 +45,8 @@ export interface UiStrings {
   readonly replayLevel: string;
   readonly menu: string;
   readonly audioSettings: string;
+  readonly settingsTitle: string;
+  readonly settingsLanguage: string;
   readonly audioMusic: string;
   readonly audioEffects: string;
   readonly audioClose: string;
@@ -99,6 +101,8 @@ const ru = Object.freeze<UiStrings>({
     replayLevel: "Переиграть уровень",
     menu: "Меню",
     audioSettings: "Звук",
+    settingsTitle: "Настройки",
+    settingsLanguage: "Язык",
     audioMusic: "Музыка",
     audioEffects: "Эффекты",
     audioClose: "Закрыть",
@@ -155,6 +159,8 @@ const en = Object.freeze<UiStrings>({
     replayLevel: "Replay level",
     menu: "Menu",
     audioSettings: "Sound",
+    settingsTitle: "Settings",
+    settingsLanguage: "Language",
     audioMusic: "Music",
     audioEffects: "Effects",
     audioClose: "Close",
