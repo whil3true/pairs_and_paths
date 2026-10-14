@@ -13,7 +13,7 @@ export const MAIN_MENU_LAYOUT = Object.freeze({
   // The PNG gear belongs to global settings, not the campaign progress card.
   // Top-right header position leaves the approved logo/preview and bottom ad-safe area intact.
   audioSettingsButton: Object.freeze({
-    centerX: 432, centerY: 44, touchSize: 56, backgroundSize: 48, iconSize: 34,
+    centerX: 432, centerY: 30, touchSize: 56, backgroundSize: 48, iconSize: 34,
   }),
   audioSettingsModal: Object.freeze({
     centerX: 240, centerY: 400, width: 416, height: 500,
