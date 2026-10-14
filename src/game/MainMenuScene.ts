@@ -194,4 +194,5 @@ export class MainMenuScene extends Phaser.Scene {
     } finally {
       this.changingLanguage = false;
     }
-  }}
+  }
+}
