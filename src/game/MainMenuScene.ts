@@ -10,22 +10,28 @@ import { getChapterBannerAsset } from "./ChapterBannerAssets.js";
 import { getChapterNumber, TOTAL_LEVELS } from "./LevelSequence.js";
 import { configureLogicalCamera } from "./Display.js";
 import { DEFAULT_LOCALE, getChapterTitle, getUiStrings, type SupportedLocale } from "./Localization.js";
+import { getActiveUiLocale } from "./UiLocaleRuntime.js";
 import { formatPrimaryMenuAction, getMainMenuBrandLayout, MAIN_MENU_LAYOUT, progressRatio } from "./MainMenuVisualPolicy.js";
 import { playStartData } from "./SceneStart.js";
+import { configureUiLocale } from "./UiLocaleRuntime.js";
+import { loadProductionFonts } from "./TypographyAssets.js";
 import { createCard, createModalShell, createPrimaryButton, createSecondaryButton, createUiText } from "./UiPrimitives.js";
 import { BORDERS, COMPONENT_RADII, VISUAL_COLORS } from "./VisualTokens.js";
 
 export class MainMenuScene extends Phaser.Scene {
   private audioSettingsOverlay: Phaser.GameObjects.Container | null = null;
+  private changingLanguage = false;
 
   constructor(
     private readonly progressStore: ProgressStore,
     private readonly renderScale = 1,
-    private readonly locale: SupportedLocale = DEFAULT_LOCALE,
+    private readonly initialLocale: SupportedLocale = DEFAULT_LOCALE,
     private readonly localeStore: WebLocaleStore = new WebLocaleStore(),
   ) {
     super({ key: "MainMenuScene" });
   }
+
+  private get locale(): SupportedLocale { return getActiveUiLocale(this.initialLocale); }
 
   preload(): void {
     const primary = getPrimaryMenuAction(this.progressStore.load());
@@ -168,18 +174,25 @@ export class MainMenuScene extends Phaser.Scene {
     ]).setDepth(50);
   }
 
-  private selectLocale(next: SupportedLocale): void {
-    if (next === this.locale) return;
-    // Re-create all scenes through the regular bootstrap so no screen retains
-    // stale constructor-injected strings, without touching progress/audio keys.
-    if (!this.localeStore.save(next)) return;
-    const url = new URL(window.location.href);
-    // Developer QA URLs must not override a newly selected language forever.
-    if (url.searchParams.get("debug") === "1" && url.searchParams.has("locale")) {
-      url.searchParams.delete("locale");
-      window.location.replace(url.toString());
-    } else {
-      window.location.reload();
+  private async selectLocale(next: SupportedLocale): Promise<void> {
+    if (next === this.locale || this.changingLanguage) return;
+    this.changingLanguage = true;
+    try {
+      await loadProductionFonts(next);
+      if (!this.sys.isActive() || !this.localeStore.save(next)) return;
+      configureUiLocale(next);
+      document.documentElement.lang = next;
+      // Remove the debug override without navigating the browser.
+      const url = new URL(window.location.href);
+      if (url.searchParams.get("debug") === "1" && url.searchParams.has("locale")) {
+        url.searchParams.delete("locale");
+        try { window.history.replaceState(null, "", url.toString()); } catch { /* restricted browser */ }
+      }
+      this.audioSettingsOverlay?.destroy(true);
+      this.audioSettingsOverlay = null;
+      this.scene.restart();
+    } finally {
+      this.changingLanguage = false;
     }
   }
 }

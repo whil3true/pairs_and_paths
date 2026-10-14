@@ -192,7 +192,7 @@ test("localized chapter names are exact and numbered one through ten", () => {
 });
 
 test("main menu production geometry, progress, and localized primary actions are stable", () => {
-  assert.deepEqual(MAIN_MENU_LAYOUT.logo, { x: 24, y: 12, width: 432, height: 152 });
+  assert.deepEqual(MAIN_MENU_LAYOUT.logo, { x: 24, y: 64, width: 432, height: 120 });
   assert.deepEqual(MAIN_MENU_LAYOUT.preview, { x: 24, y: 194, width: 432, height: 232 });
   assert.deepEqual(MAIN_MENU_LAYOUT.primary, { x: 24, y: 450, width: 432, height: 64 });
   assert.deepEqual(MAIN_MENU_LAYOUT.secondaryLeft, { x: 24, y: 530, width: 208, height: 56 });
@@ -236,8 +236,15 @@ test("Main Menu brand PNG uses contain geometry and keeps aspect ratio", () => {
     assert.ok(result.y + result.height <= region.y + region.height + 1e-9);
     assert.ok(Math.abs(result.width / result.height - width / height) < 1e-9);
   }
-  assert.deepEqual(computeMainMenuBrandPlacement(1296, 428, region),
-    { x: 24, y: 12 + (152 - 432 * 428 / 1296) / 2, width: 432, height: 432 * 428 / 1296 });
+  // Test the actual production PNG dimensions, not obsolete concept art.
+  // Both 1296px-wide logos fit at full intended 432px width in the new strip.
+  for (const imageHeight of [342, 327]) {
+    const displayedHeight = 432 * imageHeight / 1296;
+    assert.deepEqual(computeMainMenuBrandPlacement(1296, imageHeight, region), {
+      x: 24, y: region.y + (region.height - displayedHeight) / 2,
+      width: 432, height: displayedHeight,
+    });
+  }
   for (const [w, h] of [[0, 100], [-1, 50], [100, 0], [Infinity, 20], [20, NaN]]) {
     assert.throws(() => computeMainMenuBrandPlacement(w, h, region), RangeError);
   }
@@ -250,7 +257,9 @@ test("Main Menu logo-only composition keeps fallback, artwork and actions in the
   const left = MAIN_MENU_LAYOUT.secondaryLeft;
   const right = MAIN_MENU_LAYOUT.secondaryRight;
   const progress = MAIN_MENU_LAYOUT.progress;
-  assert.equal(preview.y - (logo.y + logo.height), 30);
+  assert.equal(preview.y - (logo.y + logo.height), 10);
+  const gear = MAIN_MENU_LAYOUT.audioSettingsButton;
+  assert.ok(gear.centerY + gear.touchSize / 2 < logo.y);
   assert.equal(primary.y - (preview.y + preview.height), 24);
   assert.equal(left.y - (primary.y + primary.height), 16);
   assert.equal(right.y, left.y);

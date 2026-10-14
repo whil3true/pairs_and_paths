@@ -32,6 +32,7 @@ import {
 } from "./UiPrimitives.js";
 import { BORDERS, VISUAL_COLORS } from "./VisualTokens.js";
 import { DEFAULT_LOCALE, getChapterTitle, getUiStrings, type SupportedLocale } from "./Localization.js";
+import { getActiveUiLocale } from "./UiLocaleRuntime.js";
 import { getLevelChapterPresentation } from "./ChapterPresentation.js";
 import {
   COMPLETE_LAYOUT, getRewardMotionPolicy, REWARD_LAYOUT, REWARD_TRANSITION_DIM_ALPHA,
@@ -91,10 +92,12 @@ export class PlayScene extends Phaser.Scene {
     private readonly platform: PlatformService,
     private readonly progressStore: ProgressStore,
     private readonly renderScale = 1,
-    private readonly locale: SupportedLocale = DEFAULT_LOCALE,
+    private readonly initialLocale: SupportedLocale = DEFAULT_LOCALE,
   ) {
     super({ key: "PlayScene" });
   }
+
+  private get locale(): SupportedLocale { return getActiveUiLocale(this.initialLocale); }
 
   init(data: PlayStartData): void {
     this.currentLevelNumber = data.levelNumber;

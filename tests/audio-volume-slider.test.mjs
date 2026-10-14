@@ -41,6 +41,7 @@ test("global settings gear sits in the top-right header, away from progress and 
   assert.ok(gear.centerX - gear.touchSize / 2 >= 0);
   assert.ok(gear.centerX + gear.touchSize / 2 <= 480);
   assert.ok(gear.centerY - gear.touchSize / 2 >= 0);
+  assert.ok(gear.centerY + gear.touchSize / 2 < menu.logo.y);
   assert.ok(gear.centerY + gear.touchSize / 2 < menu.preview.y);
   assert.ok(gear.centerY + gear.touchSize / 2 < menu.progress.y);
   assert.equal(menu.preview.y, 194);

@@ -4,6 +4,7 @@ import { configureLogicalCamera } from "./Display.js";
 import { CHAPTER_COUNT, getChapterNumber } from "./LevelSequence.js";
 import { getLevelArtwork, isArtworkUnlocked, type LevelArtworkDefinition } from "./LevelArtwork.js";
 import { DEFAULT_LOCALE, getChapterTitle, getUiStrings, type SupportedLocale } from "./Localization.js";
+import { getActiveUiLocale } from "./UiLocaleRuntime.js";
 import { createIconButton, createUiText } from "./UiPrimitives.js";
 import { BORDERS, VISUAL_COLORS } from "./VisualTokens.js";
 
@@ -19,8 +20,10 @@ export class ArtworkFullViewScene extends Phaser.Scene {
   constructor(
     private readonly progressStore: ProgressStore,
     private readonly renderScale = 1,
-    private readonly locale: SupportedLocale = DEFAULT_LOCALE,
+    private readonly initialLocale: SupportedLocale = DEFAULT_LOCALE,
   ) { super({ key: "ArtworkFullViewScene" }); }
+
+  private get locale(): SupportedLocale { return getActiveUiLocale(this.initialLocale); }
 
   init(data: ArtworkFullViewStartData = {}): void {
     this.levelNumber = Number.isSafeInteger(data.levelNumber) ? data.levelNumber! : 0;

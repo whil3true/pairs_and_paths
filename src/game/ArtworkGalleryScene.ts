@@ -12,6 +12,7 @@ import { configureLogicalCamera } from "./Display.js";
 import { CHAPTER_COUNT, LEVELS_PER_CHAPTER, TOTAL_LEVELS } from "./LevelSequence.js";
 import { getLevelArtwork, LEVEL_ARTWORK, type LevelArtworkDefinition } from "./LevelArtwork.js";
 import { DEFAULT_LOCALE, getChapterTitle, getUiStrings, type SupportedLocale } from "./Localization.js";
+import { getActiveUiLocale } from "./UiLocaleRuntime.js";
 import { createCard, createIconButton, createSecondaryButton, createUiText } from "./UiPrimitives.js";
 import { BORDERS, COMPONENT_RADII, VISUAL_COLORS } from "./VisualTokens.js";
 
@@ -45,8 +46,10 @@ export class ArtworkGalleryScene extends Phaser.Scene {
   constructor(
     private readonly progressStore: ProgressStore,
     private readonly renderScale = 1,
-    private readonly locale: SupportedLocale = DEFAULT_LOCALE,
+    private readonly initialLocale: SupportedLocale = DEFAULT_LOCALE,
   ) { super({ key: "ArtworkGalleryScene" }); }
+
+  private get locale(): SupportedLocale { return getActiveUiLocale(this.initialLocale); }
 
   create(data: ArtworkGalleryStartData = {}): void {
     configureLogicalCamera(this, this.renderScale);

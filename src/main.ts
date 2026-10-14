@@ -18,6 +18,7 @@ import {
   MAX_LOGICAL_VIEWPORT_HEIGHT,
 } from "./game/Display.js";
 import { loadProductionFonts } from "./game/TypographyAssets.js";
+import { configureUiLocale } from "./game/UiLocaleRuntime.js";
 import { WebPlatform } from "./platform/WebPlatform.js";
 import { WebProgressStore } from "./platform/WebProgressStore.js";
 import { VISUAL_COLORS } from "./game/VisualTokens.js";
@@ -47,6 +48,7 @@ const automaticRenderScale = computeRenderScale(
 );
 const renderScale = isLegacyRenderScaleDebugRequested(search) ? 1 : automaticRenderScale;
 const locale = resolveStartupLocale(search, localeStore.load());
+configureUiLocale(locale);
 
 document.documentElement.lang = locale;
 
