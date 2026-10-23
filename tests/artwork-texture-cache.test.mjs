@@ -104,7 +104,7 @@ test("scene wiring loads on demand, reuses textures, handles failure, and cleans
     readFile(new URL("../src/game/ArtworkFullViewScene.ts", import.meta.url), "utf8"),
     readFile(new URL("../src/game/ArtworkGalleryScene.ts", import.meta.url), "utf8"),
   ]);
-  assert.match(play, /if \(this\.textures\.exists\(artwork\.fullAssetKey\)\)[\s\S]*markLoaded/);
+  assert.match(play, /shouldLoadFullArtwork\\(artwork\\.fullAssetKey, this\\.textures\\)/);
   assert.match(play, /filecomplete-image-/);
   assert.match(play, /FILE_LOAD_ERROR/);
   assert.match(play, /cancelArtworkLoad\(true\)/);
