@@ -19,7 +19,7 @@ import {
 } from "./Display.js";
 import { getHintMove } from "./Hint.js";
 import { computeContainedSquarePlacement, getLevelArtwork, isArtworkRevealStage } from "./LevelArtwork.js";
-import { FullArtworkTextureCache } from "./ArtworkTextureCache.js";
+import { FullArtworkTextureCache, shouldLoadFullArtwork } from "./ArtworkTextureCache.js";
 import { TileVisual } from "./TileVisual.js";
 import { createBlockerVisual } from "./BlockerVisual.js";
 import { ensureBoardRuntimeAtlas } from "./BoardRuntimeAtlas.js";
@@ -114,7 +114,7 @@ export class PlayScene extends Phaser.Scene {
     preloadTileSymbols(this);
     this.retainCurrentArtwork();
     const artwork = getLevelArtwork(this.currentLevelNumber);
-    if (artwork !== undefined && !this.textures.exists(artwork.fullAssetKey)) {
+    if (artwork !== undefined && shouldLoadFullArtwork(artwork.fullAssetKey, this.textures)) {
       this.load.image(artwork.fullAssetKey, artwork.fullPath);
     }
   }
@@ -193,7 +193,7 @@ export class PlayScene extends Phaser.Scene {
       onReady();
       return;
     }
-    if (this.textures.exists(artwork.fullAssetKey)) {
+    if (!shouldLoadFullArtwork(artwork.fullAssetKey, this.textures)) {
       this.artworkTextures.markLoaded(artwork.fullAssetKey, this.textures);
       onReady();
       return;
