@@ -23,7 +23,7 @@ export class ArtworkFullViewScene extends Phaser.Scene {
     private readonly progressStore: ProgressStore,
     private readonly renderScale = 1,
     private readonly initialLocale: SupportedLocale = DEFAULT_LOCALE,
-    private readonly artworkTextures: FullArtworkTextureCache,
+    private readonly artworkTextures = new FullArtworkTextureCache(),
   ) { super({ key: "ArtworkFullViewScene" }); }
 
   private get locale(): SupportedLocale { return getActiveUiLocale(this.initialLocale); }
