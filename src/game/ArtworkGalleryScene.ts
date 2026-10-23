@@ -42,6 +42,7 @@ export class ArtworkGalleryScene extends Phaser.Scene {
   private content: Phaser.GameObjects.Container | null = null;
   private readonly pendingThumbnails = new Set<string>();
   private readonly failedThumbnails = new Set<string>();
+  private readonly thumbnailLoadCleanups = new Map<string, () => void>();
 
   constructor(
     private readonly progressStore: ProgressStore,
@@ -54,9 +55,13 @@ export class ArtworkGalleryScene extends Phaser.Scene {
   create(data: ArtworkGalleryStartData = {}): void {
     configureLogicalCamera(this, this.renderScale);
     this.cameras.main.setBackgroundColor(VISUAL_COLORS.bg.app.phaser);
+    this.cancelThumbnailLoads();
     this.pendingThumbnails.clear();
     this.failedThumbnails.clear();
-    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.destroyChapterContent());
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.cancelThumbnailLoads(true);
+      this.destroyChapterContent();
+    });
     this.progress = this.progressStore.load();
     this.chapter = Number.isSafeInteger(data.chapter) && data.chapter! >= 1 && data.chapter! <= CHAPTER_COUNT
       ? data.chapter! : getDefaultArtworkGalleryChapter(this.progress);
@@ -209,9 +214,33 @@ export class ArtworkGalleryScene extends Phaser.Scene {
   }
   private loadThumbnail(artwork: LevelArtworkDefinition): void {
     const key = artwork.thumbnailAssetKey; const completeEvent = `filecomplete-image-${key}`;
-    const onComplete = () => { this.load.off(Phaser.Loader.Events.FILE_LOAD_ERROR, onError); this.pendingThumbnails.delete(key); if (this.scene.isActive()) this.renderChapter(); };
-    const onError = (file: Phaser.Loader.File) => { if (file.key !== key) return; this.load.off(completeEvent, onComplete); this.load.off(Phaser.Loader.Events.FILE_LOAD_ERROR, onError); this.pendingThumbnails.delete(key); this.failedThumbnails.add(key); if (this.scene.isActive()) this.renderChapter(); };
-    this.pendingThumbnails.add(key); this.load.once(completeEvent, onComplete); this.load.on(Phaser.Loader.Events.FILE_LOAD_ERROR, onError);
+    const cleanup = (): void => {
+      this.load.off(completeEvent, onComplete);
+      this.load.off(Phaser.Loader.Events.FILE_LOAD_ERROR, onError);
+      this.thumbnailLoadCleanups.delete(key);
+      this.pendingThumbnails.delete(key);
+    };
+    const onComplete = () => {
+      cleanup();
+      if (this.scene.isActive()) this.renderChapter();
+    };
+    const onError = (file: Phaser.Loader.File) => {
+      if (file.key !== key) return;
+      cleanup();
+      this.failedThumbnails.add(key);
+      if (this.scene.isActive()) this.renderChapter();
+    };
+    this.pendingThumbnails.add(key);
+    this.thumbnailLoadCleanups.set(key, cleanup);
+    this.load.once(completeEvent, onComplete);
+    this.load.on(Phaser.Loader.Events.FILE_LOAD_ERROR, onError);
     this.load.image(key, artwork.thumbnailPath);
+  }
+
+  private cancelThumbnailLoads(resetLoader = false): void {
+    for (const cleanup of [...this.thumbnailLoadCleanups.values()]) cleanup();
+    this.thumbnailLoadCleanups.clear();
+    this.pendingThumbnails.clear();
+    if (resetLoader && this.load.isLoading()) this.load.reset();
   }
 }

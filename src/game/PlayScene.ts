@@ -19,6 +19,7 @@ import {
 } from "./Display.js";
 import { getHintMove } from "./Hint.js";
 import { computeContainedSquarePlacement, getLevelArtwork, isArtworkRevealStage } from "./LevelArtwork.js";
+import { FullArtworkTextureCache, shouldLoadFullArtwork } from "./ArtworkTextureCache.js";
 import { TileVisual } from "./TileVisual.js";
 import { createBlockerVisual } from "./BlockerVisual.js";
 import { ensureBoardRuntimeAtlas } from "./BoardRuntimeAtlas.js";
@@ -87,12 +88,24 @@ export class PlayScene extends Phaser.Scene {
   private currentStageIndex = 0;
   private persistenceEnabled = true;
   private progress!: CampaignProgress;
+  private retainedArtworkKey: string | null = null;
+  private artworkLoadCleanup: (() => void) | null = null;
+  private artworkLoadGeneration = 0;
+  private readonly handleSceneShutdown = (): void => {
+    this.cancelArtworkLoad(true);
+    this.releaseRetainedArtwork();
+    this.clearInitialStageSettle();
+    this.clearHintFeedback();
+    this.clearPauseOverlayImmediately();
+    this.cleanupRewardPresentation();
+  };
 
   constructor(
     private readonly platform: PlatformService,
     private readonly progressStore: ProgressStore,
     private readonly renderScale = 1,
     private readonly initialLocale: SupportedLocale = DEFAULT_LOCALE,
+    private readonly artworkTextures = new FullArtworkTextureCache(),
   ) {
     super({ key: "PlayScene" });
   }
@@ -100,6 +113,9 @@ export class PlayScene extends Phaser.Scene {
   private get locale(): SupportedLocale { return getActiveUiLocale(this.initialLocale); }
 
   init(data: PlayStartData): void {
+    this.events.off(Phaser.Scenes.Events.SHUTDOWN, this.handleSceneShutdown);
+    this.handleSceneShutdown();
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.handleSceneShutdown);
     this.currentLevelNumber = data.levelNumber;
     this.currentStageIndex = data.stageIndex;
     this.persistenceEnabled = data.persistenceEnabled;
@@ -108,8 +124,9 @@ export class PlayScene extends Phaser.Scene {
 
   preload(): void {
     preloadTileSymbols(this);
+    this.retainCurrentArtwork();
     const artwork = getLevelArtwork(this.currentLevelNumber);
-    if (artwork !== undefined && !this.textures.exists(artwork.fullAssetKey)) {
+    if (artwork !== undefined && shouldLoadFullArtwork(artwork.fullAssetKey, this.textures)) {
       this.load.image(artwork.fullAssetKey, artwork.fullPath);
     }
   }
@@ -135,33 +152,83 @@ export class PlayScene extends Phaser.Scene {
       "", "hudSecondary", { align: "center" }).setOrigin(0.5, 0);
     for (const object of [this.pauseControl.container, this.hintControl.container,
       this.levelText, this.remainingText, this.stageText]) object.setDepth(30);
-    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
-      this.clearInitialStageSettle();
-      this.clearHintFeedback();
-      this.clearPauseOverlayImmediately();
-      this.cleanupRewardPresentation();
-    });
+    if (this.retainedArtworkKey !== null && this.textures.exists(this.retainedArtworkKey)) {
+      this.artworkTextures.markLoaded(this.retainedArtworkKey, this.textures);
+    }
     this.loadStage();
   }
 
   private startLevel(): void {
     this.currentStageIndex = 0;
+    this.retainCurrentArtwork();
     this.loadCurrentArtwork(() => this.loadStage());
   }
 
+  private retainCurrentArtwork(): void {
+    const nextKey = getLevelArtwork(this.currentLevelNumber)?.fullAssetKey ?? null;
+    if (nextKey === this.retainedArtworkKey) {
+      if (nextKey !== null && this.textures.exists(nextKey)) {
+        this.artworkTextures.markLoaded(nextKey, this.textures);
+      }
+      return;
+    }
+    if (nextKey !== null) this.artworkTextures.retain(nextKey, this.textures);
+    const previousKey = this.retainedArtworkKey;
+    this.retainedArtworkKey = nextKey;
+    if (previousKey !== null) this.artworkTextures.release(previousKey, this.textures);
+  }
+
+  private releaseRetainedArtwork(): void {
+    if (this.retainedArtworkKey === null) return;
+    this.artworkTextures.release(this.retainedArtworkKey, this.textures);
+    this.retainedArtworkKey = null;
+  }
+
+  private cancelArtworkLoad(resetLoader = false): void {
+    this.artworkLoadGeneration += 1;
+    this.artworkLoadCleanup?.();
+    this.artworkLoadCleanup = null;
+    if (resetLoader && this.load.isLoading()) this.load.reset();
+  }
+
   private loadCurrentArtwork(onReady: () => void): void {
+    this.cancelArtworkLoad(true);
     const artwork = getLevelArtwork(this.currentLevelNumber);
-    if (artwork === undefined || this.textures.exists(artwork.fullAssetKey)) {
+    if (artwork === undefined) {
       onReady();
       return;
     }
-    this.load.once(Phaser.Loader.Events.COMPLETE, () => {
-      if (!this.textures.exists(artwork.fullAssetKey)) {
+    if (!shouldLoadFullArtwork(artwork.fullAssetKey, this.textures)) {
+      this.artworkTextures.markLoaded(artwork.fullAssetKey, this.textures);
+      onReady();
+      return;
+    }
+    const key = artwork.fullAssetKey;
+    const generation = this.artworkLoadGeneration;
+    const completeEvent = `filecomplete-image-${key}`;
+    const cleanup = (): void => {
+      this.load.off(completeEvent, onComplete);
+      this.load.off(Phaser.Loader.Events.FILE_LOAD_ERROR, onError);
+      if (this.artworkLoadCleanup === cleanup) this.artworkLoadCleanup = null;
+    };
+    const settle = (loaded: boolean): void => {
+      if (generation !== this.artworkLoadGeneration) return;
+      cleanup();
+      if (loaded) this.artworkTextures.markLoaded(key, this.textures);
+      else {
+        this.artworkTextures.markLoadFailed(key);
         console.warn(`Artwork failed to load for Level ${artwork.levelNumber}: ${artwork.fullPath}`);
       }
-      onReady();
-    });
-    this.load.image(artwork.fullAssetKey, artwork.fullPath);
+      if (this.sys.isActive() && this.retainedArtworkKey === key) onReady();
+    };
+    const onComplete = (): void => settle(true);
+    const onError = (file: Phaser.Loader.File): void => {
+      if (file.key === key) settle(false);
+    };
+    this.artworkLoadCleanup = cleanup;
+    this.load.once(completeEvent, onComplete);
+    this.load.on(Phaser.Loader.Events.FILE_LOAD_ERROR, onError);
+    this.load.image(key, artwork.fullPath);
     this.load.start();
   }
 

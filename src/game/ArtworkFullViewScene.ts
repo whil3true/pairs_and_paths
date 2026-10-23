@@ -3,6 +3,7 @@ import { ARTWORK_FULL_VIEW_LAYOUT } from "./ArtworkGalleryVisualPolicy.js";
 import { configureLogicalCamera } from "./Display.js";
 import { CHAPTER_COUNT, getChapterNumber } from "./LevelSequence.js";
 import { getLevelArtwork, isArtworkUnlocked, type LevelArtworkDefinition } from "./LevelArtwork.js";
+import { FullArtworkTextureCache, shouldLoadFullArtwork } from "./ArtworkTextureCache.js";
 import { DEFAULT_LOCALE, getChapterTitle, getUiStrings, type SupportedLocale } from "./Localization.js";
 import { getActiveUiLocale } from "./UiLocaleRuntime.js";
 import { createIconButton, createUiText } from "./UiPrimitives.js";
@@ -16,16 +17,27 @@ export class ArtworkFullViewScene extends Phaser.Scene {
   private returnChapter = 1;
   private allowed = false;
   private loadingPresentation: Phaser.GameObjects.Container | null = null;
+  private retainedArtworkKey: string | null = null;
+  private readonly handleSceneShutdown = (): void => {
+    if (this.load.isLoading()) this.load.reset();
+    this.loadingPresentation?.destroy(true);
+    this.loadingPresentation = null;
+    this.releaseArtwork();
+  };
 
   constructor(
     private readonly progressStore: ProgressStore,
     private readonly renderScale = 1,
     private readonly initialLocale: SupportedLocale = DEFAULT_LOCALE,
+    private readonly artworkTextures = new FullArtworkTextureCache(),
   ) { super({ key: "ArtworkFullViewScene" }); }
 
   private get locale(): SupportedLocale { return getActiveUiLocale(this.initialLocale); }
 
   init(data: ArtworkFullViewStartData = {}): void {
+    this.events.off(Phaser.Scenes.Events.SHUTDOWN, this.handleSceneShutdown);
+    this.handleSceneShutdown();
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.handleSceneShutdown);
     this.levelNumber = Number.isSafeInteger(data.levelNumber) ? data.levelNumber! : 0;
     this.artwork = getLevelArtwork(this.levelNumber);
     this.allowed = this.artwork !== undefined && isArtworkUnlocked(this.progressStore.load(), this.levelNumber);
@@ -35,7 +47,10 @@ export class ArtworkFullViewScene extends Phaser.Scene {
   }
 
   preload(): void {
-    if (this.allowed && this.artwork !== undefined && !this.textures.exists(this.artwork.fullAssetKey)) {
+    if (!this.allowed || this.artwork === undefined) return;
+    this.retainedArtworkKey = this.artwork.fullAssetKey;
+    this.artworkTextures.retain(this.retainedArtworkKey, this.textures);
+    if (shouldLoadFullArtwork(this.artwork.fullAssetKey, this.textures)) {
       configureLogicalCamera(this, this.renderScale);
       this.cameras.main.setBackgroundColor(VISUAL_COLORS.bg.app.phaser);
       this.loadingPresentation = this.renderPresentation("loading");
@@ -44,6 +59,9 @@ export class ArtworkFullViewScene extends Phaser.Scene {
   }
 
   create(): void {
+    if (this.retainedArtworkKey !== null && this.textures.exists(this.retainedArtworkKey)) {
+      this.artworkTextures.markLoaded(this.retainedArtworkKey, this.textures);
+    }
     this.loadingPresentation?.destroy(true); this.loadingPresentation = null;
     configureLogicalCamera(this, this.renderScale);
     this.cameras.main.setBackgroundColor(VISUAL_COLORS.bg.app.phaser);
@@ -91,6 +109,12 @@ export class ArtworkFullViewScene extends Phaser.Scene {
         }).setOrigin(0.5));
     }
     return this.add.container(0, 0, objects);
+  }
+
+  private releaseArtwork(): void {
+    if (this.retainedArtworkKey === null) return;
+    this.artworkTextures.release(this.retainedArtworkKey, this.textures);
+    this.retainedArtworkKey = null;
   }
 
   private drawUnavailableGlyph(graphics: Phaser.GameObjects.Graphics, x: number, y: number): void {

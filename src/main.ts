@@ -13,6 +13,7 @@ import { PlayScene } from "./game/PlayScene.js";
 import { SymbolGalleryScene } from "./game/SymbolGalleryScene.js";
 import { ArtworkGalleryScene } from "./game/ArtworkGalleryScene.js";
 import { ArtworkFullViewScene } from "./game/ArtworkFullViewScene.js";
+import { FullArtworkTextureCache } from "./game/ArtworkTextureCache.js";
 import {
   computeRenderScale, isLegacyRenderScaleDebugRequested, LOGICAL_GAME_HEIGHT, LOGICAL_GAME_WIDTH,
   MAX_LOGICAL_VIEWPORT_HEIGHT,
@@ -26,6 +27,7 @@ import { VISUAL_COLORS } from "./game/VisualTokens.js";
 const platform = new WebPlatform();
 const progressStore = new WebProgressStore();
 const localeStore = new WebLocaleStore();
+const artworkTextures = new FullArtworkTextureCache();
 // One audio service for the entire game. Scene navigation must not restart music.
 const audioManager = new AudioManager(new HtmlAudioOutput(), new WebAudioSettingsStore());
 configureAudioRuntime(audioManager);
@@ -63,8 +65,8 @@ const startGame = async (): Promise<void> => {
       new MainMenuScene(progressStore, renderScale, locale, localeStore),
       new LevelSelectScene(progressStore, renderScale, locale),
       new ArtworkGalleryScene(progressStore, renderScale, locale),
-      new ArtworkFullViewScene(progressStore, renderScale, locale),
-      new PlayScene(platform, progressStore, renderScale, locale),
+      new ArtworkFullViewScene(progressStore, renderScale, locale, artworkTextures),
+      new PlayScene(platform, progressStore, renderScale, locale, artworkTextures),
       new SymbolGalleryScene(renderScale),
     ],
     scale: {
