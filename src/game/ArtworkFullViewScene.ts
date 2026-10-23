@@ -3,7 +3,7 @@ import { ARTWORK_FULL_VIEW_LAYOUT } from "./ArtworkGalleryVisualPolicy.js";
 import { configureLogicalCamera } from "./Display.js";
 import { CHAPTER_COUNT, getChapterNumber } from "./LevelSequence.js";
 import { getLevelArtwork, isArtworkUnlocked, type LevelArtworkDefinition } from "./LevelArtwork.js";
-import { FullArtworkTextureCache } from "./ArtworkTextureCache.js";
+import { FullArtworkTextureCache, shouldLoadFullArtwork } from "./ArtworkTextureCache.js";
 import { DEFAULT_LOCALE, getChapterTitle, getUiStrings, type SupportedLocale } from "./Localization.js";
 import { getActiveUiLocale } from "./UiLocaleRuntime.js";
 import { createIconButton, createUiText } from "./UiPrimitives.js";
@@ -42,7 +42,7 @@ export class ArtworkFullViewScene extends Phaser.Scene {
     if (!this.allowed || this.artwork === undefined) return;
     this.retainedArtworkKey = this.artwork.fullAssetKey;
     this.artworkTextures.retain(this.retainedArtworkKey, this.textures);
-    if (!this.textures.exists(this.artwork.fullAssetKey)) {
+    if (shouldLoadFullArtwork(this.artwork.fullAssetKey, this.textures)) {
       configureLogicalCamera(this, this.renderScale);
       this.cameras.main.setBackgroundColor(VISUAL_COLORS.bg.app.phaser);
       this.loadingPresentation = this.renderPresentation("loading");
