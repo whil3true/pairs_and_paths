@@ -39,6 +39,7 @@ import {
   COMPLETE_LAYOUT, getRewardMotionPolicy, REWARD_LAYOUT, REWARD_TRANSITION_DIM_ALPHA,
 } from "./RewardVisualPolicy.js";
 import { getPauseMotionPolicy, PAUSE_FADE_EASE, PAUSE_LAYOUT } from "./PauseVisualPolicy.js";
+import { attachBrowserGameplayLifecycle } from "./BrowserGameplayLifecycle.js";
 
 const keyOf = ({ col, row }: GridPoint): string => `${col},${row}`;
 const samePoint = (left: GridPoint, right: GridPoint): boolean =>
@@ -81,6 +82,8 @@ export class PlayScene extends Phaser.Scene {
   private currentArtworkVisual: Phaser.GameObjects.Image | null = null;
   private pauseOverlay: Phaser.GameObjects.Container | null = null;
   private pauseTween: Phaser.Tweens.Tween | null = null;
+  private pauseContent: Phaser.GameObjects.Container | null = null;
+  private pauseContentTween: Phaser.Tweens.Tween | null = null;
   private pauseClosing = false;
   private pauseControl!: UiButton;
   private hintControl!: UiButton;
@@ -91,7 +94,17 @@ export class PlayScene extends Phaser.Scene {
   private retainedArtworkKey: string | null = null;
   private artworkLoadCleanup: (() => void) | null = null;
   private artworkLoadGeneration = 0;
+  private browserLifecycleCleanup: (() => void) | null = null;
+  private browserPauseRequired = false;
+  private browserPauseSuspendedGameplay = false;
+  private inputLockedBeforeBrowserPause = false;
+  private gameplayUiReady = false;
+  private presentationState: "gameplay" | "loading" | "reward" | "complete" = "gameplay";
   private readonly handleSceneShutdown = (): void => {
+    this.browserLifecycleCleanup?.();
+    this.browserLifecycleCleanup = null;
+    this.releaseBrowserPause(false);
+    this.gameplayUiReady = false;
     this.cancelArtworkLoad(true);
     this.releaseRetainedArtwork();
     this.clearInitialStageSettle();
@@ -120,6 +133,13 @@ export class PlayScene extends Phaser.Scene {
     this.currentStageIndex = data.stageIndex;
     this.persistenceEnabled = data.persistenceEnabled;
     this.progress = this.progressStore.load();
+    this.presentationState = "gameplay";
+    if (typeof window !== "undefined" && typeof document !== "undefined") {
+      this.browserLifecycleCleanup = attachBrowserGameplayLifecycle({
+        onBackground: () => this.handleBrowserBackground(),
+        onForeground: () => this.handleBrowserForeground(),
+      });
+    }
   }
 
   preload(): void {
@@ -152,13 +172,16 @@ export class PlayScene extends Phaser.Scene {
       "", "hudSecondary", { align: "center" }).setOrigin(0.5, 0);
     for (const object of [this.pauseControl.container, this.hintControl.container,
       this.levelText, this.remainingText, this.stageText]) object.setDepth(30);
+    this.gameplayUiReady = true;
     if (this.retainedArtworkKey !== null && this.textures.exists(this.retainedArtworkKey)) {
       this.artworkTextures.markLoaded(this.retainedArtworkKey, this.textures);
     }
     this.loadStage();
+    this.ensureBrowserPauseOverlay();
   }
 
   private startLevel(): void {
+    this.presentationState = "loading";
     this.currentStageIndex = 0;
     this.retainCurrentArtwork();
     this.loadCurrentArtwork(() => this.loadStage());
@@ -233,6 +256,7 @@ export class PlayScene extends Phaser.Scene {
   }
 
   private loadStage(animateIn = false): void {
+    this.presentationState = "gameplay";
     this.clearPauseOverlayImmediately();
     this.completeOverlay?.destroy(true);
     this.completeOverlay = null;
@@ -277,6 +301,7 @@ export class PlayScene extends Phaser.Scene {
         },
       );
     }
+    this.ensureBrowserPauseOverlay();
   }
 
   private clearInitialStageSettle(): void {
@@ -698,6 +723,7 @@ export class PlayScene extends Phaser.Scene {
       this.showComplete();
       return;
     }
+    this.presentationState = "reward";
     this.clearPauseOverlayImmediately();
     this.clearHintFeedback();
     this.setGameplayHudVisible(false);
@@ -819,6 +845,7 @@ export class PlayScene extends Phaser.Scene {
   }
 
   private showComplete(): void {
+    this.presentationState = "complete";
     this.clearPauseOverlayImmediately();
     setPageDim(VISUAL_COLORS.overlay.modal.alpha, 0);
     this.clearHintFeedback();
@@ -954,6 +981,7 @@ export class PlayScene extends Phaser.Scene {
       contentObjects.push(button.container);
     });
     const content = this.add.container(0, 0, contentObjects);
+    this.pauseContent = content;
     const objects: Phaser.GameObjects.GameObject[] = [shell, content];
     if (this.pauseOverlay === null) {
       this.pauseOverlay = this.add.container(0, 0, objects).setDepth(50);
@@ -981,13 +1009,14 @@ export class PlayScene extends Phaser.Scene {
           this.pauseTween = null;
         },
       });
-      this.tweens.add({
+      this.pauseContentTween = this.tweens.add({
         targets: content,
         alpha: 1,
         y: 0,
         delay: motion.contentDelay,
         duration: motion.contentDuration,
         ease: "Quad.Out",
+        onComplete: () => { this.pauseContentTween = null; },
       });
       this.pauseTween = tween;
     }
@@ -995,11 +1024,19 @@ export class PlayScene extends Phaser.Scene {
 
   private dismissPauseOverlay(afterDismiss?: () => void): void {
     if (this.pauseOverlay === null || this.pauseClosing) return;
+    if (this.browserPauseRequired) {
+      this.clearPauseOverlayImmediately();
+      this.releaseBrowserPause(true);
+      afterDismiss?.();
+      return;
+    }
     this.pauseClosing = true;
     const overlay = this.pauseOverlay;
     const motion = getPauseMotionPolicy(this.prefersReducedMotion());
     this.pauseTween?.stop();
     this.pauseTween = null;
+    this.pauseContentTween?.stop();
+    this.pauseContentTween = null;
     this.syncPausePageDim(overlay.alpha);
     let tween!: Phaser.Tweens.Tween;
     tween = this.tweens.add({
@@ -1015,6 +1052,7 @@ export class PlayScene extends Phaser.Scene {
         this.syncPausePageDim(0);
         overlay.destroy(true);
         this.pauseOverlay = null;
+        this.pauseContent = null;
         this.pauseClosing = false;
         afterDismiss?.();
       },
@@ -1030,9 +1068,60 @@ export class PlayScene extends Phaser.Scene {
     const ownedPageDim = this.pauseOverlay !== null;
     this.pauseTween?.stop();
     this.pauseTween = null;
+    this.pauseContentTween?.stop();
+    this.pauseContentTween = null;
     this.pauseOverlay?.destroy(true);
     this.pauseOverlay = null;
+    this.pauseContent = null;
     this.pauseClosing = false;
     if (ownedPageDim) resetPageDim();
   }
+
+  private handleBrowserBackground(): void {
+    if ((this.presentationState !== "gameplay" && this.presentationState !== "loading")
+      || this.browserPauseRequired) return;
+    this.browserPauseRequired = true;
+    this.inputLockedBeforeBrowserPause = this.inputLocked;
+    this.inputLocked = true;
+    this.ensureBrowserPauseOverlay();
+    if (this.pauseOverlay !== null) {
+      this.pauseTween?.stop();
+      this.pauseTween = null;
+      this.pauseContentTween?.stop();
+      this.pauseContentTween = null;
+      this.pauseOverlay.setAlpha(1);
+      this.pauseContent?.setAlpha(1).setY(0);
+      this.syncPausePageDim(1);
+    }
+    // Freeze the scene-owned clock only after creating the static Pause UI.
+    // Phaser can still restore its renderer and input system on foreground.
+    this.time.paused = true;
+    this.tweens.pauseAll();
+    this.browserPauseSuspendedGameplay = true;
+  }
+
+  private handleBrowserForeground(): void {
+    if (!this.browserPauseRequired || !this.sys.isActive()) return;
+    // The scene stays frozen until Continue. Rendering and pointer input do not
+    // depend on the scene clock, so the existing Pause controls remain usable.
+    this.ensureBrowserPauseOverlay();
+  }
+
+  private ensureBrowserPauseOverlay(): void {
+    if (!this.browserPauseRequired || !this.gameplayUiReady || this.presentationState !== "gameplay"
+      || this.pauseOverlay !== null) return;
+    this.showPauseMenu();
+  }
+
+  private releaseBrowserPause(restoreInput: boolean): void {
+    if (this.browserPauseSuspendedGameplay) {
+      this.time.paused = false;
+      this.tweens.resumeAll();
+    }
+    if (restoreInput) this.inputLocked = this.inputLockedBeforeBrowserPause;
+    this.browserPauseRequired = false;
+    this.browserPauseSuspendedGameplay = false;
+    this.inputLockedBeforeBrowserPause = false;
+  }
 }
+
