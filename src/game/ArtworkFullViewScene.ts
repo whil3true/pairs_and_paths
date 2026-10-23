@@ -18,6 +18,12 @@ export class ArtworkFullViewScene extends Phaser.Scene {
   private allowed = false;
   private loadingPresentation: Phaser.GameObjects.Container | null = null;
   private retainedArtworkKey: string | null = null;
+  private readonly handleSceneShutdown = (): void => {
+    if (this.load.isLoading()) this.load.reset();
+    this.loadingPresentation?.destroy(true);
+    this.loadingPresentation = null;
+    this.releaseArtwork();
+  };
 
   constructor(
     private readonly progressStore: ProgressStore,
@@ -29,7 +35,9 @@ export class ArtworkFullViewScene extends Phaser.Scene {
   private get locale(): SupportedLocale { return getActiveUiLocale(this.initialLocale); }
 
   init(data: ArtworkFullViewStartData = {}): void {
-    this.releaseArtwork();
+    this.events.off(Phaser.Scenes.Events.SHUTDOWN, this.handleSceneShutdown);
+    this.handleSceneShutdown();
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.handleSceneShutdown);
     this.levelNumber = Number.isSafeInteger(data.levelNumber) ? data.levelNumber! : 0;
     this.artwork = getLevelArtwork(this.levelNumber);
     this.allowed = this.artwork !== undefined && isArtworkUnlocked(this.progressStore.load(), this.levelNumber);
@@ -51,7 +59,6 @@ export class ArtworkFullViewScene extends Phaser.Scene {
   }
 
   create(): void {
-    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.releaseArtwork());
     if (this.retainedArtworkKey !== null && this.textures.exists(this.retainedArtworkKey)) {
       this.artworkTextures.markLoaded(this.retainedArtworkKey, this.textures);
     }
