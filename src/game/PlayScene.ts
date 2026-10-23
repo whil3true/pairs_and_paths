@@ -1089,6 +1089,10 @@ export class PlayScene extends Phaser.Scene {
       this.pauseTween = null;
       this.pauseContentTween?.stop();
       this.pauseContentTween = null;
+      // A dismissal action is committed only by its tween completion. If the
+      // page hides first, restore the same menu/confirmation and require a new
+      // activation after return; the invalidated completion cannot run twice.
+      this.pauseClosing = false;
       this.pauseOverlay.setAlpha(1);
       this.pauseContent?.setAlpha(1).setY(0);
       this.syncPausePageDim(1);
