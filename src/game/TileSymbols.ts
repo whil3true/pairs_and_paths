@@ -1,41 +1,37 @@
 export const PRODUCTION_SYMBOL_DISPLAY_SIZE = 56;
-export const LEGACY_SYMBOL_DISPLAY_SIZE = 38;
 
 export interface TileSymbolDefinition {
   readonly name: string;
   readonly assetKey: string;
   readonly assetPath: string;
-  readonly artwork: "production-pilot" | "legacy-placeholder";
-  /** Full prepared canvas for production; temporary normalized canvas for legacy art. */
-  readonly displaySize: typeof PRODUCTION_SYMBOL_DISPLAY_SIZE | typeof LEGACY_SYMBOL_DISPLAY_SIZE;
+  readonly artwork: "production-v2";
+  /** Full authored 256x256 canvas, including its transparent padding. */
+  readonly displaySize: typeof PRODUCTION_SYMBOL_DISPLAY_SIZE;
 }
 
-const symbol = (name: string, artwork: TileSymbolDefinition["artwork"]): TileSymbolDefinition => Object.freeze({
+const symbol = (name: string): TileSymbolDefinition => Object.freeze({
   name,
-  assetKey: `tile-symbol-${artwork}-${name}`,
-  assetPath: artwork === "production-pilot"
-    ? `assets/production-pilot/symbols/${name}.png`
-    : `assets/symbols/${name}.png`,
-  artwork,
-  displaySize: artwork === "production-pilot" ? PRODUCTION_SYMBOL_DISPLAY_SIZE : LEGACY_SYMBOL_DISPLAY_SIZE,
+  assetKey: `tile-symbol-v2-${name}`,
+  assetPath: `assets/symbols/v2/${name}.png`,
+  artwork: "production-v2",
+  displaySize: PRODUCTION_SYMBOL_DISPLAY_SIZE,
 });
-
-const pilot = (name: string): TileSymbolDefinition => symbol(name, "production-pilot");
-const legacy = (name: string): TileSymbolDefinition => symbol(name, "legacy-placeholder");
 
 /** Ordered visual vocabulary: TileId 1 maps to entry 0. Keep early entries especially distinct. */
 export const TILE_SYMBOLS: readonly TileSymbolDefinition[] = Object.freeze([
-  pilot("cup"), pilot("teapot"), legacy("sun"), legacy("cloud"), legacy("key"),
-  pilot("leaf"), pilot("feather"), pilot("flower"), legacy("clover"), legacy("acorn"),
-  legacy("bell"), pilot("compass"), pilot("camera"), legacy("mountain"), legacy("planet"),
-  pilot("shell"), legacy("wave"), legacy("lightning"), legacy("fish"), legacy("flame"),
-  legacy("mushroom"), legacy("crystal"), pilot("jam-jar"), legacy("heart"), legacy("butterfly"),
-  pilot("snowflake"), legacy("moon"), pilot("star"), pilot("lantern"), legacy("gem"),
+  symbol("cup"), symbol("teapot"), symbol("sun"), symbol("cloud"), symbol("key"),
+  symbol("leaf"), symbol("feather"), symbol("flower"), symbol("clover"), symbol("acorn"),
+  symbol("bell"), symbol("compass"), symbol("camera"), symbol("mountain"), symbol("planet"),
+  symbol("shell"), symbol("wave"), symbol("lightning"), symbol("fish"), symbol("flame"),
+  symbol("mushroom"), symbol("crystal"), symbol("jam-jar"), symbol("heart"), symbol("butterfly"),
+  symbol("snowflake"), symbol("moon"), symbol("star"), symbol("lantern"), symbol("gem"),
 ]);
 
 /** Loads the single shared symbol catalog into any scene that presents tiles. */
 export function preloadTileSymbols(scene: Phaser.Scene): void {
-  for (const definition of TILE_SYMBOLS) scene.load.image(definition.assetKey, definition.assetPath);
+  for (const definition of TILE_SYMBOLS) {
+    if (!scene.textures.exists(definition.assetKey)) scene.load.image(definition.assetKey, definition.assetPath);
+  }
 }
 
 export function getTileSymbol(tileId: number): TileSymbolDefinition {

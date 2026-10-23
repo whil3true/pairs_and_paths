@@ -23,12 +23,12 @@ import {
   MULTI_STAGE_LEVELS, createLevelStage, getLevelStageConfigs, getStageClearOutcome, getStageCount, preStageSeed,
 } from "../.test-dist/game/LevelSequence.js";
 import {
-  getTileSymbol, LEGACY_SYMBOL_DISPLAY_SIZE, PRODUCTION_SYMBOL_DISPLAY_SIZE, TILE_SYMBOLS,
+  getTileSymbol, preloadTileSymbols, PRODUCTION_SYMBOL_DISPLAY_SIZE, TILE_SYMBOLS,
 } from "../.test-dist/game/TileSymbols.js";
 import { resolveTileCardFrame, TILE_VISUAL_STYLE } from "../.test-dist/game/TileVisual.js";
 import {
-  BOARD_CARD_FRAMES, BOARD_RUNTIME_ATLAS_COLUMNS, BOARD_RUNTIME_ATLAS_ROWS, BOARD_SYMBOL_FRAMES,
-  computeBoardRuntimeAtlasLayout, getBoardSymbolFrameName,
+  BOARD_CARD_FRAMES, BOARD_RUNTIME_ATLAS_COLUMNS, BOARD_RUNTIME_ATLAS_ROWS, BOARD_RUNTIME_ATLAS_VERSION,
+  BOARD_SYMBOL_FRAMES, computeBoardRuntimeAtlasLayout, getBoardSymbolFrameName,
 } from "../.test-dist/game/BoardRuntimeAtlas.js";
 import {
   computeContainedSquarePlacement, getLevelArtwork, isArtworkRevealStage, isArtworkUnlocked, LEVEL_ARTWORK,
@@ -674,6 +674,7 @@ test("semantic tile states take precedence over transient pressed frame", () => 
 });
 
 test("board runtime atlas manifest covers five cards and all thirty symbols exactly once", () => {
+  assert.equal(BOARD_RUNTIME_ATLAS_VERSION, 2);
   assert.equal(BOARD_CARD_FRAMES.length, 5);
   assert.equal(BOARD_SYMBOL_FRAMES.length, 30);
   assert.deepEqual(BOARD_CARD_FRAMES.map(({ frameName }) => frameName), [
@@ -715,7 +716,7 @@ test("board runtime atlas protects tile and symbol visual geometry", () => {
   assert.equal(TILE_VISUAL_STYLE.borderWidth, 1);
   assert.equal(TILE_VISUAL_STYLE.emphasizedBorderWidth, 3);
   assert.equal(PRODUCTION_SYMBOL_DISPLAY_SIZE, 56);
-  assert.equal(LEGACY_SYMBOL_DISPLAY_SIZE, 38);
+  assert.ok(TILE_SYMBOLS.every(({ displaySize }) => displaySize === TILE_VISUAL_STYLE.size));
   const hint = BOARD_CARD_FRAMES.find(({ state }) => state === "hint");
   const selected = BOARD_CARD_FRAMES.find(({ state }) => state === "selected");
   assert.equal(hint.borderWidth, 3);
@@ -963,16 +964,11 @@ test("tile symbol catalog implements the deterministic 30-entry production mappi
   for (let tileId = 1; tileId <= TILE_SYMBOLS.length; tileId += 1) {
     const first = getTileSymbol(tileId);
     assert.strictEqual(getTileSymbol(tileId), first);
-    const prefix = first.artwork === "production-pilot"
-      ? "assets/production-pilot/symbols/" : "assets/symbols/";
-    assert.equal(first.assetPath, `${prefix}${first.name}.png`);
-    assert.equal(first.displaySize, first.artwork === "production-pilot"
-      ? PRODUCTION_SYMBOL_DISPLAY_SIZE : LEGACY_SYMBOL_DISPLAY_SIZE);
+    assert.equal(first.assetKey, `tile-symbol-v2-${first.name}`);
+    assert.equal(first.assetPath, `assets/symbols/v2/${first.name}.png`);
+    assert.equal(first.artwork, "production-v2");
+    assert.equal(first.displaySize, PRODUCTION_SYMBOL_DISPLAY_SIZE);
   }
-  assert.ok(TILE_SYMBOLS.filter(({ artwork }) => artwork === "production-pilot")
-    .every(({ displaySize }) => displaySize === 56));
-  assert.ok(TILE_SYMBOLS.filter(({ artwork }) => artwork === "legacy-placeholder")
-    .every(({ displaySize }) => displaySize === 38));
   assert.throws(() => getTileSymbol(0), RangeError);
   assert.throws(() => getTileSymbol(TILE_SYMBOLS.length + 1), RangeError);
 });
@@ -986,12 +982,32 @@ test("tile symbol runtime PNG paths resolve to committed 256x256 RGBA textures",
     assert.equal(png.readUInt32BE(20), 256, `${definition.name} must be 256 px high`);
     assert.equal(png[24], 8, `${definition.name} must use 8-bit channels`);
     assert.equal(png[25], 6, `${definition.name} must use RGBA color type`);
-
-    if (definition.artwork === "legacy-placeholder") {
-      const svg = await readFile(new URL(`../art/source/symbols/${definition.name}.svg`, import.meta.url), "utf8");
-      assert.match(svg, /^<svg\b/, `${definition.name} must retain its legacy SVG source master`);
-    }
   }
+});
+
+test("runtime symbols preserve the full authored canvas without legacy downscaling", async () => {
+  assert.equal(PRODUCTION_SYMBOL_DISPLAY_SIZE, TILE_VISUAL_STYLE.size);
+  assert.ok(TILE_SYMBOLS.every(({ displaySize }) => displaySize === 56));
+  const symbolSource = await readFile(new URL("../src/game/TileSymbols.ts", import.meta.url), "utf8");
+  const atlasSource = await readFile(new URL("../src/game/BoardRuntimeAtlas.ts", import.meta.url), "utf8");
+  const tileVisualSource = await readFile(new URL("../src/game/TileVisual.ts", import.meta.url), "utf8");
+  assert.doesNotMatch(symbolSource, /production-pilot|legacy-placeholder|assets\/production-pilot|assets\/symbols\/(?!v2\/)/);
+  assert.match(atlasSource, /targetPx = Math\.round\(definition\.displaySize \* layout\.physicalScale\)/);
+  assert.doesNotMatch(atlasSource, /LEGACY_SYMBOL_DISPLAY_SIZE|\b38\b/);
+  assert.match(tileVisualSource, /setDisplaySize\(atlas\.logicalSlotSize, atlas\.logicalSlotSize\)/);
+  assert.doesNotMatch(tileVisualSource, /\b38\b/);
+});
+
+test("symbol preloader skips textures already held by Phaser", () => {
+  const existingKey = TILE_SYMBOLS[0].assetKey;
+  const queued = [];
+  preloadTileSymbols({
+    textures: { exists: (key) => key === existingKey },
+    load: { image: (assetKey, assetPath) => queued.push([assetKey, assetPath]) },
+  });
+  assert.equal(queued.length, TILE_SYMBOLS.length - 1);
+  assert.ok(queued.every(([assetKey]) => assetKey !== existingKey));
+  assert.deepEqual(queued[0], [TILE_SYMBOLS[1].assetKey, TILE_SYMBOLS[1].assetPath]);
 });
 
 test("approved production pilot symbol hashes match staged sources and review values", async () => {
@@ -1009,15 +1025,14 @@ test("approved production pilot symbol hashes match staged sources and review va
     star: "e10b7edee6cbed95b92f2183773f2b361b55a1b3de3bbfc7b6627b6b27442cf3",
     lantern: "edab028cb64b0ea44bf2c0d0453f0e4ec4bb044cafeaca4ee17096ba87729695",
   }));
-  const production = TILE_SYMBOLS.filter(({ artwork }) => artwork === "production-pilot");
-  assert.equal(production.length, 12);
-  assert.deepEqual(production.map(({ name }) => name), [...expected.keys()]);
-  for (const definition of production) {
-    const runtime = await readFile(new URL(`../public/${definition.assetPath}`, import.meta.url));
-    const staged = await readFile(new URL(`../art/production-pilot/symbols/${definition.name}.png`, import.meta.url));
-    const digest = createHash("sha256").update(runtime).digest("hex");
-    assert.equal(digest, expected.get(definition.name));
-    assert.deepEqual(runtime, staged, `${definition.name} runtime must match its approved staged source`);
+  for (const [name, approvedHash] of expected) {
+    const historicalRuntime = await readFile(
+      new URL(`../public/assets/production-pilot/symbols/${name}.png`, import.meta.url),
+    );
+    const staged = await readFile(new URL(`../art/production-pilot/symbols/${name}.png`, import.meta.url));
+    const digest = createHash("sha256").update(historicalRuntime).digest("hex");
+    assert.equal(digest, approvedHash);
+    assert.deepEqual(historicalRuntime, staged, `${name} historical runtime must match its approved staged source`);
   }
 });
 
@@ -1028,6 +1043,8 @@ test("developer symbol gallery requires both flags and reuses the shared catalog
   }
   const gallerySource = await readFile(new URL("../src/game/SymbolGalleryScene.ts", import.meta.url), "utf8");
   assert.match(gallerySource, /TILE_SYMBOLS\.forEach/);
+  assert.match(gallerySource, /preloadTileSymbols\(this\)/);
+  assert.match(gallerySource, /ensureBoardRuntimeAtlas\(this, this\.renderScale\)/);
   assert.doesNotMatch(gallerySource, /assets\/symbols\//);
 });
 
@@ -1669,7 +1686,7 @@ test("production board and tile visual policies protect frozen geometry and toke
   assert.equal(TILE_VISUAL_STYLE.pressedFill, VISUAL_COLORS.state.pressedFill.phaser);
   assert.equal(TILE_VISUAL_STYLE.pressedDuration, 80);
   assert.equal(PRODUCTION_SYMBOL_DISPLAY_SIZE, 56);
-  assert.equal(LEGACY_SYMBOL_DISPLAY_SIZE, 38);
+  assert.ok(TILE_SYMBOLS.every(({ displaySize }) => displaySize === 56));
 });
 
 test("frame opening policy applies overlap only when artwork is present", () => {
