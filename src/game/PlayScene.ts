@@ -90,6 +90,15 @@ export class PlayScene extends Phaser.Scene {
   private progress!: CampaignProgress;
   private retainedArtworkKey: string | null = null;
   private artworkLoadCleanup: (() => void) | null = null;
+  private artworkLoadGeneration = 0;
+  private readonly handleSceneShutdown = (): void => {
+    this.cancelArtworkLoad(true);
+    this.releaseRetainedArtwork();
+    this.clearInitialStageSettle();
+    this.clearHintFeedback();
+    this.clearPauseOverlayImmediately();
+    this.cleanupRewardPresentation();
+  };
 
   constructor(
     private readonly platform: PlatformService,
@@ -104,6 +113,9 @@ export class PlayScene extends Phaser.Scene {
   private get locale(): SupportedLocale { return getActiveUiLocale(this.initialLocale); }
 
   init(data: PlayStartData): void {
+    this.events.off(Phaser.Scenes.Events.SHUTDOWN, this.handleSceneShutdown);
+    this.handleSceneShutdown();
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, this.handleSceneShutdown);
     this.currentLevelNumber = data.levelNumber;
     this.currentStageIndex = data.stageIndex;
     this.persistenceEnabled = data.persistenceEnabled;
@@ -143,14 +155,6 @@ export class PlayScene extends Phaser.Scene {
     if (this.retainedArtworkKey !== null && this.textures.exists(this.retainedArtworkKey)) {
       this.artworkTextures.markLoaded(this.retainedArtworkKey, this.textures);
     }
-    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
-      this.cancelArtworkLoad(true);
-      this.releaseRetainedArtwork();
-      this.clearInitialStageSettle();
-      this.clearHintFeedback();
-      this.clearPauseOverlayImmediately();
-      this.cleanupRewardPresentation();
-    });
     this.loadStage();
   }
 
@@ -181,6 +185,7 @@ export class PlayScene extends Phaser.Scene {
   }
 
   private cancelArtworkLoad(resetLoader = false): void {
+    this.artworkLoadGeneration += 1;
     this.artworkLoadCleanup?.();
     this.artworkLoadCleanup = null;
     if (resetLoader && this.load.isLoading()) this.load.reset();
@@ -199,6 +204,7 @@ export class PlayScene extends Phaser.Scene {
       return;
     }
     const key = artwork.fullAssetKey;
+    const generation = this.artworkLoadGeneration;
     const completeEvent = `filecomplete-image-${key}`;
     const cleanup = (): void => {
       this.load.off(completeEvent, onComplete);
@@ -206,6 +212,7 @@ export class PlayScene extends Phaser.Scene {
       if (this.artworkLoadCleanup === cleanup) this.artworkLoadCleanup = null;
     };
     const settle = (loaded: boolean): void => {
+      if (generation !== this.artworkLoadGeneration) return;
       cleanup();
       if (loaded) this.artworkTextures.markLoaded(key, this.textures);
       else {
