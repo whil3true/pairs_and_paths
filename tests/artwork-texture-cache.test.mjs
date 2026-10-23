@@ -53,6 +53,8 @@ test("active artwork survives eviction until every scene lease is released", () 
 
   cache.release("shared", store);
   visit(cache, store, "five");
+  assert.equal(store.exists("shared"), true);
+  visit(cache, store, "six");
   assert.equal(store.exists("shared"), false);
 });
 
