@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 import {
-  FULL_ARTWORK_CACHE_LIMIT, FullArtworkTextureCache,
+  FULL_ARTWORK_CACHE_LIMIT, FullArtworkTextureCache, shouldLoadFullArtwork,
 } from "../.test-dist/game/ArtworkTextureCache.js";
 
 class FakeTextureStore {
@@ -24,6 +24,13 @@ const visit = (cache, store, key) => {
   cache.markLoaded(key, store);
   cache.release(key, store);
 };
+
+test("full artwork loading is requested only when the texture is absent", () => {
+  const store = new FakeTextureStore();
+  assert.equal(shouldLoadFullArtwork("level-001", store), true);
+  store.add("level-001");
+  assert.equal(shouldLoadFullArtwork("level-001", store), false);
+});
 
 test("full artwork cache prevents unbounded growth across a 100-level session", () => {
   const store = new FakeTextureStore();
