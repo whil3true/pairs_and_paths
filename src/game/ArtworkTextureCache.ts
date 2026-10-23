@@ -9,6 +9,10 @@ export interface ArtworkTextureStore {
  */
 export const FULL_ARTWORK_CACHE_LIMIT = 3;
 
+export const shouldLoadFullArtwork = (
+  key: string, textures: Pick<ArtworkTextureStore, "exists">,
+): boolean => !textures.exists(key);
+
 interface ArtworkTextureEntry {
   activeUses: number;
 }
