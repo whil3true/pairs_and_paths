@@ -9,29 +9,19 @@ export interface LevelArtworkDefinition {
   readonly thumbnailPath: string;
 }
 
-export const LEVEL_ARTWORK: readonly LevelArtworkDefinition[] = Object.freeze([
-  Object.freeze({
-    levelNumber: 1,
-    fullAssetKey: "level-artwork-001-full",
-    fullPath: "assets/artwork/pipeline/full/level-001.webp",
-    thumbnailAssetKey: "level-artwork-001-thumb",
-    thumbnailPath: "assets/artwork/pipeline/thumbs/level-001.webp",
+export const LEVEL_ARTWORK: readonly LevelArtworkDefinition[] = Object.freeze(
+  Array.from({ length: 100 }, (_, index): LevelArtworkDefinition => {
+    const levelNumber = index + 1;
+    const levelId = String(levelNumber).padStart(3, "0");
+    return Object.freeze({
+      levelNumber,
+      fullAssetKey: `level-artwork-${levelId}-full`,
+      fullPath: `assets/artwork/pipeline/full/level-${levelId}.webp`,
+      thumbnailAssetKey: `level-artwork-${levelId}-thumb`,
+      thumbnailPath: `assets/artwork/pipeline/thumbs/level-${levelId}.webp`,
+    });
   }),
-  Object.freeze({
-    levelNumber: 30,
-    fullAssetKey: "level-artwork-030-full",
-    fullPath: "assets/artwork/pipeline/full/level-030.webp",
-    thumbnailAssetKey: "level-artwork-030-thumb",
-    thumbnailPath: "assets/artwork/pipeline/thumbs/level-030.webp",
-  }),
-  Object.freeze({
-    levelNumber: 80,
-    fullAssetKey: "level-artwork-080-full",
-    fullPath: "assets/artwork/pipeline/full/level-080.webp",
-    thumbnailAssetKey: "level-artwork-080-thumb",
-    thumbnailPath: "assets/artwork/pipeline/thumbs/level-080.webp",
-  }),
-]);
+);
 
 export const getLevelArtwork = (levelNumber: number): LevelArtworkDefinition | undefined =>
   LEVEL_ARTWORK.find((artwork) => artwork.levelNumber === levelNumber);

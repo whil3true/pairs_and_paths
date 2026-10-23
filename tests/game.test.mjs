@@ -726,7 +726,7 @@ test("board runtime atlas protects tile and symbol visual geometry", () => {
   assert.equal(TILE_VISUAL_STYLE.selectedMarker, false);
 });
 
-const validatePilotWebp = (webp, path, expectedSize) => {
+const validateWebp = (webp, path, expectedSize) => {
   const message = (reason) => `${path}: ${reason}`;
   assert.ok(webp.length >= 12, message("file is too short for a RIFF/WebP header"));
   assert.equal(webp.subarray(0, 4).toString("ascii"), "RIFF", message("invalid RIFF signature"));
@@ -761,19 +761,27 @@ const validatePilotWebp = (webp, path, expectedSize) => {
 
 test("artwork Gallery derives unavailable, locked, and unlocked slot states", () => {
   assert.equal(getArtworkGallerySlotState(progressAt(0), 1), "locked");
-  assert.equal(getArtworkGallerySlotState(progressAt(0), 2), "unavailable");
+  assert.equal(getArtworkGallerySlotState(progressAt(0), 2), "locked");
   assert.equal(getArtworkGallerySlotState(progressAt(0), 30), "locked");
   assert.equal(getArtworkGallerySlotState(progressAt(0), 80), "locked");
+  assert.equal(getArtworkGallerySlotState(progressAt(0), 100), "locked");
+  assert.equal(getArtworkGallerySlotState(progressAt(100), 0), "unavailable");
+  assert.equal(getArtworkGallerySlotState(progressAt(100), 101), "unavailable");
   assert.equal(getArtworkGallerySlotState(progressAt(1), 1), "unlocked");
+  assert.equal(getArtworkGallerySlotState(progressAt(1), 2), "locked");
   assert.equal(getArtworkGallerySlotState(progressAt(29), 30), "locked");
   assert.equal(getArtworkGallerySlotState(progressAt(30), 30), "unlocked");
   assert.equal(getArtworkGallerySlotState(progressAt(79), 80), "locked");
   assert.equal(getArtworkGallerySlotState(progressAt(80), 80), "unlocked");
-  for (const level of [1, 30, 80]) assert.equal(getArtworkGallerySlotState(progressAt(100), level), "unlocked");
+  assert.equal(getArtworkGallerySlotState(progressAt(99), 100), "locked");
+  for (let level = 1; level <= TOTAL_LEVELS; level += 1) {
+    assert.equal(getArtworkGallerySlotState(progressAt(100), level), "unlocked");
+  }
 });
 
 test("artwork Gallery count and default chapter derive from catalog and progress", () => {
-  const expectations = [[0, 0, 1], [1, 1, 1], [29, 1, 1], [30, 2, 3], [79, 2, 3], [80, 3, 8], [100, 3, 8]];
+  const expectations = [[0, 0, 1], [1, 1, 1], [29, 29, 3], [30, 30, 3],
+    [79, 79, 8], [80, 80, 8], [100, 100, 10]];
   for (const [completed, count, chapter] of expectations) {
     assert.equal(getUnlockedArtworkCount(progressAt(completed)), count);
     assert.equal(getDefaultArtworkGalleryChapter(progressAt(completed)), chapter);
@@ -821,13 +829,20 @@ test("Gallery warm placeholders remain distinct from missing-artwork failures an
   assert.match(source, /artwork\.thumbnailAssetKey\)\.setDisplaySize\(thumbnail\.size, thumbnail\.size\)/);
 });
 
-test("production Gallery counts only implemented unlocked artwork out of 100 campaign slots", () => {
+test("production Gallery counts unlocked artwork across campaign chapter boundaries", () => {
   assert.equal(TOTAL_LEVELS, 100);
   assert.deepEqual([0, 1, 30, 80, 100].map((completed) => getUnlockedArtworkCount(progressAt(completed))),
-    [0, 1, 2, 3, 3]);
-  assert.deepEqual([1, 3, 8].map((chapter) => getUnlockedArtworkCountInChapter(progressAt(100), chapter)), [1, 1, 1]);
-  assert.equal(getUnlockedArtworkCountInChapter(progressAt(29), 3), 0);
-  assert.equal(getUnlockedArtworkCountInChapter(progressAt(30), 3), 1);
+    [0, 1, 30, 80, 100]);
+  const expectations = [
+    [9, 1, 9], [10, 1, 10], [10, 2, 0], [11, 2, 1],
+    [20, 2, 10], [20, 3, 0], [21, 3, 1],
+    [90, 9, 10], [90, 10, 0], [91, 10, 1], [99, 10, 9], [100, 10, 10],
+  ];
+  for (const [completed, chapter, count] of expectations) {
+    assert.equal(getUnlockedArtworkCountInChapter(progressAt(completed), chapter), count);
+  }
+  assert.equal(getArtworkGallerySlotState(progressAt(99), 100), "locked");
+  assert.equal(getArtworkGallerySlotState(progressAt(100), 100), "unlocked");
 });
 
 test("production Gallery localization resolves equivalent RU and EN copy", () => {
@@ -842,37 +857,48 @@ test("production Gallery localization resolves equivalent RU and EN copy", () =>
     "Loading artwork…", "Artwork unavailable"]);
 });
 
-test("pilot artwork catalog and final-stage reveal eligibility are explicit", () => {
-  assert.deepEqual(LEVEL_ARTWORK.map(({ levelNumber }) => levelNumber), [1, 30, 80]);
-  for (const level of [1, 30, 80]) assert.equal(getLevelArtwork(level)?.levelNumber, level);
-  assert.equal(getLevelArtwork(2), undefined);
-  assert.equal(isArtworkRevealStage(1, 0), true);
-  assert.equal(isArtworkRevealStage(30, 0), false);
-  assert.equal(isArtworkRevealStage(30, 1), false);
-  assert.equal(isArtworkRevealStage(30, 2), true);
+test("production artwork catalog covers every level and preserves final-stage reveal semantics", () => {
+  const expectedLevels = Array.from({ length: TOTAL_LEVELS }, (_, index) => index + 1);
+  assert.equal(LEVEL_ARTWORK.length, 100);
+  assert.ok(Object.isFrozen(LEVEL_ARTWORK));
+  assert.ok(LEVEL_ARTWORK.every((artwork) => Object.isFrozen(artwork)));
+  assert.deepEqual(LEVEL_ARTWORK.map(({ levelNumber }) => levelNumber), expectedLevels);
+  for (const level of expectedLevels) {
+    assert.equal(getLevelArtwork(level), LEVEL_ARTWORK[level - 1]);
+    const finalStageIndex = getStageCount(level) - 1;
+    assert.equal(isArtworkRevealStage(level, finalStageIndex), true);
+    assert.equal(isArtworkRevealStage(level, finalStageIndex - 1), false);
+    assert.equal(isArtworkRevealStage(level, finalStageIndex + 1), false);
+  }
+  for (const invalid of [-1, 0, 101, 1.5, Number.NaN, Number.POSITIVE_INFINITY]) {
+    assert.equal(getLevelArtwork(invalid), undefined);
+    assert.equal(isArtworkRevealStage(invalid, 0), false);
+  }
 });
 
-test("pilot artwork catalog references distinct full and thumbnail WebP fixtures", async () => {
-  const allKeys = LEVEL_ARTWORK.flatMap(({ fullAssetKey, thumbnailAssetKey }) =>
-    [fullAssetKey, thumbnailAssetKey]);
-  assert.equal(new Set(allKeys).size, allKeys.length);
+test("production artwork catalog has stable unique keys and valid full and thumbnail WebP files", async () => {
+  assert.equal(new Set(LEVEL_ARTWORK.map(({ fullAssetKey }) => fullAssetKey)).size, 100);
+  assert.equal(new Set(LEVEL_ARTWORK.map(({ thumbnailAssetKey }) => thumbnailAssetKey)).size, 100);
   for (const artwork of LEVEL_ARTWORK) {
+    const levelId = String(artwork.levelNumber).padStart(3, "0");
     assert.notEqual(artwork.fullAssetKey, artwork.thumbnailAssetKey);
     assert.notEqual(artwork.fullPath, artwork.thumbnailPath);
-    assert.match(artwork.fullPath, /\.webp$/);
-    assert.match(artwork.thumbnailPath, /\.webp$/);
+    assert.equal(artwork.fullAssetKey, `level-artwork-${levelId}-full`);
+    assert.equal(artwork.thumbnailAssetKey, `level-artwork-${levelId}-thumb`);
+    assert.equal(artwork.fullPath, `assets/artwork/pipeline/full/level-${levelId}.webp`);
+    assert.equal(artwork.thumbnailPath, `assets/artwork/pipeline/thumbs/level-${levelId}.webp`);
     for (const [path, expectedSize] of [[artwork.fullPath, 1024], [artwork.thumbnailPath, 256]]) {
       const webp = await readFile(new URL(`../public/${path}`, import.meta.url));
-      validatePilotWebp(webp, path, expectedSize);
+      validateWebp(webp, path, expectedSize);
     }
   }
 });
 
-test("pilot WebP validation rejects a truncated file with intact magic bytes", async () => {
+test("WebP validation rejects a truncated file with intact magic bytes", async () => {
   const path = LEVEL_ARTWORK[0].fullPath;
   const webp = await readFile(new URL(`../public/${path}`, import.meta.url));
   const truncatedWebp = webp.subarray(0, webp.length - 34);
-  assert.throws(() => validatePilotWebp(truncatedWebp, path, 1024),
+  assert.throws(() => validateWebp(truncatedWebp, path, 1024),
     /RIFF declared size does not match actual file length/);
 });
 
