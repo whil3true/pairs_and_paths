@@ -9,6 +9,10 @@ export class WebPlatform implements PlatformService {
   readonly id = "web" as const;
   readonly displayName = "Web";
   readonly locale: string;
+  readonly isPaused = false;
+  ready(): void { /* no SDK in local / GitHub Pages mode */ }
+  onPause(_handler: () => void): () => void { return () => {}; }
+  onResume(_handler: () => void): () => void { return () => {}; }
 
   constructor(language = globalThis.navigator?.language) {
     this.locale = normalizeLocale(language);
