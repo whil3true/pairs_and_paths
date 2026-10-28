@@ -23,17 +23,17 @@ const bounds = (left: number, top: number, width: number, height: number): Gamep
 
 const MULTI_STAGE_LAYOUT = Object.freeze({
   pause: bounds(24, 20, 48, 48),
-  level: bounds(81, 20, 104, 48),
-  stage: bounds(194, 24, 92, 40),
-  remaining: bounds(295, 20, 104, 48),
+  level: bounds(78, 16, 104, 56),
+  stage: bounds(188, 16, 104, 56),
+  remaining: bounds(298, 16, 104, 56),
   hint: bounds(408, 20, 48, 48),
 });
 
 const SINGLE_STAGE_LAYOUT = Object.freeze({
   pause: bounds(24, 20, 48, 48),
-  level: bounds(115, 20, 104, 48),
-  stage: bounds(194, 24, 92, 40),
-  remaining: bounds(261, 20, 104, 48),
+  level: bounds(115, 16, 104, 56),
+  stage: bounds(188, 16, 104, 56),
+  remaining: bounds(261, 16, 104, 56),
   hint: bounds(408, 20, 48, 48),
 });
 
@@ -60,12 +60,16 @@ export const GAMEPLAY_HUD = Object.freeze({
   singleStage: SINGLE_STAGE_LAYOUT,
   statNineSlice: Object.freeze({
     sourceWidth: 256, sourceHeight: 112, leftWidth: 56, rightWidth: 56,
-    topHeight: 40, bottomHeight: 40, objectWidth: 208, objectHeight: 96, scale: 0.5,
+    topHeight: 40, bottomHeight: 40, objectWidth: 208, objectHeight: 112, scale: 0.5,
   }),
   stageNineSlice: Object.freeze({
     sourceWidth: 224, sourceHeight: 88, leftWidth: 44, rightWidth: 44,
-    topHeight: 32, bottomHeight: 32, objectWidth: 184, objectHeight: 80, scale: 0.5,
+    topHeight: 32, bottomHeight: 32, objectWidth: 208, objectHeight: 112, scale: 0.5,
   }),
+  statLabelY: -9,
+  statValueY: 7,
+  stageLabelY: -8,
+  stageDotsY: 8,
   buttonSize: 48,
   stageDotSize: 8,
   stageDotGap: 4,
