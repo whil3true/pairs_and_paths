@@ -131,8 +131,8 @@ interface StatChip {
 
 const createStatChip = (scene: Phaser.Scene, renderScale: number): StatChip => {
   const base = createNineSlice(scene, COMPACT_HUD_ASSETS.statChip.key, GAMEPLAY_HUD.statNineSlice);
-  const label = createHudText(scene, renderScale, "", 10, 500).setY(-9);
-  const value = createHudText(scene, renderScale, "", 16, 600).setY(8);
+  const label = createHudText(scene, renderScale, "", 10, 500).setY(GAMEPLAY_HUD.statLabelY);
+  const value = createHudText(scene, renderScale, "", 16, 600).setY(GAMEPLAY_HUD.statValueY);
   return { root: scene.add.container(0, 0, [base, label, value]), label, value };
 };
 
@@ -160,7 +160,7 @@ export class CompactGameplayHud {
     this.levelChip = createStatChip(scene, renderScale);
     this.remainingChip = createStatChip(scene, renderScale);
     const stageBase = createNineSlice(scene, COMPACT_HUD_ASSETS.stagePill.key, GAMEPLAY_HUD.stageNineSlice);
-    this.stageLabel = createHudText(scene, renderScale, "", 11, 600).setY(-8);
+    this.stageLabel = createHudText(scene, renderScale, "", 11, 600).setY(GAMEPLAY_HUD.stageLabelY);
     this.stageRoot = scene.add.container(0, 0, [stageBase, this.stageLabel]);
     this.root = scene.add.container(0, 0, [
       this.pauseControl.container, this.levelChip.root, this.stageRoot,
@@ -212,7 +212,7 @@ export class CompactGameplayHud {
       const dot = this.stageRoot.scene.add.image(
         -span / 2 + GAMEPLAY_HUD.stageDotSize / 2
           + index * (GAMEPLAY_HUD.stageDotSize + GAMEPLAY_HUD.stageDotGap),
-        9,
+        GAMEPLAY_HUD.stageDotsY,
         key,
       ).setDisplaySize(GAMEPLAY_HUD.stageDotSize, GAMEPLAY_HUD.stageDotSize);
       this.stageRoot.add(dot);
