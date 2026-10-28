@@ -1,7 +1,7 @@
 import { TILE_SYMBOLS, type TileSymbolDefinition } from "./TileSymbols.js";
 import { BORDERS, COMPONENT_RADII, MOTION, VISUAL_COLORS } from "./VisualTokens.js";
 
-export const BOARD_RUNTIME_ATLAS_VERSION = 2;
+export const BOARD_RUNTIME_ATLAS_VERSION = 3;
 export const BOARD_RUNTIME_ATLAS_COLUMNS = 6;
 export const BOARD_RUNTIME_ATLAS_ROWS = 6;
 export const BOARD_RUNTIME_ATLAS_GUARD = 3;

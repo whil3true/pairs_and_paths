@@ -4,16 +4,16 @@ export interface TileSymbolDefinition {
   readonly name: string;
   readonly assetKey: string;
   readonly assetPath: string;
-  readonly artwork: "production-v2";
+  readonly artwork: "production-v5.4.1";
   /** Full authored 256x256 canvas, including its transparent padding. */
   readonly displaySize: typeof PRODUCTION_SYMBOL_DISPLAY_SIZE;
 }
 
 const symbol = (name: string): TileSymbolDefinition => Object.freeze({
   name,
-  assetKey: `tile-symbol-v2-${name}`,
-  assetPath: `assets/symbols/v2/${name}.png`,
-  artwork: "production-v2",
+  assetKey: `tile-symbol-v3-${name}`,
+  assetPath: `assets/symbols/v3/${name}.png`,
+  artwork: "production-v5.4.1",
   displaySize: PRODUCTION_SYMBOL_DISPLAY_SIZE,
 });
 

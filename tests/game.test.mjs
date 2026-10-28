@@ -674,7 +674,7 @@ test("semantic tile states take precedence over transient pressed frame", () => 
 });
 
 test("board runtime atlas manifest covers five cards and all thirty symbols exactly once", () => {
-  assert.equal(BOARD_RUNTIME_ATLAS_VERSION, 2);
+  assert.equal(BOARD_RUNTIME_ATLAS_VERSION, 3);
   assert.equal(BOARD_CARD_FRAMES.length, 5);
   assert.equal(BOARD_SYMBOL_FRAMES.length, 30);
   assert.deepEqual(BOARD_CARD_FRAMES.map(({ frameName }) => frameName), [
@@ -964,9 +964,9 @@ test("tile symbol catalog implements the deterministic 30-entry production mappi
   for (let tileId = 1; tileId <= TILE_SYMBOLS.length; tileId += 1) {
     const first = getTileSymbol(tileId);
     assert.strictEqual(getTileSymbol(tileId), first);
-    assert.equal(first.assetKey, `tile-symbol-v2-${first.name}`);
-    assert.equal(first.assetPath, `assets/symbols/v2/${first.name}.png`);
-    assert.equal(first.artwork, "production-v2");
+    assert.equal(first.assetKey, `tile-symbol-v3-${first.name}`);
+    assert.equal(first.assetPath, `assets/symbols/v3/${first.name}.png`);
+    assert.equal(first.artwork, "production-v5.4.1");
     assert.equal(first.displaySize, PRODUCTION_SYMBOL_DISPLAY_SIZE);
   }
   assert.throws(() => getTileSymbol(0), RangeError);
@@ -991,7 +991,7 @@ test("runtime symbols preserve the full authored canvas without legacy downscali
   const symbolSource = await readFile(new URL("../src/game/TileSymbols.ts", import.meta.url), "utf8");
   const atlasSource = await readFile(new URL("../src/game/BoardRuntimeAtlas.ts", import.meta.url), "utf8");
   const tileVisualSource = await readFile(new URL("../src/game/TileVisual.ts", import.meta.url), "utf8");
-  assert.doesNotMatch(symbolSource, /production-pilot|legacy-placeholder|assets\/production-pilot|assets\/symbols\/(?!v2\/)/);
+  assert.doesNotMatch(symbolSource, /production-pilot|legacy-placeholder|assets\/production-pilot|assets\/symbols\/(?!v3\/)/);
   assert.match(atlasSource, /targetPx = Math\.round\(definition\.displaySize \* layout\.physicalScale\)/);
   assert.doesNotMatch(atlasSource, /LEGACY_SYMBOL_DISPLAY_SIZE|\b38\b/);
   assert.match(tileVisualSource, /setDisplaySize\(atlas\.logicalSlotSize, atlas\.logicalSlotSize\)/);
