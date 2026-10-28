@@ -28,7 +28,7 @@ import {
 import { resolveTileCardFrame, TILE_VISUAL_STYLE } from "../.test-dist/game/TileVisual.js";
 import {
   BOARD_CARD_FRAMES, BOARD_RUNTIME_ATLAS_COLUMNS, BOARD_RUNTIME_ATLAS_ROWS, BOARD_RUNTIME_ATLAS_VERSION,
-  BOARD_SYMBOL_FRAMES, computeBoardRuntimeAtlasLayout, getBoardSymbolFrameName,
+  BOARD_SYMBOL_FRAMES, computeBoardRuntimeAtlasLayout, ensureBoardRuntimeAtlas, getBoardSymbolFrameName,
 } from "../.test-dist/game/BoardRuntimeAtlas.js";
 import {
   computeContainedSquarePlacement, getLevelArtwork, isArtworkRevealStage, isArtworkUnlocked, LEVEL_ARTWORK,
@@ -703,7 +703,7 @@ test("semantic tile states take precedence over transient pressed frame", () => 
 });
 
 test("board runtime atlas manifest covers five cards and all thirty symbols exactly once", () => {
-  assert.equal(BOARD_RUNTIME_ATLAS_VERSION, 3);
+  assert.equal(BOARD_RUNTIME_ATLAS_VERSION, 4);
   assert.equal(BOARD_CARD_FRAMES.length, 5);
   assert.equal(BOARD_SYMBOL_FRAMES.length, 30);
   assert.deepEqual(BOARD_CARD_FRAMES.map(({ frameName }) => frameName), [
@@ -716,6 +716,51 @@ test("board runtime atlas manifest covers five cards and all thirty symbols exac
   const names = [...BOARD_CARD_FRAMES, ...BOARD_SYMBOL_FRAMES].map(({ frameName }) => frameName);
   assert.equal(new Set(names).size, 35);
   assert.ok(names.length <= BOARD_RUNTIME_ATLAS_COLUMNS * BOARD_RUNTIME_ATLAS_ROWS);
+});
+
+test("board runtime atlas omits strokes for default and pressed cards only", () => {
+  const idleFrames = BOARD_CARD_FRAMES.filter(({ state }) => state === "default" || state === "pressed");
+  assert.ok(idleFrames.every(({ borderWidth, innerBorderWidth }) => borderWidth === 0 && innerBorderWidth === 0));
+  assert.deepEqual(
+    BOARD_CARD_FRAMES.filter(({ borderWidth }) => borderWidth > 0).map(({ state }) => state),
+    ["selected", "hint", "blocked"],
+  );
+
+  const canvasEvents = [];
+  const addedFrames = new Set();
+  const context = {
+    beginPath() {}, moveTo() {}, lineTo() {}, arcTo() {}, closePath() {},
+    clearRect() {}, drawImage() {},
+    fill() { canvasEvents.push("fill"); },
+    stroke() { canvasEvents.push("stroke"); },
+  };
+  const atlasTexture = {
+    getContext: () => context,
+    add: (frameName) => {
+      addedFrames.add(frameName);
+      return {};
+    },
+    has: (frameName) => addedFrames.has(frameName),
+    refresh() {},
+  };
+  const sourceTexture = { getSourceImage: () => ({ width: 56, height: 56 }) };
+  const scene = {
+    textures: {
+      exists: (key) => !key.startsWith("board-runtime-atlas-v"),
+      get: () => sourceTexture,
+      createCanvas: () => atlasTexture,
+    },
+  };
+
+  ensureBoardRuntimeAtlas(scene, 1);
+  assert.deepEqual(canvasEvents, [
+    "fill",
+    "fill",
+    "fill", "stroke",
+    "fill", "stroke", "stroke",
+    "fill", "stroke",
+  ]);
+  assert.equal(addedFrames.size, 35);
 });
 
 test("board runtime atlas layout is guarded, deterministic, integral, non-overlapping, and mobile-safe", () => {
