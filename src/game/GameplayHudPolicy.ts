@@ -2,7 +2,6 @@ export const COMPACT_HUD_ASSET_ROOT = "assets/ui/compact-hud-v1";
 
 export const COMPACT_HUD_ASSETS = Object.freeze({
   button: Object.freeze({ key: "compact-hud-button-base", path: `${COMPACT_HUD_ASSET_ROOT}/ui-button-base.png` }),
-  statChip: Object.freeze({ key: "compact-hud-stat-chip-base", path: `${COMPACT_HUD_ASSET_ROOT}/ui-stat-chip-base.png` }),
   stagePill: Object.freeze({ key: "compact-hud-stage-pill-base", path: `${COMPACT_HUD_ASSET_ROOT}/ui-stage-pill-base.png` }),
   stageDotActive: Object.freeze({ key: "compact-hud-stage-dot-active", path: `${COMPACT_HUD_ASSET_ROOT}/ui-stage-dot-active.png` }),
   stageDotInactive: Object.freeze({ key: "compact-hud-stage-dot-inactive", path: `${COMPACT_HUD_ASSET_ROOT}/ui-stage-dot-inactive.png` }),
@@ -58,10 +57,6 @@ export const getStageDotStates = (stageIndex: number, stageCount: number): reado
 export const GAMEPLAY_HUD = Object.freeze({
   multiStage: MULTI_STAGE_LAYOUT,
   singleStage: SINGLE_STAGE_LAYOUT,
-  statNineSlice: Object.freeze({
-    sourceWidth: 256, sourceHeight: 112, leftWidth: 56, rightWidth: 56,
-    topHeight: 40, bottomHeight: 40, objectWidth: 208, objectHeight: 112, scale: 0.5,
-  }),
   stageNineSlice: Object.freeze({
     sourceWidth: 224, sourceHeight: 88, leftWidth: 44, rightWidth: 44,
     topHeight: 32, bottomHeight: 32, objectWidth: 208, objectHeight: 112, scale: 0.5,
