@@ -1,7 +1,7 @@
 import { TILE_SYMBOLS, type TileSymbolDefinition } from "./TileSymbols.js";
 import { BORDERS, COMPONENT_RADII, MOTION, VISUAL_COLORS } from "./VisualTokens.js";
 
-export const BOARD_RUNTIME_ATLAS_VERSION = 3;
+export const BOARD_RUNTIME_ATLAS_VERSION = 4;
 export const BOARD_RUNTIME_ATLAS_COLUMNS = 6;
 export const BOARD_RUNTIME_ATLAS_ROWS = 6;
 export const BOARD_RUNTIME_ATLAS_GUARD = 3;
@@ -39,9 +39,9 @@ export interface CardFrameDefinition {
 
 export const BOARD_CARD_FRAMES: readonly CardFrameDefinition[] = Object.freeze([
   { state: "default", frameName: "tile/default", fill: TILE_VISUAL_STYLE.fill,
-    border: TILE_VISUAL_STYLE.border, borderWidth: TILE_VISUAL_STYLE.borderWidth, innerBorderWidth: 0 },
+    border: TILE_VISUAL_STYLE.border, borderWidth: 0, innerBorderWidth: 0 },
   { state: "pressed", frameName: "tile/pressed", fill: TILE_VISUAL_STYLE.pressedFill,
-    border: TILE_VISUAL_STYLE.border, borderWidth: TILE_VISUAL_STYLE.borderWidth, innerBorderWidth: 0 },
+    border: TILE_VISUAL_STYLE.border, borderWidth: 0, innerBorderWidth: 0 },
   { state: "selected", frameName: "tile/selected", fill: TILE_VISUAL_STYLE.selectedFill,
     border: TILE_VISUAL_STYLE.selectedBorder, borderWidth: TILE_VISUAL_STYLE.emphasizedBorderWidth,
     innerBorderWidth: 0 },
@@ -149,9 +149,11 @@ function drawCard(
   roundedRect(context, x, y, size, size, radius);
   context.fillStyle = cssColor(definition.fill);
   context.fill();
-  context.strokeStyle = cssColor(definition.border);
-  context.lineWidth = Math.max(1, Math.round(definition.borderWidth * layout.physicalScale));
-  context.stroke();
+  if (definition.borderWidth > 0) {
+    context.strokeStyle = cssColor(definition.border);
+    context.lineWidth = Math.max(1, Math.round(definition.borderWidth * layout.physicalScale));
+    context.stroke();
+  }
   if (definition.innerBorderWidth > 0) {
     const inset = Math.round(TILE_VISUAL_STYLE.hintInnerInset * layout.physicalScale);
     roundedRect(context, x + inset, y + inset, size - inset * 2, size - inset * 2,
