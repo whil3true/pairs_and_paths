@@ -46,7 +46,10 @@ import {
 } from "../.test-dist/game/VisualTokens.js";
 import { createButtonHitArea, resolveButtonVisual } from "../.test-dist/game/UiPolicy.js";
 import { createViewportBackdrop } from "../.test-dist/game/UiPrimitives.js";
-import { GAMEPLAY_HUD } from "../.test-dist/game/GameplayHudPolicy.js";
+import {
+  COMPACT_HUD_ASSETS, GAMEPLAY_HUD, getGameplayHudLayout, getStageDotStates,
+  shouldShowStageIndicator,
+} from "../.test-dist/game/GameplayHudPolicy.js";
 import {
   BLOCKER_VISUAL_STYLE, createPolylineMetrics, GAMEPLAY_FEEDBACK, partialPolyline,
   partialPolylineFromMetrics,
@@ -72,7 +75,9 @@ const progressAt = (completedThroughLevel) => ({ version: 1, completedThroughLev
 test("Phase 4 localization dictionaries have equivalent complete shapes", () => {
   assert.deepEqual(Object.keys(UI_STRINGS).sort(), ["en", "ru"]);
   assert.deepEqual(Object.keys(UI_STRINGS.ru).sort(), Object.keys(UI_STRINGS.en).sort());
-  const required = ["gameTitle", "brandTitle", "brandDescriptor", "tagline", "play", "gameplayPause", "gameplayHint", "remainingPairs", "stageLabel", "continueLevel", "playAgainLevel", "levels", "gallery",
+  const required = ["gameTitle", "brandTitle", "brandDescriptor", "tagline", "play", "gameplayPause", "gameplayHint",
+    "gameplayLevelCaption", "gameplayRemainingCaption", "gameplayPairCount", "remainingPairs", "stageLabel",
+    "continueLevel", "playAgainLevel", "levels", "gallery",
     "openedProgress", "collectionComplete", "chapterLabel", "chapterHeader", "globalProgress", "backToMenu",
     "galleryChapterProgress", "levelLabel", "gallerySoon", "galleryLoading", "galleryUnavailable", "back",
     "artworkLoading", "artworkUnavailable",
@@ -591,11 +596,31 @@ test("button hit area matches the sized Container's local visual rectangle", () 
 });
 
 test("gameplay HUD policy freezes compact production bounds and localized copy", () => {
-  assert.deepEqual(GAMEPLAY_HUD.pause, { left: 24, top: 20, width: 104, height: 48, centerX: 76, centerY: 44 });
-  assert.deepEqual(GAMEPLAY_HUD.hint, { left: 352, top: 20, width: 104, height: 48, centerX: 404, centerY: 44 });
+  assert.deepEqual(getGameplayHudLayout(3), {
+    pause: { left: 24, top: 20, width: 48, height: 48, centerX: 48, centerY: 44 },
+    level: { left: 81, top: 20, width: 104, height: 48, centerX: 133, centerY: 44 },
+    stage: { left: 194, top: 24, width: 92, height: 40, centerX: 240, centerY: 44 },
+    remaining: { left: 295, top: 20, width: 104, height: 48, centerX: 347, centerY: 44 },
+    hint: { left: 408, top: 20, width: 48, height: 48, centerX: 432, centerY: 44 },
+  });
   assert.deepEqual(
-    [GAMEPLAY_HUD.statusLeftX, GAMEPLAY_HUD.statusRightX, GAMEPLAY_HUD.stageCenterX],
-    [24, 456, 240],
+    [getGameplayHudLayout(1).level.centerX, getGameplayHudLayout(1).remaining.centerX],
+    [167, 313],
+  );
+  assert.equal(shouldShowStageIndicator(1), false);
+  assert.equal(shouldShowStageIndicator(2), true);
+  assert.deepEqual(getStageDotStates(0, 3), [true, false, false]);
+  assert.deepEqual(getStageDotStates(1, 3), [true, true, false]);
+  assert.deepEqual(getStageDotStates(2, 3), [true, true, true]);
+  assert.deepEqual(
+    Object.values(COMPACT_HUD_ASSETS).map(({ path }) => path),
+    [
+      "assets/ui/compact-hud-v1/ui-button-base.png",
+      "assets/ui/compact-hud-v1/ui-stat-chip-base.png",
+      "assets/ui/compact-hud-v1/ui-stage-pill-base.png",
+      "assets/ui/compact-hud-v1/ui-stage-dot-active.png",
+      "assets/ui/compact-hud-v1/ui-stage-dot-inactive.png",
+    ],
   );
 
   assert.deepEqual(
@@ -613,6 +638,11 @@ test("gameplay HUD policy freezes compact production bounds and localized copy",
   }
   assert.equal(UI_STRINGS.en.remainingPairs(1), "Remaining: 1 pair");
   assert.equal(UI_STRINGS.en.remainingPairs(2), "Remaining: 2 pairs");
+  assert.equal(UI_STRINGS.ru.gameplayLevelCaption, "Уровень");
+  assert.equal(UI_STRINGS.en.gameplayLevelCaption, "Level");
+  assert.equal(UI_STRINGS.ru.gameplayPairCount(22), "22 пары");
+  assert.equal(UI_STRINGS.en.gameplayPairCount(22), "22 pairs");
+  assert.equal(String(100), "100");
 });
 
 test("partial route progression follows physical length for arbitrary polylines", () => {
@@ -1798,3 +1828,4 @@ test("layout rejects coordinates outside the real board", () => {
   assert.throws(() => full.cellCenter({ col: 7, row: 0 }), RangeError);
   assert.throws(() => full.cellCenter({ col: 0, row: 7 }), RangeError);
 });
+

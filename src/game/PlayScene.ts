@@ -23,13 +23,13 @@ import { FullArtworkTextureCache, shouldLoadFullArtwork } from "./ArtworkTexture
 import { TileVisual } from "./TileVisual.js";
 import { createBlockerVisual } from "./BlockerVisual.js";
 import { ensureBoardRuntimeAtlas } from "./BoardRuntimeAtlas.js";
-import { GAMEPLAY_HUD } from "./GameplayHudPolicy.js";
+import { CompactGameplayHud, preloadCompactGameplayHud } from "./CompactGameplayHud.js";
 import {
   createPolylineMetrics, GAMEPLAY_FEEDBACK, partialPolylineFromMetrics,
 } from "./GameplayFeedbackPolicy.js";
 import {
   createDangerButton, createModalShell, createPrimaryButton, createSecondaryButton, createUiText,
-  createViewportBackdrop, type UiButton,
+  createViewportBackdrop,
 } from "./UiPrimitives.js";
 import { BORDERS, VISUAL_COLORS } from "./VisualTokens.js";
 import { DEFAULT_LOCALE, getChapterTitle, getUiStrings, type SupportedLocale } from "./Localization.js";
@@ -69,9 +69,7 @@ export class PlayScene extends Phaser.Scene {
   private currentBoardVisual: Phaser.GameObjects.Container | null = null;
   private frontSheet: Phaser.GameObjects.Graphics | null = null;
   private nextSheet: BackingSheetVisual | null = null;
-  private levelText!: Phaser.GameObjects.Text;
-  private remainingText!: Phaser.GameObjects.Text;
-  private stageText!: Phaser.GameObjects.Text;
+  private gameplayHud!: CompactGameplayHud;
   private completeOverlay: Phaser.GameObjects.Container | null = null;
   private artworkPresentation: Phaser.GameObjects.Container | null = null;
   private rewardTimer: Phaser.Time.TimerEvent | null = null;
@@ -85,8 +83,6 @@ export class PlayScene extends Phaser.Scene {
   private pauseContent: Phaser.GameObjects.Container | null = null;
   private pauseContentTween: Phaser.Tweens.Tween | null = null;
   private pauseClosing = false;
-  private pauseControl!: UiButton;
-  private hintControl!: UiButton;
   private currentLevelNumber = 1;
   private currentStageIndex = 0;
   private persistenceEnabled = true;
@@ -144,6 +140,7 @@ export class PlayScene extends Phaser.Scene {
 
   preload(): void {
     preloadTileSymbols(this);
+    preloadCompactGameplayHud(this);
     this.retainCurrentArtwork();
     const artwork = getLevelArtwork(this.currentLevelNumber);
     if (artwork !== undefined && shouldLoadFullArtwork(artwork.fullAssetKey, this.textures)) {
@@ -154,24 +151,11 @@ export class PlayScene extends Phaser.Scene {
   create(): void {
     configureLogicalCamera(this, this.renderScale);
     ensureBoardRuntimeAtlas(this, this.renderScale);
-    this.pauseControl = createSecondaryButton(this, this.renderScale, {
-      x: GAMEPLAY_HUD.pause.centerX, y: GAMEPLAY_HUD.pause.centerY,
-      width: GAMEPLAY_HUD.pause.width, height: GAMEPLAY_HUD.pause.height,
-      label: getUiStrings(this.locale).gameplayPause, onActivate: () => this.showPause(),
-    });
-    this.hintControl = createSecondaryButton(this, this.renderScale, {
-      x: GAMEPLAY_HUD.hint.centerX, y: GAMEPLAY_HUD.hint.centerY,
-      width: GAMEPLAY_HUD.hint.width, height: GAMEPLAY_HUD.hint.height,
-      label: getUiStrings(this.locale).gameplayHint, onActivate: () => this.showHint(),
-    });
-    this.levelText = createUiText(this, this.renderScale, GAMEPLAY_HUD.statusLeftX, GAMEPLAY_HUD.statusY,
-      "", "hudPrimary").setOrigin(0, 0);
-    this.remainingText = createUiText(this, this.renderScale, GAMEPLAY_HUD.statusRightX, GAMEPLAY_HUD.statusY,
-      "", "hudPrimary", { align: "right" }).setOrigin(1, 0);
-    this.stageText = createUiText(this, this.renderScale, GAMEPLAY_HUD.stageCenterX, GAMEPLAY_HUD.stageY,
-      "", "hudSecondary", { align: "center" }).setOrigin(0.5, 0);
-    for (const object of [this.pauseControl.container, this.hintControl.container,
-      this.levelText, this.remainingText, this.stageText]) object.setDepth(30);
+    this.gameplayHud = new CompactGameplayHud(
+      this, this.renderScale, this.locale,
+      () => this.showPause(),
+      () => this.showHint(),
+    );
     this.gameplayUiReady = true;
     if (this.retainedArtworkKey !== null && this.textures.exists(this.retainedArtworkKey)) {
       this.artworkTextures.markLoaded(this.retainedArtworkKey, this.textures);
@@ -269,9 +253,13 @@ export class PlayScene extends Phaser.Scene {
     const level = createLevelStage(this.currentLevelNumber, this.currentStageIndex);
     this.board = level.board;
     const stageCount = getStageCount(this.currentLevelNumber);
-    const strings = getUiStrings(this.locale);
-    this.levelText.setText(strings.levelLabel(this.currentLevelNumber));
-    this.stageText.setText(strings.stageLabel(this.currentStageIndex + 1, stageCount)).setVisible(stageCount > 1);
+    const remainingPairs = this.board.toRows()
+      .flat()
+      .reduce<number>((count, tile) => count + (tile === null ? 0 : 1), 0) / 2;
+    this.gameplayHud.update(
+      this.currentLevelNumber, remainingPairs,
+      this.currentStageIndex, stageCount,
+    );
     this.layout = new BoardLayout({
       sceneWidth: LOGICAL_GAME_WIDTH, sceneHeight: LOGICAL_GAME_HEIGHT,
       boardWidth: this.board.width, boardHeight: this.board.height,
@@ -662,7 +650,7 @@ export class PlayScene extends Phaser.Scene {
   }
 
   private updateRemaining(): void {
-    this.remainingText.setText(getUiStrings(this.locale).remainingPairs(this.tiles.size / 2));
+    this.gameplayHud.setRemainingPairs(this.tiles.size / 2);
   }
 
   private prefersReducedMotion(): boolean {
@@ -671,13 +659,7 @@ export class PlayScene extends Phaser.Scene {
   }
 
   private setGameplayHudVisible(visible: boolean): void {
-    this.pauseControl.container.setVisible(visible);
-    this.hintControl.container.setVisible(visible);
-    this.pauseControl.setDisabled(!visible);
-    this.hintControl.setDisabled(!visible);
-    this.levelText.setVisible(visible);
-    this.remainingText.setVisible(visible);
-    this.stageText.setVisible(visible && getStageCount(this.currentLevelNumber) > 1);
+    this.gameplayHud.setVisible(visible);
   }
 
   private finishStage(): void {
@@ -1128,4 +1110,5 @@ export class PlayScene extends Phaser.Scene {
     this.inputLockedBeforeBrowserPause = false;
   }
 }
+
 
