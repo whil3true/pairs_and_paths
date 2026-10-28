@@ -598,9 +598,9 @@ test("button hit area matches the sized Container's local visual rectangle", () 
 test("gameplay HUD policy freezes compact production bounds and localized copy", () => {
   assert.deepEqual(getGameplayHudLayout(3), {
     pause: { left: 24, top: 20, width: 48, height: 48, centerX: 48, centerY: 44 },
-    level: { left: 81, top: 20, width: 104, height: 48, centerX: 133, centerY: 44 },
-    stage: { left: 194, top: 24, width: 92, height: 40, centerX: 240, centerY: 44 },
-    remaining: { left: 295, top: 20, width: 104, height: 48, centerX: 347, centerY: 44 },
+    level: { left: 78, top: 16, width: 104, height: 56, centerX: 130, centerY: 44 },
+    stage: { left: 188, top: 16, width: 104, height: 56, centerX: 240, centerY: 44 },
+    remaining: { left: 298, top: 16, width: 104, height: 56, centerX: 350, centerY: 44 },
     hint: { left: 408, top: 20, width: 48, height: 48, centerX: 432, centerY: 44 },
   });
   assert.deepEqual(
