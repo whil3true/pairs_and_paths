@@ -112,7 +112,7 @@ const createHudButton = (
   };
 };
 
-type NineSlicePolicy = typeof GAMEPLAY_HUD.statNineSlice | typeof GAMEPLAY_HUD.stageNineSlice;
+type NineSlicePolicy = typeof GAMEPLAY_HUD.stageNineSlice;
 
 const createNineSlice = (
   scene: Phaser.Scene,
@@ -130,7 +130,7 @@ interface StatChip {
 }
 
 const createStatChip = (scene: Phaser.Scene, renderScale: number): StatChip => {
-  const base = createNineSlice(scene, COMPACT_HUD_ASSETS.statChip.key, GAMEPLAY_HUD.statNineSlice);
+  const base = createNineSlice(scene, COMPACT_HUD_ASSETS.stagePill.key, GAMEPLAY_HUD.stageNineSlice);
   const label = createHudText(scene, renderScale, "", 10, 500).setY(GAMEPLAY_HUD.statLabelY);
   const value = createHudText(scene, renderScale, "", 16, 600).setY(GAMEPLAY_HUD.statValueY);
   return { root: scene.add.container(0, 0, [base, label, value]), label, value };

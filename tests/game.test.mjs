@@ -616,7 +616,6 @@ test("gameplay HUD policy freezes compact production bounds and localized copy",
     Object.values(COMPACT_HUD_ASSETS).map(({ path }) => path),
     [
       "assets/ui/compact-hud-v1/ui-button-base.png",
-      "assets/ui/compact-hud-v1/ui-stat-chip-base.png",
       "assets/ui/compact-hud-v1/ui-stage-pill-base.png",
       "assets/ui/compact-hud-v1/ui-stage-dot-active.png",
       "assets/ui/compact-hud-v1/ui-stage-dot-inactive.png",

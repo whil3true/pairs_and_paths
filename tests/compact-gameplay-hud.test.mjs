@@ -88,23 +88,10 @@ test("single-stage HUD closes the hidden stage slot symmetrically", async () => 
   );
 });
 
-test("chip nine-slices produce identical runtime bounds without changing source caps", async () => {
+test("all three chips share the stage-pill texture and NineSlice configuration", async () => {
   const { GAMEPLAY_HUD } = await import("../.test-dist/game/GameplayHudPolicy.js");
-  for (const policy of [GAMEPLAY_HUD.statNineSlice, GAMEPLAY_HUD.stageNineSlice]) {
-    assert.equal(policy.objectWidth * policy.scale, 104);
-    assert.equal(policy.objectHeight * policy.scale, 56);
-  }
-  assert.deepEqual(
-    [
-      GAMEPLAY_HUD.statNineSlice.sourceWidth,
-      GAMEPLAY_HUD.statNineSlice.sourceHeight,
-      GAMEPLAY_HUD.statNineSlice.leftWidth,
-      GAMEPLAY_HUD.statNineSlice.rightWidth,
-      GAMEPLAY_HUD.statNineSlice.topHeight,
-      GAMEPLAY_HUD.statNineSlice.bottomHeight,
-    ],
-    [256, 112, 56, 56, 40, 40],
-  );
+  assert.equal(GAMEPLAY_HUD.stageNineSlice.objectWidth * GAMEPLAY_HUD.stageNineSlice.scale, 104);
+  assert.equal(GAMEPLAY_HUD.stageNineSlice.objectHeight * GAMEPLAY_HUD.stageNineSlice.scale, 56);
   assert.deepEqual(
     [
       GAMEPLAY_HUD.stageNineSlice.sourceWidth,
@@ -116,6 +103,15 @@ test("chip nine-slices produce identical runtime bounds without changing source 
     ],
     [224, 88, 44, 44, 32, 32],
   );
+
+  const source = await readFile(new URL("../src/game/CompactGameplayHud.ts", import.meta.url), "utf8");
+  const calls = [...source.matchAll(/createNineSlice\(scene, ([^,]+), ([^)]+)\)/g)]
+    .map(([, texture, policy]) => [texture, policy]);
+  assert.deepEqual(calls, [
+    ["COMPACT_HUD_ASSETS.stagePill.key", "GAMEPLAY_HUD.stageNineSlice"],
+    ["COMPACT_HUD_ASSETS.stagePill.key", "GAMEPLAY_HUD.stageNineSlice"],
+  ]);
+  assert.equal(source.includes("COMPACT_HUD_ASSETS.statChip"), false);
 });
 
 test("HUD content offsets retain safe vertical padding at render scales 1 and 2", async () => {
