@@ -63,6 +63,9 @@ export interface UiStrings {
   readonly cancel: string;
   readonly gameplayPause: string;
   readonly gameplayHint: string;
+  readonly gameplayLevelCaption: string;
+  readonly gameplayRemainingCaption: string;
+  readonly gameplayPairCount: (count: number) => string;
   readonly remainingPairs: (count: number) => string;
   readonly stageLabel: (stage: number, total: number) => string;
   readonly chapterTitles: readonly [string, string, string, string, string, string, string, string, string, string];
@@ -119,6 +122,9 @@ const ru = Object.freeze<UiStrings>({
     cancel: "Отмена",
     gameplayPause: "Пауза",
     gameplayHint: "Подсказка",
+    gameplayLevelCaption: "Уровень",
+    gameplayRemainingCaption: "Осталось",
+    gameplayPairCount: (count) => `${count} ${russianPairWord(count)}`,
     remainingPairs: (count) => `Осталось: ${count} ${russianPairWord(count)}`,
     stageLabel: (stage, total) => `Этап ${stage}/${total}`,
     chapterTitles: [
@@ -177,6 +183,9 @@ const en = Object.freeze<UiStrings>({
     cancel: "Cancel",
     gameplayPause: "Pause",
     gameplayHint: "Hint",
+    gameplayLevelCaption: "Level",
+    gameplayRemainingCaption: "Remaining",
+    gameplayPairCount: (count) => `${count} ${count === 1 ? "pair" : "pairs"}`,
     remainingPairs: (count) => `Remaining: ${count} ${count === 1 ? "pair" : "pairs"}`,
     stageLabel: (stage, total) => `Stage ${stage}/${total}`,
     chapterTitles: [
@@ -195,3 +204,4 @@ export const getChapterTitle = (locale: SupportedLocale, chapterNumber: number):
   }
   return UI_STRINGS[locale].chapterTitles[chapterNumber - 1]!;
 };
+
