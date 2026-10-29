@@ -13,7 +13,8 @@ import {
 } from "../.test-dist/game/BoardVisualPolicy.js";
 import { isSymbolGalleryRequested, parseDebugLocale, parseDebugStart } from "../.test-dist/game/DebugStart.js";
 import {
-  computePortraitFrame, computeRenderScale, isDesktopBrowserUserAgent, isLegacyRenderScaleDebugRequested, selectStartupRenderScale,
+  computePortraitFrame, computeRenderScale, isDesktopBrowserUserAgent, isLegacyRenderScaleDebugRequested,
+  selectStartupRenderScale, setHiDpiTextResolution,
   LOGICAL_GAME_HEIGHT, LOGICAL_GAME_WIDTH, MAX_LOGICAL_VIEWPORT_HEIGHT, MAX_RENDER_SCALE, MIN_RENDER_SCALE,
 } from "../.test-dist/game/Display.js";
 import { applyMove, findLegalMoves, findPath, solveBoard, validateGeneratedLevel } from "../.test-dist/domain/index.js";
@@ -1375,6 +1376,22 @@ test("desktop 2x sharpness trial preserves mobile density and the explicit legac
   const main = await readFile(new URL("../src/main.ts", import.meta.url), "utf8");
   assert.match(main, /selectStartupRenderScale\(/);
   assert.match(main, /isDesktopBrowserUserAgent\(navigator\.userAgent, navigator\.maxTouchPoints\)/);
+});
+
+test("HiDPI text uses built-in Phaser resolution without a custom renderer", () => {
+  const resolutionCalls = [];
+  const text = {
+    setResolution(resolution) {
+      resolutionCalls.push(resolution);
+      return this;
+    },
+  };
+  assert.equal(setHiDpiTextResolution(text, 1), text);
+  assert.deepEqual(resolutionCalls, []);
+  assert.equal(setHiDpiTextResolution(text, 2), text);
+  assert.deepEqual(resolutionCalls, [2]);
+  assert.equal(setHiDpiTextResolution(text, 1.5), text);
+  assert.deepEqual(resolutionCalls, [2, 1.5]);
 });
 
 test("render density does not alter the canonical authored composition", () => {

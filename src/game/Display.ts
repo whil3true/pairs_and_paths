@@ -1,5 +1,3 @@
-import { attachTextRasterAlignment } from "./TextRasterAlignment.js";
-
 export const LOGICAL_GAME_WIDTH = 480;
 export const LOGICAL_GAME_HEIGHT = 800;
 export const MIN_RENDER_SCALE = 1;
@@ -153,11 +151,9 @@ export const configureLogicalCamera = (scene: Phaser.Scene, renderScale: number)
   }
 };
 
+/** Uses Phaser's supported Text resolution without custom WebGL render nodes. */
 export const setHiDpiTextResolution = <T extends Phaser.GameObjects.Text>(
   text: T,
   renderScale: number,
-): T => {
-  const resolved = renderScale === 1 ? text : text.setResolution(renderScale);
-  return attachTextRasterAlignment(resolved, renderScale);
-};
+): T => renderScale === 1 ? text : text.setResolution(renderScale);
 
