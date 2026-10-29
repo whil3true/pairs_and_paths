@@ -33,10 +33,14 @@ export class WebLocaleStore {
 
 /** Explicit developer locale overrides saved preferences, not vice versa. */
 export const resolveStartupLocale = (
-  search: string, storedLocale: SupportedLocale | null,
+  search: string, storedLocale: SupportedLocale | null, platformLanguage?: string,
 ): SupportedLocale => {
   const params = new URLSearchParams(search);
   const debugOverride = params.get("debug") === "1" ? params.get("locale") : null;
   if (debugOverride === "ru" || debugOverride === "en") return debugOverride;
-  return storedLocale ?? DEFAULT_LOCALE;
+  // Respect a manually saved language. On Yandex, an unsupported portal
+  // language uses English as the available international fallback.
+  const sdkLanguage = platformLanguage?.trim().toLowerCase().split(/[-_]/, 1)[0];
+  const sdkLocale = sdkLanguage === "ru" ? "ru" : sdkLanguage ? "en" : null;
+  return storedLocale ?? sdkLocale ?? DEFAULT_LOCALE;
 };

@@ -142,3 +142,7 @@ Pause is presentation state owned directly by `PlayScene`, not a separate `Pause
 
 Future user-driven pause and resume boundaries may call platform `GameplayAPI.stop()` and `GameplayAPI.start()` respectively. Platform-driven and advertisement-driven lifecycle handling are separate future concerns; no SDK hook exists yet. Future Music and SFX volumes likewise belong to a separate persistent settings concern, never the `CampaignProgress` schema.
 
+
+## Yandex Games SDK bootstrap: stage 1
+
+The portal browser SDK is loaded from `/sdk.js` and initialized before Phaser and audio. Only known standalone hosts (localhost and GitHub Pages) skip SDK initialization; SDK errors on other hosts are shown rather than silently hidden. The initial language comes from `ysdk.environment.i18n.lang` when no explicit saved manual RU/EN preference exists, falling back to EN for unsupported SDK languages. The first rendered interactive scene triggers `LoadingAPI.ready()` once. SDK pause/resume events currently suspend or resume the shared audio manager. Gameplay suspension, `GameplayAPI` markup, and advertising are separate follow-up stages. The project is not moderation-ready with stage 1 alone.

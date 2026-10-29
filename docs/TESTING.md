@@ -261,3 +261,7 @@ At `?debug=1&level=30&stage=2`, Resume must retain Stage 2 while confirmed Resta
 
 Press Pause during Hint's 900 ms feedback and during pair-removal, blocked-pair, and stage-transition locks; it must be ignored until each transient lock ends. While any pause or confirmation view is open, only its current controls may respond and Pause must not stack another overlay. Complete a level and verify Pause is hidden/disabled, Complete Menu exits directly without confirmation, and Replay/Next restore normal gameplay with Pause available. Also verify overlay objects and interactions do not survive Resume, Restart, Exit, shutdown, completion, Replay, or Next.
 
+
+## Yandex Games SDK bootstrap QA: stage 1
+
+CI must pass typecheck, unit tests, 10k simulations, blockers, build and size limit. On GitHub Pages, verify the game starts without `/sdk.js`, preserves desktop 2× density and mobile rendering, and retains progress and audio preferences. In a Yandex console draft, check the SDK debug loader, Game Ready after first interactive render, RU/EN initial locale and saved manual override, error/retry UI, and audio pause/resume for SDK events, tab switches and startup ads. SDK-driven gameplay freeze and Gameplay API marking must be implemented before moderation approval; no ads are triggered in this first stage.
