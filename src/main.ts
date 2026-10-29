@@ -15,7 +15,7 @@ import { ArtworkGalleryScene } from "./game/ArtworkGalleryScene.js";
 import { ArtworkFullViewScene } from "./game/ArtworkFullViewScene.js";
 import { FullArtworkTextureCache } from "./game/ArtworkTextureCache.js";
 import {
-  computeRenderScale, isLegacyRenderScaleDebugRequested, LOGICAL_GAME_HEIGHT, LOGICAL_GAME_WIDTH,
+  computeRenderScale, isDesktopBrowserUserAgent, isLegacyRenderScaleDebugRequested, selectStartupRenderScale, LOGICAL_GAME_HEIGHT, LOGICAL_GAME_WIDTH,
   MAX_LOGICAL_VIEWPORT_HEIGHT,
 } from "./game/Display.js";
 import { loadProductionFonts } from "./game/TypographyAssets.js";
@@ -48,7 +48,11 @@ const automaticRenderScale = computeRenderScale(
   window.innerWidth,
   window.innerHeight,
 );
-const renderScale = isLegacyRenderScaleDebugRequested(search) ? 1 : automaticRenderScale;
+const renderScale = selectStartupRenderScale(
+  automaticRenderScale,
+  isDesktopBrowserUserAgent(navigator.userAgent, navigator.maxTouchPoints),
+  isLegacyRenderScaleDebugRequested(search),
+);
 const locale = resolveStartupLocale(search, localeStore.load());
 configureUiLocale(locale);
 
