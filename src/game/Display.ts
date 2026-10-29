@@ -96,6 +96,22 @@ export const computeRenderScale = (
 };
 
 /**
+ * Mirrors Phaser 4.2.1's device/OS desktop classification for startup.
+ * Phaser.Device is intentionally not exposed by the Phaser root namespace.
+ * Device emulation changes the UA; do not apply the desktop trial on Android/iOS.
+ */
+export const isDesktopBrowserUserAgent = (
+  userAgent: string,
+  maxTouchPoints = 0,
+): boolean => {
+  if (/(Android|iPhone|iPad|iPod|Windows Phone|IEMobile)/i.test(userAgent)) return false;
+  if (/Windows/i.test(userAgent)) return !/Touch/i.test(userAgent);
+  if (/Mac OS/i.test(userAgent) && !/like Mac OS/i.test(userAgent)) return maxTouchPoints <= 2;
+  if (/CrOS/i.test(userAgent)) return true;
+  return /Linux/i.test(userAgent) && !/Silk/i.test(userAgent);
+};
+
+/**
  * Desktop sharpness trial: use the existing bounded 2x backing density at startup
  * instead of fractional 1.x density. Mobile keeps its current computed policy.
  * The explicit legacy 1x debug override always wins.

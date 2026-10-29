@@ -13,7 +13,7 @@ import {
 } from "../.test-dist/game/BoardVisualPolicy.js";
 import { isSymbolGalleryRequested, parseDebugLocale, parseDebugStart } from "../.test-dist/game/DebugStart.js";
 import {
-  computePortraitFrame, computeRenderScale, isLegacyRenderScaleDebugRequested, selectStartupRenderScale,
+  computePortraitFrame, computeRenderScale, isDesktopBrowserUserAgent, isLegacyRenderScaleDebugRequested, selectStartupRenderScale,
   LOGICAL_GAME_HEIGHT, LOGICAL_GAME_WIDTH, MAX_LOGICAL_VIEWPORT_HEIGHT, MAX_RENDER_SCALE, MIN_RENDER_SCALE,
 } from "../.test-dist/game/Display.js";
 import { applyMove, findLegalMoves, findPath, solveBoard, validateGeneratedLevel } from "../.test-dist/domain/index.js";
@@ -1338,6 +1338,23 @@ test("production render density accounts for startup CSS presentation and remain
   assert.equal(computeRenderScale(1, 3840, 2160), MAX_RENDER_SCALE);
 });
 
+test("desktop detector matches common desktop and mobile-emulation user agents", () => {
+  const examples = [
+    ["Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/151.0 Safari/537.36", 0, true],
+    ["Mozilla/5.0 (X11; Linux x86_64) Chrome/151.0 Safari/537.36", 0, true],
+    ["Mozilla/5.0 (Macintosh; Intel Mac OS X 14_0) Chrome/151.0 Safari/537.36", 0, true],
+    ["Mozilla/5.0 (CrOS x86_64 14500) Chrome/151.0 Safari/537.36", 0, true],
+    ["Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 Mobile Safari/537.36", 5, false],
+    ["Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15", 5, false],
+    ["Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15) AppleWebKit/605.1.15", 5, false],
+    ["Mozilla/5.0 (Windows NT 10.0; Touch) AppleWebKit/537.36", 10, false],
+    ["Mozilla/5.0 (Linux; Android 12; Tablet) AppleWebKit/537.36", 10, false],
+  ];
+  for (const [ua, touches, expected] of examples) {
+    assert.equal(isDesktopBrowserUserAgent(ua, touches), expected, ua);
+  }
+});
+
 test("desktop 2x sharpness trial preserves mobile density and the explicit legacy debug override", async () => {
   const cases = [
     { name: "Full-HD", width: 1920, height: 1080, dpr: 1 },
@@ -1357,7 +1374,7 @@ test("desktop 2x sharpness trial preserves mobile density and the explicit legac
 
   const main = await readFile(new URL("../src/main.ts", import.meta.url), "utf8");
   assert.match(main, /selectStartupRenderScale\(/);
-  assert.match(main, /Phaser\.Device\.OS\.desktop/);
+  assert.match(main, /isDesktopBrowserUserAgent\(navigator\.userAgent, navigator\.maxTouchPoints\)/);
 });
 
 test("render density does not alter the canonical authored composition", () => {
