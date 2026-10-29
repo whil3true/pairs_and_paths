@@ -20,25 +20,13 @@ import {
 } from "./game/Display.js";
 import { loadProductionFonts } from "./game/TypographyAssets.js";
 import { configureUiLocale } from "./game/UiLocaleRuntime.js";
-import { WebPlatform } from "./platform/WebPlatform.js";
+import { createPlatform } from "./platform/createPlatform.js";
+import { attachGameReady } from "./platform/GameReady.js";
 import { WebProgressStore } from "./platform/WebProgressStore.js";
 import { VISUAL_COLORS } from "./game/VisualTokens.js";
 
-const platform = new WebPlatform();
-const progressStore = new WebProgressStore();
-const localeStore = new WebLocaleStore();
-const artworkTextures = new FullArtworkTextureCache();
-// One audio service for the entire game. Scene navigation must not restart music.
-const audioManager = new AudioManager(new HtmlAudioOutput(), new WebAudioSettingsStore());
-configureAudioRuntime(audioManager);
-attachBrowserAudioLifecycle(audioManager);
 const search = window.location.search;
 const resetProgress = isProgressResetRequested(search);
-if (resetProgress) progressStore.clear();
-else {
-  const setProgress = parseDebugSetProgress(search);
-  if (setProgress !== null) progressStore.save({ version: 1, completedThroughLevel: setProgress });
-}
 const route = resolveStartupRoute(parseDebugStart(search), isSymbolGalleryRequested(search));
 // Renderer density is deliberately fixed for this game instance. Rebuilding
 // the WebGL backing buffer, Text objects and runtime atlas during resize would
@@ -53,14 +41,33 @@ const renderScale = selectStartupRenderScale(
   isDesktopBrowserUserAgent(navigator.userAgent, navigator.maxTouchPoints),
   isLegacyRenderScaleDebugRequested(search),
 );
-const locale = resolveStartupLocale(search, localeStore.load());
-configureUiLocale(locale);
-
-document.documentElement.lang = locale;
-
 const startGame = async (): Promise<void> => {
+  // Platform events may arrive during startup before Phaser/audio exist.
+  const platform = await createPlatform();
+  const progressStore = new WebProgressStore();
+  const localeStore = new WebLocaleStore();
+  const artworkTextures = new FullArtworkTextureCache();
+  if (resetProgress) progressStore.clear();
+  else {
+    const setProgress = parseDebugSetProgress(search);
+    if (setProgress !== null) progressStore.save({ version: 1, completedThroughLevel: setProgress });
+  }
+  const locale = resolveStartupLocale(
+    search, localeStore.load(), platform.id === "yandex" ? platform.locale : undefined,
+  );
+  configureUiLocale(locale);
+  document.documentElement.lang = locale;
+
+  // Shared audio manager survives scene navigation.
+  const audioManager = new AudioManager(new HtmlAudioOutput(), new WebAudioSettingsStore());
+  configureAudioRuntime(audioManager);
+  platform.onPause(() => audioManager.setAdActive(true));
+  platform.onResume(() => audioManager.setAdActive(false));
+  if (platform.isPaused) audioManager.setAdActive(true);
+  attachBrowserAudioLifecycle(audioManager);
+
   await loadProductionFonts(locale);
-  new Phaser.Game({
+  const game = new Phaser.Game({
     type: Phaser.AUTO,
     parent: "game",
     backgroundColor: VISUAL_COLORS.bg.app.hex,
@@ -81,6 +88,21 @@ const startGame = async (): Promise<void> => {
       height: LOGICAL_GAME_HEIGHT * renderScale,
     },
   });
+  attachGameReady(game, platform);
 };
 
-void startGame();
+void startGame().catch((error: unknown) => {
+  console.error("Unable to initialize game platform", error);
+  const target = document.getElementById("game");
+  if (!target) return;
+  target.replaceChildren();
+  const panel = document.createElement("div");
+  panel.style.cssText = "position:absolute;inset:20% 5% auto;padding:24px;background:#FFFDF8;border-radius:16px;text-align:center;font:16px sans-serif;color:#26383A";
+  const message = document.createElement("p");
+  message.textContent = "Не удалось запустить игру / Unable to start the game";
+  const action = document.createElement("button");
+  action.textContent = "Повторить / Retry";
+  action.addEventListener("click", () => window.location.reload());
+  panel.append(message, action);
+  target.append(panel);
+});
