@@ -13,7 +13,7 @@ import {
 } from "../.test-dist/game/BoardVisualPolicy.js";
 import { isSymbolGalleryRequested, parseDebugLocale, parseDebugStart } from "../.test-dist/game/DebugStart.js";
 import {
-  computePortraitFrame, computeRenderScale, isLegacyRenderScaleDebugRequested,
+  computePortraitFrame, computeRenderScale, isLegacyRenderScaleDebugRequested, selectStartupRenderScale,
   LOGICAL_GAME_HEIGHT, LOGICAL_GAME_WIDTH, MAX_LOGICAL_VIEWPORT_HEIGHT, MAX_RENDER_SCALE, MIN_RENDER_SCALE,
 } from "../.test-dist/game/Display.js";
 import { applyMove, findLegalMoves, findPath, solveBoard, validateGeneratedLevel } from "../.test-dist/domain/index.js";
@@ -1336,6 +1336,28 @@ test("production render density accounts for startup CSS presentation and remain
   assert.equal(computeRenderScale(1, 1920, Number.POSITIVE_INFINITY), 1);
   assert.equal(computeRenderScale(1, 0, 1080), 1);
   assert.equal(computeRenderScale(1, 3840, 2160), MAX_RENDER_SCALE);
+});
+
+test("desktop 2x sharpness trial preserves mobile density and the explicit legacy debug override", async () => {
+  const cases = [
+    { name: "Full-HD", width: 1920, height: 1080, dpr: 1 },
+    { name: "QHD", width: 2560, height: 1440, dpr: 1 },
+    { name: "Windows 125% with DevTools", width: 982, height: 783, dpr: 1.25 },
+    { name: "small desktop", width: 1366, height: 768, dpr: 1 },
+    { name: "phone DPR 2", width: 390, height: 844, dpr: 2 },
+    { name: "phone DPR 3", width: 390, height: 844, dpr: 3 },
+  ];
+  for (const { name, width, height, dpr } of cases) {
+    const automatic = computeRenderScale(dpr, width, height);
+    assert.equal(selectStartupRenderScale(automatic, true, false), 2, name);
+    assert.equal(selectStartupRenderScale(automatic, false, false), automatic, name);
+    assert.equal(selectStartupRenderScale(automatic, true, true), 1, name);
+    assert.equal(selectStartupRenderScale(automatic, false, true), 1, name);
+  }
+
+  const main = await readFile(new URL("../src/main.ts", import.meta.url), "utf8");
+  assert.match(main, /selectStartupRenderScale\(/);
+  assert.match(main, /Phaser\.Device\.OS\.desktop/);
 });
 
 test("render density does not alter the canonical authored composition", () => {

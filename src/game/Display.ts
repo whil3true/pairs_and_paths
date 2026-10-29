@@ -95,6 +95,17 @@ export const computeRenderScale = (
   return Math.min(MAX_RENDER_SCALE, Math.max(MIN_RENDER_SCALE, requiredScale));
 };
 
+/**
+ * Desktop sharpness trial: use the existing bounded 2x backing density at startup
+ * instead of fractional 1.x density. Mobile keeps its current computed policy.
+ * The explicit legacy 1x debug override always wins.
+ */
+export const selectStartupRenderScale = (
+  automaticRenderScale: number,
+  isDesktop: boolean,
+  forceLegacy1x: boolean,
+): number => forceLegacy1x ? MIN_RENDER_SCALE : isDesktop ? MAX_RENDER_SCALE : automaticRenderScale;
+
 const logicalCameraResizeHandlers = new WeakMap<Phaser.Scene, () => void>();
 
 /**
