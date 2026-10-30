@@ -1,0 +1,52 @@
+name: Yandex Draft ZIP
+
+on:
+  push:
+    branches: [dev]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: yandex-draft-archive-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  package:
+    name: Build upload-ready Yandex ZIP
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run build
+      - run: npm run check:package-size
+      - name: Create and validate game ZIP
+        shell: bash
+        run: |
+          (cd dist && zip -q -r ../cozy-gallery-yandex-draft.zip .)
+          python3 - <<'PY'
+          from zipfile import ZipFile
+          from pathlib import Path
+          archive = Path("cozy-gallery-yandex-draft.zip")
+          with ZipFile(archive) as zip_file:
+              contents = zip_file.infolist()
+              names = [entry.filename for entry in contents if not entry.is_dir()]
+              assert names.count("index.html") == 1, "One root index.html is required"
+              assert all(name.isascii() and not any(c.isspace() for c in name) for name in names), "Non-ASCII or whitespace filename"
+              uncompressed_bytes = sum(entry.file_size for entry in contents)
+              assert uncompressed_bytes <= 100_000_000, "Yandex game size exceeds 100 MB"
+              assert zip_file.testzip() is None, "ZIP has a corrupted member"
+          print(f"Validated {archive}: {len(names)} files, {uncompressed_bytes:,} uncompressed bytes, {archive.stat().st_size:,} ZIP bytes")
+          PY
+          sha256sum cozy-gallery-yandex-draft.zip
+      - name: Upload ready-to-use ZIP (no outer ZIP wrapper)
+        uses: actions/upload-artifact@v7
+        with:
+          path: cozy-gallery-yandex-draft.zip
+          archive: false
+          retention-days: 7
