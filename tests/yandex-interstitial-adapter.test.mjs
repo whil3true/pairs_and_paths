@@ -18,6 +18,7 @@ const create = (handler) => {
 };
 
 test("fullscreen callbacks are nested under options.callbacks for Yandex SDK", async () => {
+  let opened = 0;
   const { adapter, ads } = create(callbacks => {
     assert.equal(typeof callbacks.onOpen, "function");
     assert.equal(typeof callbacks.onClose, "function");
@@ -26,7 +27,8 @@ test("fullscreen callbacks are nested under options.callbacks for Yandex SDK", a
     callbacks.onOpen();
     callbacks.onClose(true);
   });
-  assert.equal(await adapter.showInterstitial(), true);
+  assert.equal(await adapter.showInterstitial(() => { opened++; }), true);
+  assert.equal(opened, 1);
   assert.equal(ads.length, 1);
   adapter.destroy();
 });
