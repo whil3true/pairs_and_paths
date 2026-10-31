@@ -294,3 +294,27 @@ For music, record a before/after comparison on Next with cooldown active (no
 request) and after the cooldown (ad requested). Distinguish SDK audio pause
 from main-thread texture load; do not invent a playback workaround without
 measuring which case glitches.
+
+
+## Post-#123 interstitial close/navigation regression
+
+In the Yandex draft, wait at least 90 seconds after game startup, finish a
+level, select Next, Replay, or Menu exactly once, and close the real fullscreen
+ad. The selected action must start on the ad's close callback without another
+tap or a delayed wait for `game_api_resume`. Verify the result with a real
+device and SDK debug events.
+
+The advertising promise and SDK pause are separate authorities: `onClose`
+completes the pending navigation, while `game_api_pause` continues to freeze
+input, timers, tweens, and audio until the SDK actually resumes. Do not forge
+`game_api_resume` or force-enable input. A newly loaded level can remain
+temporarily frozen until the platform resumes, but its navigation must already
+be committed; when resumed its initial settle timer must finish normally.
+
+Check both callback orders (close before resume and resume before close),
+onClose(false), error, missing callback, rapid repeated taps, Pause
+confirmation and Gallery exit. Confirm the action is executed once and no
+extra advertisements are requested. Compare `interstitial_close`,
+`interstitial_navigation_unblocked`, `platform_resume` in logs. In case of
+a prolonged pause after navigation, diagnose SDK state separately rather than
+re-entering or repeating the navigation.
