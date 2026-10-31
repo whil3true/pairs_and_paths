@@ -5,18 +5,14 @@ import { attachBrowserAudioLifecycle } from "./audio/BrowserAudioLifecycle.js";
 import { WebAudioSettingsStore } from "./platform/WebAudioSettingsStore.js";
 import { resolveStartupLocale, WebLocaleStore } from "./platform/WebLocaleStore.js";
 import { BootScene } from "./game/BootScene.js";
-import { resolveStartupRoute } from "./game/CampaignStartup.js";
-import { isProgressResetRequested, isSymbolGalleryRequested, parseDebugSetProgress, parseDebugStart } from "./game/DebugStart.js";
 import { MainMenuScene } from "./game/MainMenuScene.js";
 import { LevelSelectScene } from "./game/LevelSelectScene.js";
 import { PlayScene } from "./game/PlayScene.js";
-import { SymbolGalleryScene } from "./game/SymbolGalleryScene.js";
 import { ArtworkGalleryScene } from "./game/ArtworkGalleryScene.js";
 import { ArtworkFullViewScene } from "./game/ArtworkFullViewScene.js";
 import { FullArtworkTextureCache } from "./game/ArtworkTextureCache.js";
 import {
-  computeRenderScale, isDesktopBrowserUserAgent, isLegacyRenderScaleDebugRequested, selectStartupRenderScale, LOGICAL_GAME_HEIGHT, LOGICAL_GAME_WIDTH,
-  MAX_LOGICAL_VIEWPORT_HEIGHT,
+  computeRenderScale, isDesktopBrowserUserAgent, selectStartupRenderScale, LOGICAL_GAME_HEIGHT, LOGICAL_GAME_WIDTH,
 } from "./game/Display.js";
 import { loadProductionFonts } from "./game/TypographyAssets.js";
 import { configureUiLocale } from "./game/UiLocaleRuntime.js";
@@ -27,9 +23,6 @@ import { InterstitialController } from "./platform/InterstitialController.js";
 import { WebProgressStore } from "./platform/WebProgressStore.js";
 import { VISUAL_COLORS } from "./game/VisualTokens.js";
 
-const search = window.location.search;
-const resetProgress = isProgressResetRequested(search);
-const route = resolveStartupRoute(parseDebugStart(search), isSymbolGalleryRequested(search));
 // Renderer density is deliberately fixed for this game instance. Rebuilding
 // the WebGL backing buffer, Text objects and runtime atlas during resize would
 // be riskier than retaining the startup choice across orientation changes.
@@ -41,7 +34,7 @@ const automaticRenderScale = computeRenderScale(
 const renderScale = selectStartupRenderScale(
   automaticRenderScale,
   isDesktopBrowserUserAgent(navigator.userAgent, navigator.maxTouchPoints),
-  isLegacyRenderScaleDebugRequested(search),
+  false,
 );
 const bootTime = performance.now();
 const sdkTrace = (name: string): void => {
@@ -58,13 +51,8 @@ const startGame = async (): Promise<void> => {
   const localeStore = new WebLocaleStore();
   const artworkTextures = new FullArtworkTextureCache();
   const interstitials = new InterstitialController(platform);
-  if (resetProgress) progressStore.clear();
-  else {
-    const setProgress = parseDebugSetProgress(search);
-    if (setProgress !== null) progressStore.save({ version: 1, completedThroughLevel: setProgress });
-  }
   const locale = resolveStartupLocale(
-    search, localeStore.load(), platform.id === "yandex" ? platform.locale : undefined,
+    localeStore.load(), platform.id === "yandex" ? platform.locale : undefined,
   );
   configureUiLocale(locale);
   document.documentElement.lang = locale;
@@ -83,13 +71,12 @@ const startGame = async (): Promise<void> => {
     parent: "game",
     backgroundColor: VISUAL_COLORS.bg.app.hex,
     scene: [
-      new BootScene(route),
+      new BootScene(),
       new MainMenuScene(progressStore, renderScale, locale, localeStore),
       new LevelSelectScene(progressStore, renderScale, locale),
       new ArtworkGalleryScene(progressStore, renderScale, locale, interstitials),
       new ArtworkFullViewScene(progressStore, renderScale, locale, artworkTextures),
       new PlayScene(platform, progressStore, renderScale, locale, artworkTextures, interstitials),
-      new SymbolGalleryScene(renderScale),
     ],
     scale: {
       mode: Phaser.Scale.EXPAND,
