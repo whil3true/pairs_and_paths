@@ -16,4 +16,7 @@ The CI suite verifies that all manifest targets exist and have nonempty audio
 files. Run Android playback QA after this PR is merged; CI cannot prove that
 device codecs, autoplay policies or music-loop transitions sound correct.
 
-For provenance and licensing, see `docs/AUDIO_LICENSES.md`.
+The six effects have file-level Kenney CC0 provenance evidence recorded in
+`docs/AUDIO_LICENSES.md` (five matching Git blobs and one matching LFS SHA-256).
+No audio files were modified. See that document for the mirror evidence,
+official source-pack links and limitations.
