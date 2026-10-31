@@ -29,7 +29,7 @@ These are observed project patterns and maintenance rules, not a request to add 
   Path and texture-key `v3` is an active compatibility name. Never sort/reorder `TILE_SYMBOLS`.
 - Campaign art is 100 paired full/thumb WebPs with three-digit IDs, 1024² / 256² respectively.
   Keep all chapter banners, approved UI, audio and attribution/license files. Dynamic path templates,
-  CSS font URLs, preloader catalogs, tests and debug routes all count as references.
+  CSS font URLs, preloader catalogs and tests all count as references.
 - Use `VisualTokens`, `BoardLayout` and scene policy constants; retain 480×800 authored geometry,
   render-scale policy and safe-area behavior. Do not fix presentation by changing domain coordinates.
 - Never rename persistence keys to match the new product name. A schema/key change needs explicit

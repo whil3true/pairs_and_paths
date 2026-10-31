@@ -7,7 +7,7 @@ This describes the implementation; historical proposals are not runtime contract
 
 | Owner / entry files | Responsibilities | Dependencies and consumers |
 | --- | --- | --- |
-| `src/main.ts` | Resolve debug route, initialize platform before Phaser, construct stores/audio/shared caches/controller, fonts, scenes and global guards | All outer boundaries; no game rules here |
+| `src/main.ts` | Initialize platform before Phaser, construct stores/audio/shared caches/controller, fonts, scenes and global guards | All outer boundaries; no game rules here |
 | `src/domain/` | Immutable board, static terrain, deterministic pathfinding, legal moves, seeded generation, solver and metrics | No Phaser, DOM, SDK, audio or persistence; used by game and headless scripts |
 | `src/game/LevelSequence.ts` | Campaign content, uint32 seeds, progression bands, explicit blocker/pre-stage tables | Domain; consumed by scenes, progress and diagnostic scripts |
 | `src/progress/` | Version-1 parsing, monotonic completion, resume/unlock and final-stage save decision | `CampaignProgress` imports `TOTAL_LEVELS` from game content; this small existing reverse dependency is real |
@@ -27,11 +27,11 @@ dead code from a lack of scene imports. There is no event bus, ECS or generic sc
 ## Startup and navigation
 
 `createPlatform` completes before audio/Phaser construction. Yandex listeners are attached early;
-`isPaused` is consulted again when consumers appear. Locale precedence is debug override → stored
+`isPaused` is consulted again when consumers appear. Locale precedence is stored
 manual choice → SDK language (`ru`, otherwise `en`) → standalone default `ru`.
 `loadProductionFonts` probes active Onest weights with a 4-second fallback.
 
-`BootScene` routes to Main Menu, an isolated debug campaign session, or Symbol Gallery.
+`BootScene` always routes to Main Menu in production.
 Main Menu opens `PlayScene`, `LevelSelectScene`, or `ArtworkGalleryScene`. Level Select has ten
 chapter pages; only completed levels and the next level are selectable. Gallery opens
 `ArtworkFullViewScene`, which returns to Gallery. Settings/Pause/confirmations, Reward and Complete
@@ -74,8 +74,7 @@ See `GAME_RULES.md` for legal-move/solvability rules. Critical implementation de
 Gallery unlocks are derived from completed levels, never stored separately. Mid-board progress,
 selected tiles, current stage and hint markers are session state. Hint indicators are persistent
 **within the current board**, not across browser reloads. Removing an unrelated pair retains them;
-removing either marked tile or disposing the board clears them. Valid debug `level` jumps disable
-campaign writes for the whole resulting session; debug progress fixtures intentionally mutate storage.
+removing either marked tile or disposing the board clears them. Production URL parameters never bypass progression or mutate saves.
 
 ## Rendering, loading and memory
 
@@ -89,7 +88,7 @@ but that helper/cap is not a complete live ScaleManager constraint. `viewport-fi
 current CSS has no `env(safe-area-inset-*)` padding. Preserve actual behavior and verify tall/notched
 devices rather than assuming old FIT/safe-area prose applies. Density is chosen once at startup,
 clamped 1..2, desktop forced 2×;
-`debug=1&renderScale=1` is the sole legacy override. Resizing does not rebuild the atlas/density.
+There is no public render-scale debug override. Resizing does not rebuild the atlas/density.
 
 `BoardRuntimeAtlas` is game-global with density/versioned keys; scene shutdown must not remove it.
 Tile semantic states and pressed feedback are separate. Rewarded hints use an independent inset

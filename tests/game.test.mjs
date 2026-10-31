@@ -11,9 +11,8 @@ import {
   BOARD_VISUAL_STYLE, getBackingSheetShadeAlpha, getBoardArtworkApertureBounds,
   getBoardArtworkApertureCorners, getBoardContentBounds, getBoardFrameBounds, getBoardFrameOpening,
 } from "../.test-dist/game/BoardVisualPolicy.js";
-import { isSymbolGalleryRequested, parseDebugLocale, parseDebugStart } from "../.test-dist/game/DebugStart.js";
 import {
-  computePortraitFrame, computeRenderScale, isDesktopBrowserUserAgent, isLegacyRenderScaleDebugRequested,
+  computePortraitFrame, computeRenderScale, isDesktopBrowserUserAgent,
   selectStartupRenderScale, setHiDpiTextResolution,
   LOGICAL_GAME_HEIGHT, LOGICAL_GAME_WIDTH, MAX_LOGICAL_VIEWPORT_HEIGHT, MAX_RENDER_SCALE, MIN_RENDER_SCALE,
 } from "../.test-dist/game/Display.js";
@@ -517,15 +516,6 @@ test("level-select states remain distinct without structural borders", () => {
   assert.equal(VISUAL_COLORS.route.core.hex, "#0B7475");
   assert.deepEqual([completed.borderWidth, available.borderWidth, locked.borderWidth], [0, 0, 0]);
   assert.deepEqual([completed.affordance, available.affordance, locked.affordance], ["check", "tab", "lock"]);
-});
-
-test("debug locale override is gated, valid, non-persistent, and defaults to Russian", () => {
-  assert.equal(parseDebugLocale(""), "ru");
-  assert.equal(parseDebugLocale("?locale=en"), "ru");
-  assert.equal(parseDebugLocale("?debug=1&locale=en"), "en");
-  for (const search of ["?debug=1", "?debug=1&locale=ru", "?debug=1&locale=de", "?debug=0&locale=en"]) {
-    assert.equal(parseDebugLocale(search), "ru");
-  }
 });
 
 test("production visual tokens protect core palette and layout invariants", () => {
@@ -1098,18 +1088,6 @@ test("approved V5.4.1 runtime symbols retain the audited production bytes", asyn
   }
 });
 
-test("developer symbol gallery requires both flags and reuses the shared catalog", async () => {
-  assert.equal(isSymbolGalleryRequested("?debug=1&symbols=1"), true);
-  for (const search of ["", "?symbols=1", "?debug=1", "?debug=0&symbols=1", "?debug=1&symbols=0"]) {
-    assert.equal(isSymbolGalleryRequested(search), false);
-  }
-  const gallerySource = await readFile(new URL("../src/game/SymbolGalleryScene.ts", import.meta.url), "utf8");
-  assert.match(gallerySource, /TILE_SYMBOLS\.forEach/);
-  assert.match(gallerySource, /preloadTileSymbols\(this\)/);
-  assert.match(gallerySource, /ensureBoardRuntimeAtlas\(this, this\.renderScale\)/);
-  assert.doesNotMatch(gallerySource, /assets\/symbols\//);
-});
-
 test("game parent owns mobile viewport geometry while landscape keeps centered 480:800 presentation", async () => {
   const css = await readFile(new URL("../public/styles.css", import.meta.url), "utf8");
   const html = await readFile(new URL("../public/index.html", import.meta.url), "utf8");
@@ -1354,10 +1332,8 @@ test("desktop 2x sharpness trial preserves mobile density and the explicit legac
   ];
   for (const { name, width, height, dpr } of cases) {
     const automatic = computeRenderScale(dpr, width, height);
-    assert.equal(selectStartupRenderScale(automatic, true, false), 2, name);
-    assert.equal(selectStartupRenderScale(automatic, false, false), automatic, name);
-    assert.equal(selectStartupRenderScale(automatic, true, true), 1, name);
-    assert.equal(selectStartupRenderScale(automatic, false, true), 1, name);
+    assert.equal(selectStartupRenderScale(automatic, true), 2, name);
+    assert.equal(selectStartupRenderScale(automatic, false), automatic, name);
   }
 
   const main = await readFile(new URL("../src/main.ts", import.meta.url), "utf8");
@@ -1388,40 +1364,8 @@ test("render density does not alter the canonical authored composition", () => {
   assert.equal(MAX_RENDER_SCALE, 2);
 });
 
-test("only debug renderScale 1 requests the legacy render density", () => {
-  assert.equal(isLegacyRenderScaleDebugRequested("?debug=1&renderScale=1"), true);
-  for (const search of [
-    "", "?renderScale=1", "?debug=0&renderScale=1", "?debug=1&renderScale=2",
-    "?debug=1&renderScale=3", "?debug=1&renderScale=abc", "?debug=1&hidpi=1",
-  ]) {
-    assert.equal(isLegacyRenderScaleDebugRequested(search), false);
-  }
-});
-
 const layout = (boardWidth, boardHeight) => new BoardLayout({
   sceneWidth: 480, sceneHeight: 800, boardWidth, boardHeight,
-});
-
-test("debug campaign start requires its explicit gate and a valid level", () => {
-  assert.equal(parseDebugStart(""), null);
-  assert.equal(parseDebugStart("?level=58"), null);
-  assert.equal(parseDebugStart("?debug=0&level=58"), null);
-  assert.deepEqual(parseDebugStart("?debug=1&level=58"), { levelNumber: 58, stageIndex: 0 });
-  for (const level of ["0", "101", "-1", "abc", "1.5", ""]) {
-    assert.equal(parseDebugStart(`?debug=1&level=${level}`), null);
-  }
-});
-
-test("debug campaign stages are one-based and fall back to stage one", () => {
-  assert.deepEqual(parseDebugStart("?debug=1&level=48&stage=1"), { levelNumber: 48, stageIndex: 0 });
-  assert.deepEqual(parseDebugStart("?debug=1&level=48&stage=2"), { levelNumber: 48, stageIndex: 1 });
-  assert.deepEqual(parseDebugStart("?debug=1&level=48&stage=3"), { levelNumber: 48, stageIndex: 2 });
-  assert.deepEqual(parseDebugStart("?debug=1&level=48&stage=4"), { levelNumber: 48, stageIndex: 0 });
-  assert.deepEqual(parseDebugStart("?debug=1&level=50&stage=2"), { levelNumber: 50, stageIndex: 0 });
-  assert.deepEqual(parseDebugStart("?debug=1&level=100&stage=2"), { levelNumber: 100, stageIndex: 1 });
-  for (const stage of ["0", "-1", "abc", "1.5", "999"]) {
-    assert.deepEqual(parseDebugStart(`?debug=1&level=48&stage=${stage}`), { levelNumber: 48, stageIndex: 0 });
-  }
 });
 
 test("level 1 starts the calibrated campaign with a small deterministic board", () => {

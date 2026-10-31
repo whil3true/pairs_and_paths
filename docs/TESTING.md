@@ -24,21 +24,17 @@ Simulators share `.simulation-dist` and must not run concurrently.
 The audit records exact baseline/final results and limitations in `REPOSITORY_AUDIT.md`.
 A passing build is not moderation approval or proof of Android playback/SDK callback delivery.
 
-## Developer fixtures (retained intentionally)
+## Production startup and release safety
 
-Serve `dist` at localhost or the GitHub Pages preview. Most debug features require `debug=1`.
+Production startup always opens Main Menu. Query parameters such as `debug=1`,
+`setProgress`, `resetProgress`, `level`, `symbols`, `locale`, and `renderScale` do
+not enable developer bypasses. They cannot change saved campaign progress or
+expose a diagnostic gallery. A saved language choice takes precedence over
+the platform language, and the desktop 2× density remains the same.
 
-| Query | Effect / persistence |
-| --- | --- |
-| `?debug=1&level=30&stage=2` | One-based stage; valid level 1..100; invalid stage → Stage 1. Campaign writes disabled for session |
-| `?debug=1&symbols=1` | Production 30-symbol contact sheet; takes route precedence over level jump |
-| `?debug=1&setProgress=20` | Saves completion fixture 20, normal session persistence afterwards |
-| `?debug=1&resetProgress=1` | Clears campaign before routing; wins over setProgress |
-| `?debug=1&locale=en` / `locale=ru` | Non-persistent locale override; otherwise stored choice then SDK language then RU |
-| `?debug=1&renderScale=1` | Legacy backing density comparison; default caps at 2× |
-
-Progress fixtures overwrite the current origin's save. Use a dedicated QA origin/profile, not a
-player save. Gallery unlock QA: fixtures 0, 20, 99, 100. Debug level jumps must never advance saves.
+Debug fixtures were deliberately removed from production source in the
+release-hardening change. Use isolated unit tests and a private development
+environment for synthetic progress fixtures; never mutate actual player saves.
 
 ## Campaign, navigation and persistence
 

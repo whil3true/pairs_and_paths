@@ -94,7 +94,7 @@ test("Game Ready requires a playable scene, not only BootScene", () => {
   assert.equal(hasInteractiveScene(["BootScene"]), false);
   assert.equal(hasInteractiveScene(["MainMenuScene"]), true);
   assert.equal(hasInteractiveScene(["BootScene", "PlayScene"]), true);
-  assert.equal(hasInteractiveScene(["SymbolGalleryScene"]), true);
+  assert.equal(hasInteractiveScene(["SymbolGalleryScene"]), false);
 });
 
 test("SDK starts before audio and Phaser, advertising is only level-boundary triggered", async () => {

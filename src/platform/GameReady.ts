@@ -1,8 +1,8 @@
 import type { PlatformService } from "./PlatformService.js";
 
-/** Debug entry points may render PlayScene or SymbolGalleryScene first. */
+/** Interactive production scenes that may signal platform readiness. */
 export const READY_SCENE_KEYS = Object.freeze([
-  "MainMenuScene", "PlayScene", "SymbolGalleryScene",
+  "MainMenuScene", "PlayScene",
 ]);
 
 export const hasInteractiveScene = (activeKeys: readonly string[]): boolean =>

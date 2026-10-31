@@ -11,7 +11,7 @@ GitHub Pages are standalone; other hosts require `/sdk.js` → `YaGames.init()`.
 watchdogs are 7 s / 12 s. Failure reaches the bilingual Retry UI; production must not silently
 fall back to free web hints. SDK listeners are registered before game construction and expose
 current `isPaused` to late subscribers. `LoadingAPI.ready()` is sent once after an interactive
-Main Menu/Play/Symbol Gallery screen is rendered, not merely after script download.
+Main Menu/Play screen is rendered, not merely after script download.
 
 `GameplayAPI.start/stop` is idempotent and controlled by `isGameplayActive`: active scene, ready UI,
 `gameplay` presentation, and no SDK/browser/manual/modal/ad-pending pause. Loading, Reward, Complete,
