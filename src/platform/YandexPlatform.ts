@@ -73,6 +73,7 @@ export class YandexPlatform implements PlatformService {
       }, 15000);
       try {
         this.sdk.adv!.showFullscreenAdv({
+          callbacks: {
           onOpen: () => {
             if (callbacksDone) return;
             console.info("[Cozy SDK] interstitial_open");
@@ -89,6 +90,7 @@ export class YandexPlatform implements PlatformService {
           onError: (error) => {
             console.warn("[Cozy SDK] interstitial_error", error);
             finishCallbacks(false);
+          },
           },
         });
       } catch (error) {
