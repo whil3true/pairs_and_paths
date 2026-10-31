@@ -10,6 +10,8 @@ export interface PlatformService {
   setGameplayActive(active: boolean): void;
   /** Resolves true only when a fullscreen interstitial was actually shown. */
   showInterstitial(onOpen?: () => void): Promise<boolean>;
+  /** True only when the video explicitly granted its reward. */
+  showRewardedHint(): Promise<boolean>;
   onPause(handler: () => void): () => void;
   onResume(handler: () => void): () => void;
 }
