@@ -7,6 +7,12 @@ export interface YandexSdk {
     readonly GameplayAPI?: { start(): void; stop(): void };
   };
   readonly adv?: {
+    showRewardedVideo(options: { callbacks: {
+      onOpen?: () => void;
+      onRewarded?: () => void;
+      onClose?: () => void;
+      onError?: (error: object) => void;
+    } }): void;
     showFullscreenAdv(options?: {
       callbacks?: {
         onOpen?: () => void;

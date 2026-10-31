@@ -63,6 +63,11 @@ export interface UiStrings {
   readonly cancel: string;
   readonly gameplayPause: string;
   readonly gameplayHint: string;
+  readonly hintConfirmTitle: string;
+  readonly hintConfirmBody: string;
+  readonly hintWatchAd: string;
+  readonly hintUnavailableTitle: string;
+  readonly hintUnavailableBody: string;
   readonly gameplayLevelCaption: string;
   readonly gameplayRemainingCaption: string;
   readonly gameplayPairCount: (count: number) => string;
@@ -122,6 +127,11 @@ const ru = Object.freeze<UiStrings>({
     cancel: "Отмена",
     gameplayPause: "Пауза",
     gameplayHint: "Подсказка",
+    hintConfirmTitle: "Получить подсказку?",
+    hintConfirmBody: "Посмотрите рекламу, чтобы увидеть подходящую пару.",
+    hintWatchAd: "Смотреть рекламу",
+    hintUnavailableTitle: "Подсказка недоступна",
+    hintUnavailableBody: "Реклама не была просмотрена до получения награды. Попробуйте позже.",
     gameplayLevelCaption: "Уровень",
     gameplayRemainingCaption: "Осталось",
     gameplayPairCount: (count) => `${count} ${russianPairWord(count)}`,
@@ -183,6 +193,11 @@ const en = Object.freeze<UiStrings>({
     cancel: "Cancel",
     gameplayPause: "Pause",
     gameplayHint: "Hint",
+    hintConfirmTitle: "Get a hint?",
+    hintConfirmBody: "Watch an ad to reveal a matching pair.",
+    hintWatchAd: "Watch ad",
+    hintUnavailableTitle: "Hint unavailable",
+    hintUnavailableBody: "No rewarded ad was completed. Please try again later.",
     gameplayLevelCaption: "Level",
     gameplayRemainingCaption: "Remaining",
     gameplayPairCount: (count) => `${count} ${count === 1 ? "pair" : "pairs"}`,

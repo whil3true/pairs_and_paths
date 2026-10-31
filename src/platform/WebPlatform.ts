@@ -14,6 +14,7 @@ export class WebPlatform implements PlatformService {
   ready(): void { /* Standalone web build: no platform SDK. */ }
   setGameplayActive(_active: boolean): void { /* No Yandex GameplayAPI here. */ }
   async showInterstitial(): Promise<boolean> { return false; }
+  async showRewardedHint(): Promise<boolean> { return true; } // Standalone development.
   onPause(_handler: () => void): () => void { return () => {}; }
   onResume(_handler: () => void): () => void { return () => {}; }
 

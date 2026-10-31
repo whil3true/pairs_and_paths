@@ -59,6 +59,9 @@ export class PlayScene extends Phaser.Scene {
   private selected: GridPoint | null = null;
   private inputLocked = false;
   private hintActive = false;
+  private hintModal: Phaser.GameObjects.Container | null = null;
+  private hintAdPending = false;
+  private hintRequestToken = 0;
   private hintedPoints: readonly [GridPoint, GridPoint] | null = null;
   private hintTimer: Phaser.Time.TimerEvent | null = null;
   private hintTween: Phaser.Tweens.Tween | null = null;
@@ -130,6 +133,9 @@ export class PlayScene extends Phaser.Scene {
     this.releaseRetainedArtwork();
     this.clearInitialStageSettle();
     this.clearHintFeedback();
+    this.dismissHintModal();
+    this.hintRequestToken++;
+    this.hintAdPending = false;
     this.clearPauseOverlayImmediately();
     this.cleanupRewardPresentation();
   };
@@ -273,6 +279,7 @@ export class PlayScene extends Phaser.Scene {
 
   private loadStage(animateIn = false): void {
     this.presentationState = "gameplay";
+    this.dismissHintModal();
     this.clearPauseOverlayImmediately();
     this.completeOverlay?.destroy(true);
     this.completeOverlay = null;
@@ -510,7 +517,7 @@ export class PlayScene extends Phaser.Scene {
   }
 
   private onCellTapped(point: GridPoint): void {
-    if (this.inputLocked || this.hintActive || this.pauseOverlay !== null || this.board.isBlocked(point)) return;
+    if (this.inputLocked || this.hintModal !== null || this.hintAdPending || this.pauseOverlay !== null || this.board.isBlocked(point)) return;
     if (this.board.isEmpty(point)) {
       this.setSelected(null);
       return;
@@ -569,28 +576,73 @@ export class PlayScene extends Phaser.Scene {
   }
 
   private showHint(): void {
-    if (this.inputLocked || this.hintActive || this.pauseOverlay !== null || this.completeOverlay !== null) return;
-    this.setSelected(null);
-    const move = getHintMove(this.board);
-    if (move === null) {
-      if (this.board.hasTiles()) console.warn("Hint requested, but the current board has no legal moves");
+    if (this.inputLocked || this.hintModal !== null || this.hintAdPending
+      || this.pauseOverlay !== null || this.completeOverlay !== null || this.hintActive) return;
+    if (getHintMove(this.board) === null) return;
+    if (this.platform.id === "web") {
+      this.revealHint();
       return;
     }
+    this.showHintDialog(false);
+  }
+
+  private showHintDialog(unavailable: boolean): void {
+    this.dismissHintModal();
+    const strings = getUiStrings(this.locale);
+    const shell = createModalShell(this, {
+      x: 240, y: 400, width: 416, height: 286,
+    });
+    const title = createUiText(this, this.renderScale, 240, 306,
+      unavailable ? strings.hintUnavailableTitle : strings.hintConfirmTitle,
+      "sectionHeading", { align: "center" }).setOrigin(0.5);
+    const body = createUiText(this, this.renderScale, 240, 367,
+      unavailable ? strings.hintUnavailableBody : strings.hintConfirmBody,
+      "body", { align: "center" }).setOrigin(0.5).setWordWrapWidth(340);
+    const confirm = unavailable ? null : createPrimaryButton(this, this.renderScale, {
+      x: 240, y: 428, width: 336, label: strings.hintWatchAd,
+      onActivate: () => this.requestRewardedHint(),
+    });
+    const cancel = createSecondaryButton(this, this.renderScale, {
+      x: 240, y: unavailable ? 442 : 497, width: 336, label: strings.cancel,
+      onActivate: () => this.dismissHintModal(),
+    });
+    this.hintModal = this.add.container(0, 0, [
+      shell, title, body, ...(confirm ? [confirm.container] : []), cancel.container,
+    ]).setDepth(60);
+    this.syncGameplayMarker();
+  }
+
+  private dismissHintModal(): void {
+    this.hintModal?.destroy(true);
+    this.hintModal = null;
+    this.syncGameplayMarker();
+  }
+
+  private requestRewardedHint(): void {
+    if (this.hintAdPending || this.hintModal === null || !this.sys.isActive()) return;
+    this.hintAdPending = true;
+    this.dismissHintModal();
+    const token = ++this.hintRequestToken;
+    void this.platform.showRewardedHint().catch((error: unknown) => {
+      console.warn("[Cozy SDK] rewarded_hint_request_failed", error);
+      return false;
+    }).then((granted) => {
+      if (token !== this.hintRequestToken || !this.sys.isActive()) return;
+      this.hintAdPending = false;
+      if (granted) this.revealHint();
+      else this.showHintDialog(true);
+    });
+  }
+
+  private revealHint(): void {
+    if (this.hintActive) return;
+    const move = getHintMove(this.board);
+    if (move === null) return;
     this.hintActive = true;
     this.hintedPoints = [move.start, move.end];
     for (const point of this.hintedPoints) {
-      this.tiles.get(keyOf(point))?.setState("hint");
+      this.tiles.get(keyOf(point))?.setHintVisible(true);
     }
-    const roots = this.hintedPoints.map((point) => this.tiles.get(keyOf(point))?.root)
-      .filter((root): root is Phaser.GameObjects.Container => root !== undefined);
-    if (!this.prefersReducedMotion()) {
-      this.hintTween = this.tweens.add({
-        targets: roots, scaleX: GAMEPLAY_FEEDBACK.hint.scalePeak, scaleY: GAMEPLAY_FEEDBACK.hint.scalePeak,
-        duration: GAMEPLAY_FEEDBACK.hint.pulseHalfDuration, yoyo: true,
-        repeat: GAMEPLAY_FEEDBACK.hint.pulseRepeats, ease: "Sine.InOut",
-      });
-    }
-    this.hintTimer = this.time.delayedCall(GAMEPLAY_FEEDBACK.hint.duration, () => this.clearHintFeedback());
   }
 
   private clearHintFeedback(): void {
@@ -598,11 +650,8 @@ export class PlayScene extends Phaser.Scene {
     this.hintTimer = null;
     this.hintTween?.stop();
     this.hintTween = null;
-    if (this.hintedPoints !== null) for (const point of this.hintedPoints) {
-      this.tiles.get(keyOf(point))?.root.setScale(1);
-    }
     if (this.hintedPoints !== null) {
-      for (const point of this.hintedPoints) this.styleTile(point, false);
+      for (const point of this.hintedPoints) this.tiles.get(keyOf(point))?.setHintVisible(false);
     }
     this.hintedPoints = null;
     this.hintActive = false;
@@ -610,6 +659,7 @@ export class PlayScene extends Phaser.Scene {
 
   private completeMove(move: LegalMove): void {
     this.inputLocked = true;
+    this.clearHintFeedback();
     this.setSelected(null);
     this.animateRoute(move.path.points, () => {
       this.board = applyMove(this.board, move);
@@ -924,7 +974,7 @@ export class PlayScene extends Phaser.Scene {
   }
 
   private showPause(): void {
-    if (this.inputLocked || this.hintActive || this.completeOverlay !== null
+    if (this.inputLocked || this.hintModal !== null || this.hintAdPending || this.completeOverlay !== null
       || this.artworkPresentation !== null || this.pauseOverlay !== null) return;
     this.showPauseMenu(true);
   }
@@ -1160,7 +1210,7 @@ export class PlayScene extends Phaser.Scene {
       presentation: this.presentationState,
       sdkPaused: this.sdkPaused,
       browserPaused: this.browserPauseRequired,
-      manualPauseOpen: this.pauseOverlay !== null || this.pauseClosing,
+      manualPauseOpen: this.pauseOverlay !== null || this.pauseClosing || this.hintModal !== null || this.hintAdPending,
     }));
   }
 

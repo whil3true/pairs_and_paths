@@ -77,6 +77,7 @@ test("Phase 4 localization dictionaries have equivalent complete shapes", () => 
   assert.deepEqual(Object.keys(UI_STRINGS).sort(), ["en", "ru"]);
   assert.deepEqual(Object.keys(UI_STRINGS.ru).sort(), Object.keys(UI_STRINGS.en).sort());
   const required = ["gameTitle", "brandTitle", "brandDescriptor", "tagline", "play", "gameplayPause", "gameplayHint",
+    "hintConfirmTitle", "hintConfirmBody", "hintWatchAd", "hintUnavailableTitle", "hintUnavailableBody",
     "gameplayLevelCaption", "gameplayRemainingCaption", "gameplayPairCount", "remainingPairs", "stageLabel",
     "continueLevel", "playAgainLevel", "levels", "gallery",
     "openedProgress", "collectionComplete", "chapterLabel", "chapterHeader", "globalProgress", "backToMenu",

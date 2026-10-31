@@ -19,6 +19,8 @@ export class TileVisual {
   private cardFrame: TileCardFrame = "default";
   private state: TileVisualState = "default";
   private pressed = false;
+  private readonly hintMark: Phaser.GameObjects.Graphics;
+  private hintVisible = false;
 
   constructor(
     scene: Phaser.Scene,
@@ -38,12 +40,34 @@ export class TileVisual {
       .setDisplaySize(atlas.logicalSlotSize, atlas.logicalSlotSize);
     this.symbol = scene.add.image(0, 0, atlas.textureKey, symbolFrame)
       .setDisplaySize(atlas.logicalSlotSize, atlas.logicalSlotSize);
-    this.root = scene.add.container(x, y, [this.card, this.symbol]).setDepth(5).setName("board-cell");
+    const inset = TILE_VISUAL_STYLE.hintInnerInset + 2;
+    const size = TILE_VISUAL_STYLE.size - inset * 2;
+    this.hintMark = scene.add.graphics();
+    this.hintMark.lineStyle(2, TILE_VISUAL_STYLE.hintBorder, 1)
+      .strokeRoundedRect(-size / 2, -size / 2, size, size, Math.max(1, TILE_VISUAL_STYLE.radius - inset));
+    this.hintMark.setVisible(false);
+    this.root = scene.add.container(x, y, [this.card, this.symbol, this.hintMark]).setDepth(5).setName("board-cell");
   }
 
   setState(state: TileVisualState): void {
     this.state = state;
     this.syncFrame();
+  }
+
+  setHintVisible(visible: boolean): void {
+    if (this.hintVisible === visible) return;
+    this.hintVisible = visible;
+    this.hintMark.setVisible(visible);
+    this.hintMark.setAlpha(1);
+    if (visible) {
+      // A single opacity-only entrance: no scale outside the visible tile.
+      this.hintMark.setAlpha(0.3);
+      this.root.scene.tweens.add({
+        targets: this.hintMark, alpha: 1, duration: 360, ease: "Sine.Out",
+      });
+    } else {
+      this.root.scene.tweens.killTweensOf(this.hintMark);
+    }
   }
 
   press(tweens: Phaser.Tweens.TweenManager): void {

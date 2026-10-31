@@ -104,6 +104,46 @@ export class YandexPlatform implements PlatformService {
     });
   }
 
+  showRewardedHint(): Promise<boolean> {
+    if (!this.sdk.adv?.showRewardedVideo) return Promise.resolve(false);
+    return new Promise<boolean>((resolve) => {
+      let settled = false;
+      let rewarded = false;
+      let watchdog: ReturnType<typeof setTimeout> | null = null;
+      const finish = (): void => {
+        if (settled) return;
+        settled = true;
+        if (watchdog !== null) clearTimeout(watchdog);
+        console.info("[Cozy SDK] rewarded_hint_complete", rewarded);
+        resolve(rewarded);
+      };
+      watchdog = setTimeout(() => {
+        console.warn("[Cozy SDK] rewarded_hint_timeout");
+        finish();
+      }, 120000);
+      try {
+        this.sdk.adv!.showRewardedVideo({
+          callbacks: {
+            onOpen: () => console.info("[Cozy SDK] rewarded_hint_open"),
+            onRewarded: () => {
+              if (settled) return;
+              rewarded = true;
+              console.info("[Cozy SDK] rewarded_hint_granted");
+            },
+            onClose: finish,
+            onError: (error) => {
+              console.warn("[Cozy SDK] rewarded_hint_error", error);
+              finish();
+            },
+          },
+        });
+      } catch (error) {
+        console.warn("[Cozy SDK] rewarded_hint_throw", error);
+        finish();
+      }
+    });
+  }
+
   onPause(listener: () => void): () => void {
     this.pauseListeners.add(listener);
     if (this.paused) listener();
