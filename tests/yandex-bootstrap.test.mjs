@@ -9,13 +9,16 @@ import { WebPlatform } from "../.test-dist/platform/WebPlatform.js";
 const mock = () => {
   const listeners = new Map();
   let readyCalls = 0;
+  const gameplayCalls = [];
   const sdk = {
     environment: { i18n: { lang: "en" } },
-    features: { LoadingAPI: { ready: () => { readyCalls++; } } },
+    features: { LoadingAPI: { ready: () => { readyCalls++; } }, GameplayAPI: {
+      start: () => gameplayCalls.push("start"), stop: () => gameplayCalls.push("stop"),
+    } },
     on: (event, fn) => { listeners.set(event, fn); },
     off: (event, fn) => { if (listeners.get(event) === fn) listeners.delete(event); },
   };
-  return { sdk, listeners, emit: (event) => listeners.get(event)?.(), readyCalls: () => readyCalls };
+  return { sdk, listeners, emit: (event) => listeners.get(event)?.(), readyCalls: () => readyCalls, gameplayCalls };
 };
 
 test("Yandex adapter subscribes to lifecycle before gameplay and sends Ready once", async () => {
@@ -28,6 +31,12 @@ test("Yandex adapter subscribes to lifecycle before gameplay and sends Ready onc
   assert.equal(m.listeners.size, 2);
   platform.ready(); platform.ready();
   assert.equal(m.readyCalls(), 1);
+  platform.setGameplayActive(true);
+  platform.setGameplayActive(true);
+  platform.setGameplayActive(false);
+  platform.setGameplayActive(false);
+  platform.setGameplayActive(true);
+  assert.deepEqual(m.gameplayCalls, ["start", "stop", "start"]);
   const seen = [];
   platform.onPause(() => seen.push("pause"));
   platform.onResume(() => seen.push("resume"));
@@ -36,7 +45,18 @@ test("Yandex adapter subscribes to lifecycle before gameplay and sends Ready onc
   m.emit("game_api_resume"); m.emit("game_api_resume");
   assert.deepEqual(seen, ["pause", "resume"]);
   platform.destroy();
+  assert.deepEqual(m.gameplayCalls, ["start", "stop", "start", "stop"]);
   assert.equal(m.listeners.size, 0);
+});
+
+test("GameplayAPI is optional", () => {
+  const m = mock();
+  delete m.sdk.features.GameplayAPI;
+  const platform = new YandexPlatform(m.sdk);
+  platform.setGameplayActive(true);
+  platform.setGameplayActive(false);
+  platform.destroy();
+  assert.deepEqual(m.gameplayCalls, []);
 });
 
 test("late pause subscription receives state once", () => {

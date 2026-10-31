@@ -7,6 +7,7 @@ export class YandexPlatform implements PlatformService {
   readonly displayName = "Yandex Games";
   readonly locale: string;
   private readySent = false;
+  private gameplayActive = false;
   private paused = false;
   private readonly pauseListeners = new Set<() => void>();
   private readonly resumeListeners = new Set<() => void>();
@@ -25,6 +26,13 @@ export class YandexPlatform implements PlatformService {
     this.sdk.features?.LoadingAPI?.ready();
   }
 
+  setGameplayActive(active: boolean): void {
+    if (this.gameplayActive === active) return;
+    this.gameplayActive = active;
+    if (active) this.sdk.features?.GameplayAPI?.start();
+    else this.sdk.features?.GameplayAPI?.stop();
+  }
+
   onPause(listener: () => void): () => void {
     this.pauseListeners.add(listener);
     if (this.paused) listener();
@@ -37,6 +45,7 @@ export class YandexPlatform implements PlatformService {
   }
 
   destroy(): void {
+    this.setGameplayActive(false);
     this.sdk.off("game_api_pause", this.handlePause);
     this.sdk.off("game_api_resume", this.handleResume);
     this.pauseListeners.clear();

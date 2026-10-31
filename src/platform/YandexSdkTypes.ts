@@ -2,7 +2,10 @@
 export type YandexLifecycleEvent = "game_api_pause" | "game_api_resume";
 
 export interface YandexSdk {
-  readonly features?: { readonly LoadingAPI?: { ready(): void } };
+  readonly features?: {
+    readonly LoadingAPI?: { ready(): void };
+    readonly GameplayAPI?: { start(): void; stop(): void };
+  };
   readonly environment?: { readonly i18n?: { readonly lang?: string } };
   on(event: YandexLifecycleEvent, handler: () => void): void;
   off(event: YandexLifecycleEvent, handler: () => void): void;

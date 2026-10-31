@@ -12,6 +12,7 @@ export class WebPlatform implements PlatformService {
   readonly isPaused = false;
 
   ready(): void { /* Standalone web build: no platform SDK. */ }
+  setGameplayActive(_active: boolean): void { /* No Yandex GameplayAPI here. */ }
   onPause(_handler: () => void): () => void { return () => {}; }
   onResume(_handler: () => void): () => void { return () => {}; }
 
