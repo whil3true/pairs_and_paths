@@ -42,7 +42,7 @@ import { getPauseMotionPolicy, PAUSE_FADE_EASE, PAUSE_LAYOUT } from "./PauseVisu
 import { attachBrowserGameplayLifecycle } from "./BrowserGameplayLifecycle.js";
 import { isGameplayActive } from "./GameplayStatePolicy.js";
 import { InterstitialController } from "../platform/InterstitialController.js";
-import { hideNavigationCover, releaseNavigationCoverAfterRender, showNavigationCover } from "../platform/NavigationCover.js";
+import { armNavigationCoverFallback, hideNavigationCover, releaseNavigationCoverAfterRender, showNavigationCover } from "../platform/NavigationCover.js";
 
 const keyOf = ({ col, row }: GridPoint): string => `${col},${row}`;
 const samePoint = (left: GridPoint, right: GridPoint): boolean =>
@@ -323,6 +323,7 @@ export class PlayScene extends Phaser.Scene {
     }
     this.ensureBrowserPauseOverlay();
     this.syncGameplayMarker();
+    releaseNavigationCoverAfterRender(this.game);
   }
 
   private clearInitialStageSettle(): void {
@@ -875,7 +876,7 @@ export class PlayScene extends Phaser.Scene {
       }
       this.interstitialTransitionPending = false;
       action();
-      releaseNavigationCoverAfterRender(this.game);
+      armNavigationCoverFallback();
     }).catch((error: unknown) => {
       console.error("[Cozy SDK] interstitial_navigation_failed", error);
       hideNavigationCover();
