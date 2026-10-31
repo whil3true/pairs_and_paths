@@ -22,6 +22,7 @@ import { loadProductionFonts } from "./game/TypographyAssets.js";
 import { configureUiLocale } from "./game/UiLocaleRuntime.js";
 import { createPlatform } from "./platform/createPlatform.js";
 import { attachGameReady } from "./platform/GameReady.js";
+import { attachSdkInputGuard } from "./platform/SdkInputGuard.js";
 import { WebProgressStore } from "./platform/WebProgressStore.js";
 import { VISUAL_COLORS } from "./game/VisualTokens.js";
 
@@ -41,9 +42,17 @@ const renderScale = selectStartupRenderScale(
   isDesktopBrowserUserAgent(navigator.userAgent, navigator.maxTouchPoints),
   isLegacyRenderScaleDebugRequested(search),
 );
+const bootTime = performance.now();
+const sdkTrace = (name: string): void => {
+  console.info(`[Cozy SDK] ${name} +${Math.round(performance.now() - bootTime)}ms`);
+};
 const startGame = async (): Promise<void> => {
+  sdkTrace("bootstrap_begin");
   // Platform events may arrive during startup before Phaser/audio exist.
   const platform = await createPlatform();
+  sdkTrace(`platform_initialized:${platform.id}`);
+  platform.onPause(() => sdkTrace("platform_pause"));
+  platform.onResume(() => sdkTrace("platform_resume"));
   const progressStore = new WebProgressStore();
   const localeStore = new WebLocaleStore();
   const artworkTextures = new FullArtworkTextureCache();
@@ -88,7 +97,8 @@ const startGame = async (): Promise<void> => {
       height: LOGICAL_GAME_HEIGHT * renderScale,
     },
   });
-  attachGameReady(game, platform);
+  attachSdkInputGuard(game, platform);
+  attachGameReady(game, platform, () => sdkTrace("game_ready"));
 };
 
 void startGame().catch((error: unknown) => {

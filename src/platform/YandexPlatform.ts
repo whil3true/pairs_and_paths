@@ -33,6 +33,40 @@ export class YandexPlatform implements PlatformService {
     else this.sdk.features?.GameplayAPI?.stop();
   }
 
+  showInterstitial(): Promise<boolean> {
+    if (!this.sdk.adv?.showFullscreenAdv) return Promise.resolve(false);
+    return new Promise<boolean>((resolve) => {
+      let settled = false;
+      const complete = (shown: boolean): void => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(watchdog);
+        resolve(shown);
+      };
+      // A defensive callback watchdog prevents a broken advertising SDK from
+      // leaving the Next button stuck forever. Any SDK pause still owns input.
+      const watchdog = setTimeout(() => complete(false), 120000);
+      try {
+        this.sdk.adv!.showFullscreenAdv({
+          callbacks: {
+            onOpen: () => console.info("[Cozy SDK] interstitial_open"),
+            onClose: (shown) => {
+              console.info("[Cozy SDK] interstitial_close", shown);
+              complete(shown === true);
+            },
+            onError: (error) => {
+              console.warn("[Cozy SDK] interstitial_error", error);
+              complete(false);
+            },
+          },
+        });
+      } catch (error) {
+        console.warn("[Cozy SDK] interstitial_throw", error);
+        complete(false);
+      }
+    });
+  }
+
   onPause(listener: () => void): () => void {
     this.pauseListeners.add(listener);
     if (this.paused) listener();

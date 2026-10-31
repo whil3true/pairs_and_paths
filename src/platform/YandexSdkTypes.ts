@@ -6,6 +6,15 @@ export interface YandexSdk {
     readonly LoadingAPI?: { ready(): void };
     readonly GameplayAPI?: { start(): void; stop(): void };
   };
+  readonly adv?: {
+    showFullscreenAdv(options?: {
+      callbacks?: {
+        onOpen?: () => void;
+        onClose?: (wasShown: boolean) => void;
+        onError?: (error: object) => void;
+      };
+    }): void;
+  };
   readonly environment?: { readonly i18n?: { readonly lang?: string } };
   on(event: YandexLifecycleEvent, handler: () => void): void;
   off(event: YandexLifecycleEvent, handler: () => void): void;
