@@ -61,6 +61,7 @@ export class PlayScene extends Phaser.Scene {
   private hintActive = false;
   private hintModal: Phaser.GameObjects.Container | null = null;
   private hintAdPending = false;
+  private hintRewardDeferred: boolean | null = null;
   private hintRequestToken = 0;
   private hintedPoints: readonly [GridPoint, GridPoint] | null = null;
   private hintTimer: Phaser.Time.TimerEvent | null = null;
@@ -136,6 +137,7 @@ export class PlayScene extends Phaser.Scene {
     this.dismissHintModal();
     this.hintRequestToken++;
     this.hintAdPending = false;
+    this.hintRewardDeferred = null;
     this.clearPauseOverlayImmediately();
     this.cleanupRewardPresentation();
   };
@@ -280,6 +282,9 @@ export class PlayScene extends Phaser.Scene {
   private loadStage(animateIn = false): void {
     this.presentationState = "gameplay";
     this.dismissHintModal();
+    this.hintRequestToken++;
+    this.hintAdPending = false;
+    this.hintRewardDeferred = null;
     this.clearPauseOverlayImmediately();
     this.completeOverlay?.destroy(true);
     this.completeOverlay = null;
@@ -629,9 +634,26 @@ export class PlayScene extends Phaser.Scene {
     }).then((granted) => {
       if (token !== this.hintRequestToken || !this.sys.isActive()) return;
       this.hintAdPending = false;
-      if (granted) this.revealHint();
-      else this.showHintDialog(true);
+      if (this.browserPauseRequired || this.sdkPaused) {
+        this.hintRewardDeferred = granted;
+        return;
+      }
+      this.completeHintReward(granted);
     });
+  }
+
+  private completeHintReward(granted: boolean): void {
+    if (this.presentationState !== "gameplay" || !this.sys.isActive()) return;
+    if (granted) this.revealHint();
+    else this.showHintDialog(true);
+  }
+
+  private flushDeferredHintReward(): void {
+    if (this.hintRewardDeferred === null || this.browserPauseRequired || this.sdkPaused
+      || this.pauseOverlay !== null || this.pauseClosing) return;
+    const granted = this.hintRewardDeferred;
+    this.hintRewardDeferred = null;
+    this.completeHintReward(granted);
   }
 
   private revealHint(): void {
@@ -659,7 +681,8 @@ export class PlayScene extends Phaser.Scene {
 
   private completeMove(move: LegalMove): void {
     this.inputLocked = true;
-    this.clearHintFeedback();
+    if (this.hintedPoints !== null && [move.start, move.end].some((point) =>
+      this.hintedPoints!.some((hinted) => samePoint(point, hinted)))) this.clearHintFeedback();
     this.setSelected(null);
     this.animateRoute(move.path.points, () => {
       this.board = applyMove(this.board, move);
@@ -1192,6 +1215,7 @@ export class PlayScene extends Phaser.Scene {
     this.sdkInputWasEnabled = null;
     this.syncGameplayFreeze();
     this.syncGameplayMarker();
+    this.flushDeferredHintReward();
   }
 
   private syncGameplayFreeze(): void {
@@ -1218,6 +1242,7 @@ export class PlayScene extends Phaser.Scene {
     if ((this.presentationState !== "gameplay" && this.presentationState !== "loading")
       || this.browserPauseRequired) return;
     this.browserPauseRequired = true;
+    this.dismissHintModal();
     this.inputLockedBeforeBrowserPause = this.inputLocked;
     this.inputLocked = true;
     this.ensureBrowserPauseOverlay();
@@ -1245,6 +1270,7 @@ export class PlayScene extends Phaser.Scene {
     // The scene stays frozen until Continue. Rendering and pointer input do not
     // depend on the scene clock, so the existing Pause controls remain usable.
     this.ensureBrowserPauseOverlay();
+    this.flushDeferredHintReward();
   }
 
   private ensureBrowserPauseOverlay(): void {
@@ -1260,6 +1286,7 @@ export class PlayScene extends Phaser.Scene {
     this.syncGameplayFreeze();
     this.syncGameplayMarker();
     this.inputLockedBeforeBrowserPause = false;
+    this.flushDeferredHintReward();
   }
 }
 

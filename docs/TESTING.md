@@ -344,3 +344,19 @@ hints for development only; Yandex does not.
 
 Run RU and EN, SDK pause/resume and audio checks, fast cancel/close,
 no-fill/error, and real Android touch before merge.
+
+## Rewarded hint state and browser pause regression
+
+When a paid hint marks a pair, remove an unrelated pair: the same gold markers
+must remain visible and the Hint button must not request another ad. Removing
+either of the marked tiles as part of a valid pair clears the marker and allows
+another voluntary hint. Cover the special case where only one hinted tile is
+removed in a different valid pair.
+
+Open either Hint confirmation or Hint unavailable modal, background and restore
+the Android browser: browser Pause must own the foreground. The prior hint modal
+must be dismissed, never stacked over Pause. During a rewarded video, a browser
+background must still require Continue; reward success/failure must be deferred
+until after the browser Pause is dismissed. No extra ad; only a completed
+onRewarded may reveal a pair. Test callbacks arriving before/after SDK resume
+and browser foreground. When scene or stage changes invalidate stale rewards.
