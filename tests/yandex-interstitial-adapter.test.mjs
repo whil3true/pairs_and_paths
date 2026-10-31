@@ -52,7 +52,7 @@ test("missing adv or throwing SDK cannot stall navigation", async () => {
   bad.adapter.destroy();
 });
 
-test("ad close before SDK resume must not navigate or unlock the frozen scene early", async () => {
+test("ad close commits navigation immediately without overriding an SDK pause", async () => {
   const handlers = new Map();
   let callbacks;
   const sdk = {
@@ -61,22 +61,36 @@ test("ad close before SDK resume must not navigate or unlock the frozen scene ea
     adv: { showFullscreenAdv(value) { callbacks = value; } },
   };
   const platform = new YandexPlatform(sdk);
-  let completed = false;
-  const pending = platform.showInterstitial().then(value => {
-    completed = true;
-    return value;
-  });
-
+  callbacks = undefined;
+  const pending = platform.showInterstitial();
   callbacks.onOpen();
   handlers.get("game_api_pause")();
   callbacks.onClose(true);
-  await Promise.resolve();
-  assert.equal(completed, false, "ad close alone cannot unblock SDK-paused gameplay");
+  assert.equal(await pending, true, "the chosen action can navigate at ad close");
+  assert.equal(platform.isPaused, true, "navigation never fabricates SDK resume");
+  handlers.get("game_api_resume")();
+  assert.equal(platform.isPaused, false);
+  platform.destroy();
+});
+
+test("close before delayed resume settles only once and removes no SDK pause listeners", async () => {
+  const handlers = new Map();
+  let callbacks;
+  const sdk = {
+    on(name, fn) { handlers.set(name, fn); },
+    off(name) { handlers.delete(name); },
+    adv: { showFullscreenAdv(value) { callbacks = value; } },
+  };
+  const platform = new YandexPlatform(sdk);
+  const pending = platform.showInterstitial();
+  callbacks.onOpen();
+  handlers.get("game_api_pause")();
+  callbacks.onClose(true);
+  callbacks.onClose(false);
+  callbacks.onError({ code: "LATE" });
+  assert.equal(await pending, true);
   assert.equal(platform.isPaused, true);
   handlers.get("game_api_resume")();
-  assert.equal(await pending, true);
-  assert.equal(completed, true);
-  assert.equal(platform.isPaused, false);
   platform.destroy();
 });
 
