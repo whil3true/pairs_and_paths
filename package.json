@@ -13,7 +13,8 @@
     "simulate": "node scripts/simulate.mjs",
     "simulate:blockers": "node scripts/simulate-blockers.mjs",
     "build": "node scripts/build.mjs",
-    "check:package-size": "node scripts/check-package-size.mjs"
+    "check:package-size": "node scripts/check-package-size.mjs",
+    "check:assets": "node scripts/check-assets.mjs"
   },
   "dependencies": {
     "phaser": "4.2.1"

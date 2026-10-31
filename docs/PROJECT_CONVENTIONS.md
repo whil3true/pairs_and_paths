@@ -54,3 +54,13 @@ Work on `feature/**` branches based on an explicitly recorded `dev` SHA. Use mea
 draft PRs, no force pushes to shared branches, no automatic merge and no direct `dev`/`main` changes.
 Before deletion record exact paths, hashes/bytes where relevant, static and dynamic consumers,
 test dependencies, and build inclusion. Ambiguous evidence means REVIEW and retention.
+
+## Production asset snapshot
+
+`docs/audit/production-assets.sha256.json` pins the retained approved content. Build invokes
+`check:assets` after compilation/copy, expands the actual catalogs and CSS font paths, verifies
+source/dist byte equality and hashes, resolves local module/HTML/CSS references and rejects
+unclassified public files. It is a narrow validator, not a runtime loader or general reachability
+analysis. For an intentionally approved asset replacement, update its hash in the same reviewed
+commit; never refresh every hash just to make an unexpected difference pass. New runtime families
+must be represented in the validator; development exports belong outside public.

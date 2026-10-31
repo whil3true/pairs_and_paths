@@ -2,7 +2,7 @@
 
 ## Playtest baseline and intent
 
-The Task 7/7.1 pilot established that Levels 21 and 24 work well as two-stage levels, Level 30 is not too long as a three-stage level, the transition reads correctly, and the backing-sheet stack communicates remaining stages. It also established the more important restraint: multi-stage play is useful as variety, not as the campaign's default routine. The exact pilot content and deterministic seeds therefore remain unchanged; `STAGE_PILOT.md` retains the original implementation history.
+The Task 7/7.1 pilot established that Levels 21 and 24 work well as two-stage levels, Level 30 is not too long as a three-stage level, the transition reads correctly, and the backing-sheet stack communicates remaining stages. It also established the more important restraint: multi-stage play is useful as variety, not as the campaign's default routine. The exact pilot content and deterministic seeds therefore remain unchanged; [historical stage pilot](history/STAGE_PILOT.md) retains the original implementation history.
 
 Task 7.2 places 19 multi-stage levels across the 100-level campaign: **21, 24, 30, 35, 39, 43, 48, 54, 59, 63, 68, 73, 77, 80, 82, 87, 91, 94, 100**. There are 14 two-stage levels and five three-stage set pieces. The range counts are 0 / 5 / 4 / 5 / 5 for Levels 1–20 / 21–40 / 41–60 / 61–80 / 81–100.
 
