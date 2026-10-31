@@ -34,7 +34,6 @@ const automaticRenderScale = computeRenderScale(
 const renderScale = selectStartupRenderScale(
   automaticRenderScale,
   isDesktopBrowserUserAgent(navigator.userAgent, navigator.maxTouchPoints),
-  false,
 );
 const bootTime = performance.now();
 const sdkTrace = (name: string): void => {
