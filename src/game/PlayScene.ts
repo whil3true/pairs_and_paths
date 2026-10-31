@@ -865,8 +865,8 @@ export class PlayScene extends Phaser.Scene {
   private navigateAfterInterstitial(action: () => void): void {
     if (this.interstitialTransitionPending) return;
     this.interstitialTransitionPending = true;
-    showNavigationCover();
-    void this.interstitials.tryShow().catch((error: unknown) => {
+    // No blank transition on tap or cooldown. Cover starts only on real ad open.
+    void this.interstitials.tryShow(showNavigationCover).catch((error: unknown) => {
       console.warn("[Cozy SDK] interstitial_navigation_error", error);
       return false;
     }).then(() => {
