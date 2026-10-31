@@ -276,8 +276,10 @@ both interruption orders (browser then SDK, SDK then browser), audio, RU/EN and 
 
 ## Yandex interstitial boundaries and callback correction (post-#121)
 
-Actual Yandex SDK `adv.showFullscreenAdv` takes a direct callbacks object,
-NOT `{ callbacks: ... }`. Verify this with a mock adapter and a real draft.
+Yandex SDK fullscreen advertising uses `adv.showFullscreenAdv({ callbacks: { onOpen, onClose, onError } })`.
+The formerly used direct-callback form did not invoke the close callbacks in the
+real Yandex draft, allowing the 15-second no-callback watchdog to trigger navigation.
+Verify callback delivery and close-to-navigation timing in a real draft.
 
 One shared 90-second session/successful-show cooldown governs the following
 explicit navigation: Complete -> Next/Replay/Menu, manual Pause confirmation
