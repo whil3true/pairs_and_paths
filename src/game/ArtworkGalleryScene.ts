@@ -1,5 +1,6 @@
 import type { CampaignProgress } from "../progress/CampaignProgress.js";
 import type { ProgressStore } from "../progress/ProgressStore.js";
+import { InterstitialController } from "../platform/InterstitialController.js";
 import {
   getArtworkGallerySlotState, getDefaultArtworkGalleryChapter, getUnlockedArtworkCount,
   getUnlockedArtworkCountInChapter,
@@ -39,6 +40,7 @@ const drawThumbnailCornerOcclusion = (
 export class ArtworkGalleryScene extends Phaser.Scene {
   private progress!: CampaignProgress;
   private chapter = 1;
+  private interstitialExitPending = false;
   private content: Phaser.GameObjects.Container | null = null;
   private readonly pendingThumbnails = new Set<string>();
   private readonly failedThumbnails = new Set<string>();
@@ -48,6 +50,7 @@ export class ArtworkGalleryScene extends Phaser.Scene {
     private readonly progressStore: ProgressStore,
     private readonly renderScale = 1,
     private readonly initialLocale: SupportedLocale = DEFAULT_LOCALE,
+    private readonly interstitials: InterstitialController | null = null,
   ) { super({ key: "ArtworkGalleryScene" }); }
 
   private get locale(): SupportedLocale { return getActiveUiLocale(this.initialLocale); }
@@ -58,7 +61,9 @@ export class ArtworkGalleryScene extends Phaser.Scene {
     this.cancelThumbnailLoads();
     this.pendingThumbnails.clear();
     this.failedThumbnails.clear();
+    this.interstitialExitPending = false;
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.interstitialExitPending = false;
       this.cancelThumbnailLoads(true);
       this.destroyChapterContent();
     });
@@ -75,9 +80,24 @@ export class ArtworkGalleryScene extends Phaser.Scene {
     const back = ARTWORK_GALLERY_LAYOUT.back;
     createSecondaryButton(this, this.renderScale, {
       x: back.x + back.width / 2, y: back.y + back.height / 2, width: back.width, height: back.height,
-      label: strings.backToMenu, onActivate: () => this.scene.start("MainMenuScene"),
+      label: strings.backToMenu, onActivate: () => this.exitToMainMenu(),
     });
     this.renderChapter();
+  }
+
+  private exitToMainMenu(): void {
+    if (this.interstitialExitPending) return;
+    this.interstitialExitPending = true;
+    // An isolated GalleryScene in unit tests can still navigate without SDK.
+    const maybeAd = this.interstitials?.tryShow() ?? Promise.resolve(false);
+    void maybeAd.catch((error: unknown) => {
+      console.warn("[Cozy SDK] gallery_interstitial_error", error);
+      return false;
+    }).then(() => {
+      if (!this.sys.isActive() || !this.interstitialExitPending) return;
+      this.interstitialExitPending = false;
+      this.scene.start("MainMenuScene");
+    });
   }
 
   private renderChapter(): void {

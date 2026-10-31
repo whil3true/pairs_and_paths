@@ -86,7 +86,7 @@ const startGame = async (): Promise<void> => {
       new BootScene(route),
       new MainMenuScene(progressStore, renderScale, locale, localeStore),
       new LevelSelectScene(progressStore, renderScale, locale),
-      new ArtworkGalleryScene(progressStore, renderScale, locale),
+      new ArtworkGalleryScene(progressStore, renderScale, locale, interstitials),
       new ArtworkFullViewScene(progressStore, renderScale, locale, artworkTextures),
       new PlayScene(platform, progressStore, renderScale, locale, artworkTextures, interstitials),
       new SymbolGalleryScene(renderScale),
