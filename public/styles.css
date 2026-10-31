@@ -80,9 +80,9 @@ body {
 
 /* Opaque neutral cover for committed ad-bound navigation. Above the canvas and page dim. */
 #navigation-cover {
-  position: fixed;
+  position: absolute;
   inset: 0;
-  z-index: 10;
+  z-index: 2;
   background: #F5EEDF;
   pointer-events: auto;
 }
