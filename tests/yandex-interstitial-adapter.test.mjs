@@ -8,20 +8,21 @@ const create = (handler) => {
     environment: { i18n: { lang: "ru" } },
     features: {},
     on() {}, off() {},
-    adv: { showFullscreenAdv(callbacks) {
-      ads.push(callbacks);
-      handler?.(callbacks);
+    adv: { showFullscreenAdv(options) {
+      assert.ok(options && options.callbacks, "official SDK receives a nested callbacks object");
+      ads.push(options);
+      handler?.(options.callbacks);
     } },
   };
   return { adapter: new YandexPlatform(sdk), ads };
 };
 
-test("fullscreen callbacks are passed directly to Yandex SDK (no nested callbacks)", async () => {
+test("fullscreen callbacks are nested under options.callbacks for Yandex SDK", async () => {
   const { adapter, ads } = create(callbacks => {
     assert.equal(typeof callbacks.onOpen, "function");
     assert.equal(typeof callbacks.onClose, "function");
     assert.equal(typeof callbacks.onError, "function");
-    assert.equal("callbacks" in callbacks, false);
+    assert.equal("callbacks" in ads[0], true);
     callbacks.onOpen();
     callbacks.onClose(true);
   });
@@ -58,7 +59,7 @@ test("ad close commits navigation immediately without overriding an SDK pause", 
   const sdk = {
     on(name, fn) { handlers.set(name, fn); },
     off(name) { handlers.delete(name); },
-    adv: { showFullscreenAdv(value) { callbacks = value; } },
+    adv: { showFullscreenAdv(value) { assert.ok(value.callbacks); callbacks = value.callbacks; } },
   };
   const platform = new YandexPlatform(sdk);
   callbacks = undefined;
@@ -79,7 +80,7 @@ test("close before delayed resume settles only once and removes no SDK pause lis
   const sdk = {
     on(name, fn) { handlers.set(name, fn); },
     off(name) { handlers.delete(name); },
-    adv: { showFullscreenAdv(value) { callbacks = value; } },
+    adv: { showFullscreenAdv(value) { assert.ok(value.callbacks); callbacks = value.callbacks; } },
   };
   const platform = new YandexPlatform(sdk);
   const pending = platform.showInterstitial();
@@ -100,7 +101,7 @@ test("SDK resume before onClose is also safe, and a skipped ad completes without
   const sdk = {
     on(name, fn) { handlers.set(name, fn); },
     off(name) { handlers.delete(name); },
-    adv: { showFullscreenAdv(value) { callbacks = value; } },
+    adv: { showFullscreenAdv(value) { assert.ok(value.callbacks); callbacks = value.callbacks; } },
   };
   const platform = new YandexPlatform(sdk);
   const first = platform.showInterstitial();
