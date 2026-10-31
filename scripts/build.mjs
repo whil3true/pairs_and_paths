@@ -20,3 +20,6 @@ for (const candidate of candidates) {
 }
 if (!phaserFile) throw new Error(`No browser-ready Phaser distribution found (checked ${candidates.join(", ")})`);
 await cp(phaserFile, new URL("../dist/vendor/phaser.js", import.meta.url));
+
+// Validate deployed catalogs and public inputs before treating the build as releasable.
+run(process.execPath, ["scripts/check-assets.mjs"]);

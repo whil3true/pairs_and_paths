@@ -40,8 +40,8 @@ store-asset ZIP estimates. ZIP compressed sizes can vary by tool/version and are
 ## Deletion evidence and inventory
 
 These decisions use the baseline checkout, source loaders, all tests, build scripts, TS configs,
-HTML/CSS and workflows. Inventory decisions in PR A are proposals; apply only in PR B after
-preserving this record. Exact members/hashes/bytes are in the CSV; no name-based age heuristic.
+HTML/CSS and workflows. Inventory decisions in PR A were proposals; PR B applies the D1–D6 removals and historical
+relocations after preserving this record. Exact members/hashes/bytes are in the CSV; no name-based age heuristic.
 
 | Group | Decision / exact scope | Count / bytes | Static + dynamic evidence | Test/build dependency and disposition |
 | --- | --- | --- | --- | --- |
@@ -134,5 +134,5 @@ locale/audio and navigation before adding a second game's mechanics.
 
 ## Final cleanup validation
 
-Pending PR B. The cleanup branch will add `docs/audit/CLEANUP_RESULT.md` with exact final metrics,
-all command outcomes and verification limitations. PR A itself changes documentation only.
+Applied in PR B: see [cleanup results](audit/CLEANUP_RESULT.md) for exact final metrics, all
+command outcomes and verification limitations. PR A itself changes documentation only.

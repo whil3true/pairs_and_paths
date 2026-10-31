@@ -5,13 +5,12 @@ import test from "node:test";
 const hudRoot = new URL("../public/assets/ui/compact-hud-v1/", import.meta.url);
 const assets = [
   ["ui-button-base.png", 128, 128],
-  ["ui-stat-chip-base.png", 256, 112],
   ["ui-stage-pill-base.png", 224, 88],
   ["ui-stage-dot-active.png", 32, 32],
   ["ui-stage-dot-inactive.png", 32, 32],
 ];
 
-test("compact gameplay HUD ships the five production PNGs at their approved paths and dimensions", async () => {
+test("compact gameplay HUD ships the four loaded production PNGs at their approved paths and dimensions", async () => {
   for (const [name, expectedWidth, expectedHeight] of assets) {
     const url = new URL(name, hudRoot);
     assert.ok((await stat(url)).size > 0, `${name} must not be empty`);

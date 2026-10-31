@@ -120,3 +120,9 @@ actual files; do not use direct-import absence alone as deletion evidence.
 GitHub Actions CI is broader than the Pages/Yandex packaging jobs: packaging alone does not run
 the 10k/blocker simulations. Require full CI and explicit device gates before release. Never claim
 fresh Android/Yandex testing when only local automated checks have run.
+
+`build` also runs `check:assets`; `npm run check:assets` can repeat that gate after a build. It
+expands all 100 full/thumb paths, all 30 symbol paths, banner/brand/HUD/audio catalogs and CSS
+fonts; verifies 261 production/license hashes and identical source/dist copies; resolves local
+JS/HTML/CSS dependencies and rejects unexplained public/dist files. Deliberate snapshot changes
+require explicit approved-content review, not a blanket regeneration.

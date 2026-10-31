@@ -1,0 +1,201 @@
+{
+  "baseline_sha": "c5e09f7a54f60fa6ee2822dd6d781afd3fcb570b",
+  "documentation_head_sha": "4981b853cb252afff773f47988d8ab9ace4f1c99",
+  "environment": {
+    "node": "24.22.1",
+    "npm": "11.9.0",
+    "ci_node": "22"
+  },
+  "baseline": {
+    "checks": [
+      {
+        "check": "typecheck",
+        "exit": 0,
+        "seconds": 1.71
+      },
+      {
+        "check": "test",
+        "exit": 0,
+        "seconds": 5.61
+      },
+      {
+        "check": "simulate",
+        "exit": 0,
+        "seconds": 68.38
+      },
+      {
+        "check": "blockers",
+        "exit": 0,
+        "seconds": 1.14
+      },
+      {
+        "check": "build",
+        "exit": 0,
+        "seconds": 2.15
+      },
+      {
+        "check": "size",
+        "exit": 0,
+        "seconds": 0.22
+      }
+    ],
+    "dist_files": 424,
+    "dist_bytes": 41260747,
+    "zip_bytes": 33727540
+  },
+  "cleanup": {
+    "checks": [
+      {
+        "check": "typecheck",
+        "exit": 0,
+        "seconds": 1.81
+      },
+      {
+        "check": "test",
+        "exit": 0,
+        "seconds": 5.68
+      },
+      {
+        "check": "simulate",
+        "exit": 0,
+        "seconds": 70.2
+      },
+      {
+        "check": "blockers",
+        "exit": 0,
+        "seconds": 1.13
+      },
+      {
+        "check": "build",
+        "exit": 0,
+        "seconds": 2.52
+      },
+      {
+        "check": "size",
+        "exit": 0,
+        "seconds": 0.2
+      }
+    ],
+    "dist_files": 341,
+    "dist_bytes": 39774847,
+    "zip_bytes": 32251536
+  },
+  "baseline_simulation": {
+    "elapsedMs": 67380,
+    "densities": [
+      {
+        "pairs": 20,
+        "samples": 10000,
+        "successes": 10000,
+        "failures": 0,
+        "solverFailures": 0,
+        "solverReplayFailures": 0,
+        "initialTotal": 34678,
+        "initialMin": 1,
+        "initialMax": 8,
+        "forcedStarts": 388,
+        "turnsTotal": 283273,
+        "maxTurns": 11,
+        "threePlus": 27224,
+        "paths": 200000,
+        "length": 1011815,
+        "adjacentMatchingPairs": 0,
+        "averageInitialLegalMoveCount": 3.4678,
+        "averageTurns": 1.416365,
+        "threePlusTurnRate": 0.13612,
+        "averageSolutionPathLength": 5.059075
+      }
+    ]
+  },
+  "cleanup_simulation": {
+    "elapsedMs": 69310,
+    "densities": [
+      {
+        "pairs": 20,
+        "samples": 10000,
+        "successes": 10000,
+        "failures": 0,
+        "solverFailures": 0,
+        "solverReplayFailures": 0,
+        "initialTotal": 34678,
+        "initialMin": 1,
+        "initialMax": 8,
+        "forcedStarts": 388,
+        "turnsTotal": 283273,
+        "maxTurns": 11,
+        "threePlus": 27224,
+        "paths": 200000,
+        "length": 1011815,
+        "adjacentMatchingPairs": 0,
+        "averageInitialLegalMoveCount": 3.4678,
+        "averageTurns": 1.416365,
+        "threePlusTurnRate": 0.13612,
+        "averageSolutionPathLength": 5.059075
+      }
+    ]
+  },
+  "baseline_blockers": {
+    "generationSuccesses": 150,
+    "generationFailures": 0,
+    "solverSuccesses": 150,
+    "solverFailures": 0,
+    "replayFailures": 0,
+    "pathsCrossingBlockers": 0,
+    "tilesOnBlockers": 0
+  },
+  "cleanup_blockers": {
+    "generationSuccesses": 150,
+    "generationFailures": 0,
+    "solverSuccesses": 150,
+    "solverFailures": 0,
+    "replayFailures": 0,
+    "pathsCrossingBlockers": 0,
+    "tilesOnBlockers": 0
+  },
+  "validator_fault_probes": [
+    {
+      "probe": "corrupted deployed production image",
+      "expected_rejection": true,
+      "exit": 1,
+      "message": "AssertionError [ERR_ASSERTION]: Build altered or failed to copy assets/symbols/v3/cup.png"
+    },
+    {
+      "probe": "missing emitted module",
+      "expected_rejection": true,
+      "exit": 1,
+      "message": "AssertionError [ERR_ASSERTION]: Unexpected/missing emitted or deployed file"
+    },
+    {
+      "probe": "unclassified public export",
+      "expected_rejection": true,
+      "exit": 1,
+      "message": "AssertionError [ERR_ASSERTION]: Unexpected public file: classify new assets/support files; do not silently ship old exports"
+    },
+    {
+      "probe": "unexpected release member",
+      "expected_rejection": true,
+      "exit": 1,
+      "message": "AssertionError [ERR_ASSERTION]: Unexpected/missing emitted or deployed file"
+    }
+  ],
+  "production_files_unchanged": 261,
+  "source_files_unchanged": 76,
+  "retained_dist_files_unchanged": 341,
+  "baseline_tracked_files": 522,
+  "baseline_tracked_bytes": 33131206,
+  "final_tracked_files": 405,
+  "final_tracked_bytes": 31588216,
+  "required_checks_all_passed": true,
+  "optional_unused_diagnostics": {
+    "exit": 2,
+    "findings": 4,
+    "enabled_in_project": false
+  },
+  "unexecuted": [
+    "Fresh real Android gameplay/visual/audio/codec QA",
+    "Real Yandex draft SDK advertising and pause/resume timing",
+    "Browser GUI smoke",
+    "Moderation submission/approval"
+  ],
+  "documentation_ci": "PR #129 head 4981b853cb252afff773f47988d8ab9ace4f1c99: success"
+}

@@ -1086,29 +1086,15 @@ test("symbol preloader skips textures already held by Phaser", () => {
   assert.deepEqual(queued[0], [TILE_SYMBOLS[1].assetKey, TILE_SYMBOLS[1].assetPath]);
 });
 
-test("approved production pilot symbol hashes match staged sources and review values", async () => {
-  const expected = new Map(Object.entries({
-    cup: "ce07c4113f5944b9b7c2b65b0514d3043887ead9b11330b21e4f19b2321fd3b8",
-    teapot: "203df497d4255bc13c115f5ef784f5c20e83e21db8217f98ed105c939ea1db23",
-    leaf: "d5674f92c7893fda9f94f596bbf51afce8972e45b43eae5ed870c99e5a252c7c",
-    feather: "3d706278be02778073b1e4605fdc9cf3148731c30f268c239b86fe83df4ef577",
-    flower: "6a1e7d1a74a5afe7490652128d922b7a76355e60af6f76fb4ecfcfc509a01570",
-    compass: "ea02c3fe274b00f14337edf228b07394ae3bfa47cbda9881d5be60555aea9873",
-    camera: "d00f2273f7959647250a941dfe4a3649cfcf40a634974605f49738984e69a5b0",
-    shell: "5906913f270ec7807ef108da9c721a6d170efbf94f94e9776d1c1133dd6cb6e9",
-    "jam-jar": "4e5dfb63c1855ab5cd9fe9b9852ef08c6e3dd9ce8e4ab8d1f25dbf3511709dc5",
-    snowflake: "5f33be15a18acf49d91e001bfa020fadf945e88105d5fa004ea7f32c10278b79",
-    star: "e10b7edee6cbed95b92f2183773f2b361b55a1b3de3bbfc7b6627b6b27442cf3",
-    lantern: "edab028cb64b0ea44bf2c0d0453f0e4ec4bb044cafeaca4ee17096ba87729695",
-  }));
-  for (const [name, approvedHash] of expected) {
-    const historicalRuntime = await readFile(
-      new URL(`../public/assets/production-pilot/symbols/${name}.png`, import.meta.url),
-    );
-    const staged = await readFile(new URL(`../art/production-pilot/symbols/${name}.png`, import.meta.url));
-    const digest = createHash("sha256").update(historicalRuntime).digest("hex");
-    assert.equal(digest, approvedHash);
-    assert.deepEqual(historicalRuntime, staged, `${name} historical runtime must match its approved staged source`);
+test("approved V5.4.1 runtime symbols retain the audited production bytes", async () => {
+  const expected = JSON.parse(await readFile(
+    new URL("../docs/audit/production-assets.sha256.json", import.meta.url), "utf8",
+  ));
+  for (const { name, assetPath } of TILE_SYMBOLS) {
+    assert.ok(expected[assetPath], `${name} must be in the approved production snapshot`);
+    const bytes = await readFile(new URL(`../public/${assetPath}`, import.meta.url));
+    assert.equal(createHash("sha256").update(bytes).digest("hex"), expected[assetPath],
+      `${name} differs from the audited V5.4.1 production asset`);
   }
 });
 

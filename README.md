@@ -43,6 +43,7 @@ Other hosts require Yandex SDK initialization and show retry UI if it fails.
 | `npm run simulate:blockers` | 150 blocker fixtures across three masks |
 | `npm run analyze:progression` / `analyze:blockers` / `analyze:stages` | Campaign diagnostics; retain for content tuning |
 | `npm run build` | Recreate deployable `dist/` |
+| `npm run check:assets` | After build: verify expanded catalogs, production hashes, emitted/static paths and exact release contents |
 | `npm run check:package-size` | Report distribution/artwork bytes; warn >80 MB, fail >100 MB (decimal) |
 
 CI runs all six validation commands on pull requests. Pushes to `dev` deploy GitHub Pages
