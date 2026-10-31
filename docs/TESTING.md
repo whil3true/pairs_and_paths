@@ -1,362 +1,122 @@
-# Testing strategy
-
-## Developer campaign jump
-
-For developer testing only, add `debug=1` and a campaign level to the game URL. This is not
-player-facing progression or a level-select feature. Examples:
-
-- `?debug=1&level=21`
-- `?debug=1&level=35`
-- `?debug=1&level=48&stage=2`
-- `?debug=1&level=68`
-- `?debug=1&level=82&stage=2`
-- `?debug=1&level=94`
-- `?debug=1&level=100`
-- `?debug=1&level=100&stage=2`
-
-The optional `stage` is one-based and defaults to Stage 1. Without `debug=1`, all `level` and
-`stage` parameters are ignored. Replay always returns to Stage 1 of the current level; Next Level
-also begins at Stage 1. Refreshing the browser re-applies the initial position from the URL.
-The entire debug-jump session is persistence-disabled, so completing or advancing from the jumped
-level cannot alter real progress. Rendering debug flags without `level=N` keep normal persistence.
-
-Use `?debug=1&resetProgress=1` to clear web progress and open the fresh Main Menu; without
-`debug=1` the reset parameter is ignored. Reset is processed before scene selection, so adding
-`&symbols=1` clears once and then opens the non-writing gallery. For developer QA only, `?debug=1&setProgress=N` writes an exact 0..100 completion fixture before routing; invalid, fractional, empty, or non-debug values are ignored, and reset wins over setProgress. It may be combined with gallery or an isolated debug level jump.
-
-`npm test` compiles to a temporary directory and uses `node:test`. The independent exhaustive path oracle is a brute-force simple-path DFS with no outside cells and no turn limit. Exhaustive boards compare existence, minimum turns, and minimum length; every returned production path is independently checked for bounds, occupancy, orthogonality, compactness, and deterministic repetition. Focused regressions cover 0, 1, 2, 3, and 5 turns, blocking, edge confinement, route ranking, and removal monotonicity.
-
-Pure Hint tests verify first-legal-move selection and deterministic repetition, recomputation after
-a move, blocker exclusion, and `null` for empty and artificial no-pair boards. A campaign sweep
-repeatedly applies the current hint through every stage of all 100 levels and requires every
-non-empty board to expose a move. Phaser pixels are intentionally not unit-tested. Manual QA uses
-Levels 1, 30, and 80 to check cyan dual-tile feedback, selection clearing, current-board updates,
-spam protection, blocker and stage isolation, cleanup on Menu/Replay/Next, and disabled Hint on
-the Complete overlay. Hint does not auto-remove or show a route and remains unlimited; Shuffle is
-not part of this test scope.
-
-Phase 3 pure tests additionally freeze the compact gameplay HUD bounds, Russian pair grammar,
-production button hit bounds/centre, route widths and 180/40/60 ms (280 ms total) phases,
-precomputed route metrics, arbitrary-turn physical-length route interpolation,
-900 ms Hint pulse policy, 180 ms removal policy, and blocker footprint/token ownership. Renderer
-appearance remains manual QA: use Levels 27 and 30 for HUD rows, a bent legal route, and synchronized
-Hint/removal feedback; use Levels 11 and 30 Stage 3 for opaque procedural blocker terrain.
-
-For the Phase 3A Android corrective pass, open `?debug=1&level=27`. Tap the centre and the inside
-right edge of both Пауза and Подсказка; each must respond. Tap immediately to the right of each visual
-button; neither may respond, and neither button's visual position may have moved. On the same board,
-remove legal pairs that exercise a short straight route, a one-turn route, a long route, and a route
-with several turns. The line must progress smoothly at an apparently constant physical speed without
-giant frame-to-frame jumps, show the complete route for the short hold, fade smoothly, and only then
-run the unchanged tile scale/fade. Finally open `?debug=1&level=30&stage=3` and repeat a legal route
-over the artwork and blockers.
-
-For the Phase 3B Android corrective pass, open `?debug=1&level=27` and tap a tile immediately after
-the board becomes interactive. Selected fill and border must appear together, with no brief wrong
-inner colour. Deselect and reselect several tiles: the tactile scale may finish, but semantic colour
-must never lag the border. Reload Level 27, complete the first legal pair soon after interaction is
-enabled, then compare its route with the second and several later routes. Exercise a short straight,
-one-turn, and longer/multi-turn route. Repeat at `?debug=1&level=30&stage=3` over artwork and blockers.
-The initial 80 ms interval is non-visual scene settling and is not part of the unchanged 180/40/60 ms
-route. Record this as real-device QA only when it is actually run on Android.
-
-Generator tests check exact pair multiplicity, deterministic regeneration, non-adjacent product pairs, witness replay, solver replay, metrics, and product density. Campaign tests freeze the 100/10/10 constants, chapter boundaries, progression-band coverage, and important early band transitions; reject out-of-range levels; check next-level boundaries; and check all 100 levels for validity, solver replay, non-adjacency, deterministic replay, and distinct consecutive snapshots. Levels 1–4 have at least two initial legal moves; Level 5 has exactly one because its frozen seed and pair count now use the approved 4×4 final geometry; every campaign Level has at least one initial legal move. This Level 5 result is a known deterministic geometry-migration consequence, not a generator failure. `npm run simulate -- --count 10000` retains the deterministic 7×7/20-pair generator quality gate.
-
-`npm run analyze:progression -- --samples 300` is the heavier manual calibration command. It compiles and invokes production generation, validation, solving, and solution measurement without Phaser or a browser. It prints candidate-profile failure counts and objective solver-path metrics plus exact ten-level chapter aggregates for the campaign. `npm run analyze:progression -- --campaign-only` skips the heavy candidate sweep and reports exact campaign validation, milestones, range/chapter aggregates, cumulative removals, and the longest forced-start run. See `PROGRESSION_REPORT.md` for the recorded calibration run.
-
-After merge, manually confirm: Levels 1–10 visibly change profile several times, Level 1 starts with the smaller centered board, Level 10 is noticeably more substantial, and Levels 15/20/25/30 reflect accelerated progression; Next advances and different levels vary; Replay reproduces the current level; small boards remain centered; blocked-pair feedback still works; rendered routes remain inside the board; and the displayed level number remains correct. At Level 100, confirm “Campaign complete”, Replay, and Restart from Level 1, with no Level 101. Campaign-wide correctness does not require manually playing every level because tests and the solver cover all 100.
-
-
-The Task 5.1 checks cover pacing data only. Core mechanics are unchanged, and tests for future difficulty mechanics are deliberately deferred.
-
-## Blocker verification
-
-Blocker coverage checks separate terrain representation, invalid coordinates and capacity, path exclusion and alternate canonical routes, move/mask persistence, solver success and genuine obstruction, deterministic generation, and an independent backtracking monotonicity sweep over small blocker masks. `npm run simulate:blockers` is a lightweight 150-board diagnostic over 5×5, 5×6, and dense 7×7 patterns. It reports generation, solver, and replay failures plus any path crossings or tiles placed on blockers; all failure counters must remain zero.
-
-Campaign blocker tests freeze the introduction and selected level rhythm; validate content-table uniqueness, bounds, and capacity; and include terrain in all-100 validation, solve, replay, adjacency, and deterministic Replay checks. At every state of each blocker level's solver replay, every currently legal alternative is solved after application to guard removal monotonicity.
-
-`npm run analyze:blockers` manually calibrates the exact campaign. At every state in the unchanged deterministic solver replay it compares every matching pair with a blocker-free twin containing exactly the same tile rows. The output keeps affected, unavailable, extra-turn, and extra-length metrics separate and summarizes frequency and strongest examples by each measure. Numeric relevance values guide curation and are intentionally not frozen as CI difficulty thresholds; see `BLOCKER_PROGRESSION.md`.
-
-## Stage verification
-
-Campaign tests freeze the exact distribution of 19 multi-stage levels, comprising 14 two-stage and five three-stage levels, while retaining exact seed/config regressions for the original Levels 21/24/30 pilot. Every campaign stage is generated twice, validated, solved, replayed to an empty board, checked for blocker-mask persistence, and checked for the non-adjacent matching-pair invariant. A separate final-stage regression preserves all 100 final stage configs and generated boards against `getLevelConfig`/`createLevel`. Pure clear outcomes cover non-final advancement, final completion, the single-stage Level 99, and both stages of terminal Level 100; PlayScene reset paths all enter through `startLevel`, which resets the index.
-
-The pure presentation calculation is also checked: Stage 1/3 exposes two backing sheets at `(0,+7)` and `(0,+14)`, Stage 2/3 one at `(0,+7)`, and final or single stages none. Shade is frozen as 0% for the front, 16% at depth 1, and 28% at depth 2, with representative two- and three-stage cases proving it is recalculated from current depth. Phaser tween pixels are intentionally not unit-tested. Manual checks cover the centered, downward-only visible stack, progressive darkness, shade removal during promotion, cleanup on Replay/Next/restart, and disappearance when moving from Level 30 to single-stage Level 31.
-
-## Board and tile visual verification
-
-Pure tests freeze the board/frame bounds at every square campaign size, rectangular centering, fixed pitch/tile geometry, the production radii, and the no-art branch's 2 px outer contour. They derive the artwork aperture exactly 2 px inside every content edge, protect its constant 14 px radius across board sizes, and assert that the outer frame, artwork aperture, no-art opening, and edge tile all share a curve center 16 px from the content corner. They also protect constant curved/straight frame thickness: 8 px for no-art and 10 px for artwork including its 2 px overlap. The tests verify that the active frame and borderless backing sheets share `surface.elevated`, while `border.strong` shades depth rather than forming an artwork bezel or outer outline. Tile tests protect the quiet `1 px divider` default edge plus unchanged emphasized state borders, pressed timing, and selected fill/no-marker policy; sheet offsets and depth shade progression remain frozen. Catalog tests freeze all 30 deterministic `TileId` definitions, unique names and keys, the 12 production-pilot paths and 56 px prepared-canvas presentation, and 18 explicit legacy-placeholder paths and 38 px temporary presentation. Runtime tests read each referenced PNG to validate its signature and 256×256 8-bit RGBA header; production-pilot files additionally must match the approved SHA-256 values and staged source bytes. Tests never rewrite binary assets.
-
-The developer gallery remains available at `?debug=1&symbols=1`, iterates the shared `TILE_SYMBOLS` catalog, and uses the same `TileVisual` treatment as gameplay. After deployment, verify all 30 transparent PNG textures on Android, then compare `?debug=1&level=1` and `?debug=1&level=80`. Confirm the board has no prototype cell grid, empty cells expose the warm interior or artwork, symbols are untinted, selection is teal, and there are no black squares, missing assets, opaque symbol backgrounds, or unexpected pixelation. The 18 legacy symbols are placeholders pending later production artwork.
-
-### Responsive and HiDPI QA
-
-Pure tests cover uniform portrait fitting for the permanent logical `480×800` game, tall portrait, wide landscape, and common tablet/desktop viewport shapes. They also cover production DPR clamping to `[1, 2]`, safe handling of non-finite values, and the developer-only legacy override. Only `?debug=1&renderScale=1` forces 1×; missing debug, `debug=0`, and unsupported scale values retain automatic behavior. The former `hidpi=1` activation gate is retired.
-
-Desktop text QA: at 100% browser zoom, compare menu labels, level selection, gallery, compact HUD, Pause and Reward against the approved Windows desktop 2× rendering. The text resolution helper uses Phaser's built-in `setResolution()` without custom render nodes. Verify both RU/EN labels, changing counters and a mobile DPR 2/3 regression. The existing 1× debug override remains available.
-
-The gallery at `?debug=1&symbols=1` uses automatic production HiDPI and shows viewport CSS size, DPR, render scale, logical size, backing/client canvas sizes, and renderer. Compare it with `?debug=1&symbols=1&renderScale=1`, where diagnostics must report scale 1 and a `480×800` backing canvas. POCO X6 Pro QA observed DPR ≈ 2.994 and correctly used the capped scale 2 (`960×1600` backing canvas).
-
-On a wide and a narrow desktop browser, confirm the portrait game stays centered without cropping or stretching, side gutters retain the shell background, and resizing never produces a horizontal gameplay layout. On portrait Android, compare `?debug=1&level=80` with `?debug=1&level=80&renderScale=1`. The normal production mode must be the sharper version. Compare curved/diagonal PNG edges, card borders, text, and route lines. Tap tiles across the board and verify selection, blocked-pair feedback, routes, stage transitions, Replay, and Next all target the same logical cells in both modes. Landscape rotation must still show a centered portrait frame; it does not trigger an orientation lock or alternate layout.
-
-`npm run analyze:stages` prints exact per-stage dimensions, pairs, blockers, seeds, opening moves, solver/replay status, turn/path metrics, campaign workload, distribution and spacing, campaign stage count, and final-board preservation. It is a diagnostic report, not a synthetic difficulty score. Manual playtesting should sample early, mid, and late placements, including automatic transition clarity, two-stage pacing, occasional three-stage length, blocker-bearing finals, and terminal Level 100 completion.
-
-## Persistent progress verification
-
-Pure tests cover the v1 schema and derived values, monotonic completion, strict malformed-data fallback, storage CRUD and thrown-operation containment, startup/debug isolation, and final-stage-only persistence boundaries for Levels 21, 30, and 100. No jsdom or Phaser scene is required.
-
-After deployment, reset with `?debug=1&resetProgress=1`, then use the normal URL and confirm Level 1. Complete Level 1 and refresh on its Complete overlay before pressing Next: normal play must open Level 2 Stage 1. Remove tiles from Level 2 and refresh before completion: Level 2 must restart with its fresh Stage 1 board. On a multi-stage level, verify intermediate clearance does not update the stored payload. With real progress through Level 1, complete `?debug=1&level=80`, then return to the normal URL and confirm it still opens Level 2. Finally, reset again and confirm normal play returns to Level 1.
-
-
-## Square campaign geometry and collectible artwork QA
-
-Automated campaign checks require all 100 final configs and every last stage config to be square,
-with sides exactly 4, 5, 6, or 7. The fixed ranges are Levels 1–7 at 4×4, 8–16 at 5×5,
-17–26 at 6×6, and 27–100 at 7×7. They also require at least two empty non-blocked final cells.
-Pair counts, blocker content, seed functions, and the 19-level pre-stage table remain frozen.
-Board-layout tests cover 256, 320, 384, and 448 px square footprints at the fixed 64 px pitch /
-56 px tile scale. The 7×7 bounds are `[16, 196, 464, 644]`; no stage may zoom its tiles.
-
-Manual targets:
-
-- Level 1 (`?debug=1&level=1`): verify 4×4, normal gameplay, and square artwork filling the board.
-- Level 5 (`?debug=1&level=5`): observe whether the forced opening still feels acceptable in human play despite having exactly one initial legal move; this is observation only, not a rebalance requirement.
-- Level 16 (`?debug=1&level=16`): verify a centered 5×5 final and authored blockers.
-- Level 21 (`?debug=1&level=21&stage=1`, then Stage 2): verify unchanged 5×5 pre-stage,
-  6×6 final, and identical tile size.
-- Level 30 (`?debug=1&level=30&stage=1`, `stage=2`, and `stage=3`): verify
-  4×5 → 5×6 → 7×7, unchanged final blockers, no zoom, and artwork filling the final board.
-- Level 80 (`?debug=1&level=80&stage=1`, then `stage=2`): verify 6×6 → 7×7,
-  four final blockers, full-board artwork, and no viewport clipping.
-- Level 94: check all stages at 5×6 → 6×7 → 7×7.
-- Level 100: check both stages at 6×7 → 7×7 and verify the maximum board has no UI overlap.
-
-For artwork Levels 1, 30, and 80, also confirm progressive reveal, no crop or stretch, the clean
-400×400 “Image unlocked” presentation, and Continue opening the ordinary Complete overlay. The
-reward remains final-stage-only. Pause/Resume must preserve partial reveal; Restart returns to
-art-free Stage 1; debug sessions must not modify real progress. Level 2 must have no artwork request
-or reward. Pure tests cover catalog presence/absence, eligibility, unlock derivation, and placement.
-After build, run `npm run check:package-size`; its full/thumbnail split measures this pilot only. The
-temporary WebP average must not be multiplied by 100 as a shipping forecast. That estimate waits for
-the later art direction and representative production artwork.
-
-## Navigation verification
-
-Pure tests cover fresh/in-progress/completed primary actions, all three level states, selection eligibility, chapter ranges/defaults, strict `setProgress` parsing, reset precedence, and normal/gallery/debug-play startup routes. Manual QA should verify the 5×2 chapter grid and non-wrapping arrows, current frontier defaults, fresh progress after a confirmed pause-menu exit, and old-level replay without regression. Complete overlays retain Next/Restart and Replay and add a direct Menu exit. Debug jumps remain persistence-disabled.
-
-### Phase 4 Main Menu / Level Select and locale QA
-
-The locale override is developer-only, requires `debug=1`, is not saved, accepts `en`, and otherwise
-falls back to the standalone Russian default. Check both locales at renderScale 1 and the device's
-normal render scale; labels must remain on one line except the intentional two-line Russian brand.
-
-- `?debug=1&resetProgress=1`: Russian Main Menu shows the localized brand/tagline, `Играть`,
-  `Уровни`, `Галерея`, zero progress, and Chapter 1's deliberate identity card. Confirm its inset
-  tint, left rail, bottom rail, and corner chip read as UI rather than artwork, debug rectangles, or
-  broken layout.
-- `?debug=1&setProgress=29`: it shows `Продолжить · Уровень 30`, `Открыто 29 из 100`, and Chapter 3.
-- `?debug=1&setProgress=100`: it shows `Играть снова · Уровень 1`, the complete collection label,
-  a full track, and does not clear completion.
-- Repeat with `&locale=en`; at `?debug=1&setProgress=29&locale=en`, navigate to Chapter 5 and verify
-  the compact `Chapter 5` label, separate `Gardens & Courtyards` title, and global progress have no
-  clipping or near-edge red-zone effect. The title must not use the former combined 30 px header.
-- At `?debug=1&locale=en`, inspect Chapter 1 and verify a visible 12 px gap from the banner bottom to
-  the arrow row and another 12 px gap from the arrow row to the grid.
-- At `?debug=1&setProgress=29`, inspect Russian Chapter 3 and verify the same clean three-line header
-  hierarchy and spacing.
-- Level Select defaults to Chapter 3 at progress 29: Levels 21..29 are completed and selectable,
-  Level 30 is the selectable gold frontier, and later Levels are locked and inert. Verify the same
-  geometry and state meaning in English.
-- Navigate to Chapters 1 and 10 in both locales. The boundary arrow retains its 48×48 disabled box,
-  is non-interactive, and navigation never wraps. Rapid input must not overlap transitions.
-- In DevTools Network, entering and navigating both scenes must request zero `/full/`, `/thumbs/`,
-  reward, or chapter artwork. Their banners are static Phaser Graphics only.
-
-Headless tests protect dictionary shape and formatting, exact bilingual chapter names, all Phase 4
-geometry, progress ratios, primary-action targets, navigation boundaries, semantic non-colour card
-affordances, curated chapter metadata, and deterministic banner manifests. Browser pixel fit, actual
-Manrope/fallback metrics, pointer interaction, transition feel, and network requests remain manual QA.
-
-## Player artwork Gallery QA
-
-Pure tests cover the three Gallery slot states for pilot Levels 1, 30, and 80, unavailable Level 2,
-catalog-derived unlocked counts, and the highest-unlocked-artwork default chapter. Binary tests check
-the `RIFF`/`WEBP` signatures, complete RIFF length and chunk boundaries, VP8 frame signature, and
-expected dimensions for separate 1024×1024 full and 256×256 thumbnail fixtures. This catches
-truncated or corrupted WebP files that may still retain valid `RIFF`/`WEBP` magic bytes. The overview
-requests only unlocked thumbnails in the active chapter; locked entries, unavailable positions, and
-unopened chapters request nothing. Full view requests only its validated selected full image. Cached
-textures are reused and no Gallery action writes progress.
-
-`setProgress` and `resetProgress` intentionally mutate the local campaign save. Run these fixtures,
-then return to the normal URL unless stated otherwise:
-
-- `?debug=1&resetProgress=1`: Main Menu shows Play, Levels, and Gallery. Gallery defaults to Chapter 1;
-  Level 1 is Locked, Level 2 says Soon rather than Locked, and no thumbnail request occurs.
-- `?debug=1&setProgress=1`: Gallery says `Unlocked 1 / 3`; only the Level 1 thumbnail may load and it
-  appears in its square card. Opening it then loads the separate unstretched full image; Back returns
-  to Chapter 1 and Menu returns to Main Menu.
-- `?debug=1&setProgress=29`, then `?debug=1&setProgress=30`: Level 30 changes from locked to unlocked;
-  progress 30 defaults to Chapter 3, reports `Unlocked 2 / 3`, and Full View Back retains Chapter 3.
-- `?debug=1&setProgress=79`, then `?debug=1&setProgress=80`: Level 80 changes from locked to unlocked;
-  progress 80 defaults to Chapter 8, reports `Unlocked 3 / 3`, and its full view returns to Chapter 8.
-- `?debug=1&setProgress=100`: all three remain unlocked and the default stays Chapter 8 because Level 80
-  is the highest catalog entry.
-- `?debug=1&symbols=1`: verify the unchanged developer Tile Symbol Gallery opens, never the player
-  artwork Gallery.
-
-Also inspect the network panel: Main Menu must request zero artwork. Gallery may request only eligible
-active-chapter `/thumbs/` files and never `/full/`; locked thumbnails must never be received. Opening
-an uncached full view may request only that selected `/full/` asset. Failed artwork loads must show
-`Artwork unavailable` while Back remains functional. Phaser layout, input, network behavior, and
-device rendering remain manual QA rather than headless test coverage.
-
-### Square Gallery slots
-
-Use `?debug=1&setProgress=80`, then enter Gallery through the normal Main Menu. Chapter 8 shows the
-Level 80 thumbnail; switching chapters must not refetch cached thumbnails and must not request artwork
-for unavailable slots. Check several
-chapters, not only Chapter 1. Verify every card is square, the 5×2 layout retains clear spacing, and
-the Level number plus Unlocked, Locked, or Soon state remains readable without clipping. Chapter
-arrows and Menu must be unchanged.
-
-### First uncached artwork load
-
-Use a fresh browser session or cache where practical, then open an unlocked artwork that is not
-already cached. Verify `Loading artwork…` appears immediately, the network panel requests only the
-selected artwork, and the resulting artwork is an uncropped, unstretched 400×400 square. Back must
-return to the originating chapter. Open the same artwork again and verify it appears immediately
-from Phaser's texture cache without an unnecessary loading state or network reload.
-
-As a regression check, verify `?debug=1&symbols=1` still opens the developer Tile Symbol Gallery.
-
-For gameplay WebP QA, use `?debug=1&level=1`, `?debug=1&level=30&stage=3`, and
-`?debug=1&level=80&stage=2`. On Android and a browser, verify the real WebP appears beneath cleared
-tiles, routes, and blockers; the square fills each final board without crop/stretch; and the 400×400
-post-clear reward uses the same full image. Earlier stages remain artwork-free. This device rendering
-and DevTools network inspection are manual because headless tests do not exercise Phaser pixels or
-browser request logs. The fixtures are technical visuals only; full market/theme research and visual
-redesign remain deferred.
-
-For the Phase 2B.4 board treatment, verify `?debug=1&level=1` has one seamless warm aperture with clearly
-rounded artwork corners; `?debug=1&level=24&stage=1` and `?debug=1&level=30&stage=1` have uniform lower
-corners and depth from displacement plus 16/28% shade without repeated outlines; and `?debug=1&level=27`
-has quiet but readable 1 px default tile edges while Selected, Hint, and Blocked remain prominent.
-
-## Post-P1 Android runtime-atlas QA
-
-On an Android device, inspect `?debug=1&level=27`, `?debug=1&level=30&stage=3`, and
-`?debug=1&level=80&stage=2`. Verify default, pressed, Selected, Hint, blocked-pair, and removal
-presentation; confirm symbols and rounded borders have no crop, blur, seams, or neighbouring-frame
-bleed. Confirm artwork, frame, blockers, route geometry/timing, and stage transitions are unchanged.
-Finally open `?debug=1&symbols=1` and inspect all 30 symbols: production art retains its 56 px
-treatment and legacy art its 38 px treatment. Replay and stage transitions must reuse the same
-runtime atlas rather than creating another texture.
-
-## Pause flow verification
-
-Phaser overlay pixels are intentionally not unit-tested. At `?debug=1&level=1`, select a tile, open Pause, and verify the selection remains visible while board and Hint input do nothing; Resume must restore interaction with the same board and selection. After removing pairs, check that both Restart level and Exit to menu show confirmation, and that each Cancel returns to Pause without resuming. Confirm Restart produces the original deterministic Level 1 Stage 1 board.
-
-At `?debug=1&level=30&stage=2`, Resume must retain Stage 2 while confirmed Restart must return to fresh Stage 1. A confirmed Exit must enter Main Menu, and re-entry must start fresh at Stage 1. With `?debug=1&setProgress=20`, partially play Level 21 normally, confirm Exit, and verify Main Menu still reports 20/100 and Continue Level 21. A separate `?debug=1&level=80` Exit must leave real stored progress unchanged.
-
-Press Pause during Hint's 900 ms feedback and during pair-removal, blocked-pair, and stage-transition locks; it must be ignored until each transient lock ends. While any pause or confirmation view is open, only its current controls may respond and Pause must not stack another overlay. Complete a level and verify Pause is hidden/disabled, Complete Menu exits directly without confirmation, and Replay/Next restore normal gameplay with Pause available. Also verify overlay objects and interactions do not survive Resume, Restart, Exit, shutdown, completion, Replay, or Next.
-
-
-## Yandex Games SDK bootstrap QA: stage 1
-
-CI must pass typecheck, unit tests, 10k simulations, blockers, build and size limit. On GitHub Pages, verify the game starts without `/sdk.js`, preserves desktop 2× density and mobile rendering, and retains progress and audio preferences. In a Yandex console draft, check the SDK debug loader, Game Ready after first interactive render, RU/EN initial locale and saved manual override, error/retry UI, and audio pause/resume for SDK events, tab switches and startup ads. SDK-driven gameplay freeze and Gameplay API marking must be implemented before moderation approval; no ads are triggered in this first stage.
-
-## Yandex gameplay lifecycle QA
-
-In the draft debug panel verify gamepad is active only during playable board, not
-Pause, Reward, Complete, Menu, loading or SDK/browser background. SDK pause freezes
-tile input, timers and tweens. SDK resume must not dismiss the player's Pause menu
-or the browser background Pause, which still requires explicit Continue. Verify
-both interruption orders (browser then SDK, SDK then browser), audio, RU/EN and saves.
-
-## Yandex interstitial boundaries and callback correction (post-#121)
-
-Yandex SDK fullscreen advertising uses `adv.showFullscreenAdv({ callbacks: { onOpen, onClose, onError } })`.
-The formerly used direct-callback form did not invoke the close callbacks in the
-real Yandex draft, allowing the 15-second no-callback watchdog to trigger navigation.
-Verify callback delivery and close-to-navigation timing in a real draft.
-
-One shared 90-second session/successful-show cooldown governs the following
-explicit navigation: Complete -> Next/Replay/Menu, manual Pause confirmation
--> Restart/Exit, Gallery -> Main Menu. Gallery Full View -> Gallery, Cancel
-confirmation, and Resume never request advertisements.
-The Gallery exit must not use a separate timer. Rapid double taps may invoke
-at most one request; error, onClose(false), absent ad and timeout navigate.
-Logs distinguish `interstitial_skipped:cooldown`, `interstitial_request`,
-`interstitial_open`, `interstitial_close true/false`, and SDK errors.
-Confirm the rendered reward remains visible until the player chooses an exit.
-If the player exits a completed level, progress is already persisted.
-
-For music, record a before/after comparison on Next with cooldown active (no
-request) and after the cooldown (ad requested). Distinguish SDK audio pause
-from main-thread texture load; do not invent a playback workaround without
-measuring which case glitches.
-
-
-## Post-#123 interstitial close/navigation regression
-
-In the Yandex draft, wait at least 90 seconds after game startup, finish a
-level, select Next, Replay, or Menu exactly once, and close the real fullscreen
-ad. The selected action must start on the ad's close callback without another
-tap or a delayed wait for `game_api_resume`. Verify the result with a real
-device and SDK debug events.
-
-The advertising promise and SDK pause are separate authorities: `onClose`
-completes the pending navigation, while `game_api_pause` continues to freeze
-input, timers, tweens, and audio until the SDK actually resumes. Do not forge
-`game_api_resume` or force-enable input. A newly loaded level can remain
-temporarily frozen until the platform resumes, but its navigation must already
-be committed; when resumed its initial settle timer must finish normally.
-
-Check both callback orders (close before resume and resume before close),
-onClose(false), error, missing callback, rapid repeated taps, Pause
-confirmation and Gallery exit. Confirm the action is executed once and no
-extra advertisements are requested. Compare `interstitial_close`,
-`interstitial_navigation_unblocked`, `platform_resume` in logs. In case of
-a prolonged pause after navigation, diagnose SDK state separately rather than
-re-entering or repeating the navigation.
-
-## Rewarded hints release QA
-
-On the Yandex draft, press Hint while the board is idle. Confirm that the
-dialog offers a voluntary rewarded video with clear Watch / Cancel buttons.
-Cancel must return to playable board without any ad or hint. Successful
-rewarded playback grants a hint only after `onRewarded`, followed by `onClose`.
-Closing early, an SDK failure or no ad must never grant free hints; show an
-unavailable message and allow the player to continue.
-
-The two matching tiles remain marked until the pair is removed or the
-board changes, without blocking tile interaction. The hint is an independent
-inside-the-tile gold outline: ordinary teal selected state, red blocked state,
-tap/press feedback and board gaps must remain unchanged. The outline must
-not extend beyond the 56px visible tile card or overlap neighbouring cells.
-Test selecting one of the hinted tiles, selecting other tiles, removing a
-different pair, then the hinted pair, moving to a subsequent stage, Replay and
-Exit. Repeated taps while the rewarded ad is pending may request at most one
-video. Once a hint is active, the button should not request additional videos
-for the same unresolved suggestion. The standalone web build retains free
-hints for development only; Yandex does not.
-
-Run RU and EN, SDK pause/resume and audio checks, fast cancel/close,
-no-fill/error, and real Android touch before merge.
-
-## Rewarded hint state and browser pause regression
-
-When a paid hint marks a pair, remove an unrelated pair: the same gold markers
-must remain visible and the Hint button must not request another ad. Removing
-either of the marked tiles as part of a valid pair clears the marker and allows
-another voluntary hint. Cover the special case where only one hinted tile is
-removed in a different valid pair.
-
-Open either Hint confirmation or Hint unavailable modal, background and restore
-the Android browser: browser Pause must own the foreground. The prior hint modal
-must be dismissed, never stacked over Pause. During a rewarded video, a browser
-background must still require Continue; reward success/failure must be deferred
-until after the browser Pause is dismissed. No extra ad; only a completed
-onRewarded may reveal a pair. Test callbacks arriving before/after SDK resume
-and browser foreground. When scene or stage changes invalidate stale rewards.
+# Testing and release QA
+
+## Required automated gate
+
+Use Node 22+, `npm ci`, then run these sequentially after each coherent cleanup batch:
+
+```sh
+npm run typecheck
+npm test
+npm run simulate -- --count 10000
+npm run simulate:blockers
+npm run build
+npm run check:package-size
+```
+
+`npm test` compiles fresh `.test-dist` then runs Node tests. It covers domain/path rules, campaign
+and stage snapshots, saves/navigation, visual geometry/catalogs, audio behavior/wiring, localization,
+SDK bootstrap/input/gameplay state, interstitial callback timing/cover and rewarded hint regressions.
+Some scene tests assert source wiring; they are not a real Phaser, Android or SDK execution.
+`simulate` samples 10,000 seeded generation/validation/solve/replay cases; it is not random GUI QA.
+`simulate:blockers` runs 150 fixtures and checks no blocked occupancy/transit and complete replay.
+Simulators share `.simulation-dist` and must not run concurrently.
+
+The audit records exact baseline/final results and limitations in `REPOSITORY_AUDIT.md`.
+A passing build is not moderation approval or proof of Android playback/SDK callback delivery.
+
+## Developer fixtures (retained intentionally)
+
+Serve `dist` at localhost or the GitHub Pages preview. Most debug features require `debug=1`.
+
+| Query | Effect / persistence |
+| --- | --- |
+| `?debug=1&level=30&stage=2` | One-based stage; valid level 1..100; invalid stage → Stage 1. Campaign writes disabled for session |
+| `?debug=1&symbols=1` | Production 30-symbol contact sheet; takes route precedence over level jump |
+| `?debug=1&setProgress=20` | Saves completion fixture 20, normal session persistence afterwards |
+| `?debug=1&resetProgress=1` | Clears campaign before routing; wins over setProgress |
+| `?debug=1&locale=en` / `locale=ru` | Non-persistent locale override; otherwise stored choice then SDK language then RU |
+| `?debug=1&renderScale=1` | Legacy backing density comparison; default caps at 2× |
+
+Progress fixtures overwrite the current origin's save. Use a dedicated QA origin/profile, not a
+player save. Gallery unlock QA: fixtures 0, 20, 99, 100. Debug level jumps must never advance saves.
+
+## Campaign, navigation and persistence
+
+- Fresh normal launch → Menu → Level 1 Stage 1. Continue uses first uncompleted level; replay of a
+  completed level never reduces progress. Corrupt/unknown-version/throwing storage remains playable.
+- Test Levels 1, 21, 24, 30, 80, 99 and 100; every pre-stage promotes without saving, final saves
+  before Reward/Complete. Restart/Replay reset Stage 1; Next advances once; terminal campaign restart
+  requests Level 1, never 101. Unlock counts and Gallery agree with saved progress after reload.
+- Paths may exceed two turns; no outside-border route, falling tiles or shuffle. Verify blockers,
+  arbitrary-length route animation, bad-pair feedback and transition input locks.
+- Pause preserves board/selection. Resume keeps stage; Restart/Exit require confirmation; Cancel
+  returns to Pause. Modal controls never activate background tiles. No overlay survives scene exit.
+- Menu → Levels chapter pages → playable level; Menu → Gallery → unlocked Full View → Gallery → Menu.
+  Full View rejects locked art. First uncached artwork load, Replay cache reuse and loading failures
+  must not hang navigation or leak loader listeners. Full-art LRU releases inactive entries.
+
+## Rendering, locale and audio
+
+Test real Android touch (including the accepted POCO environment) and desktop, tall/wide resize,
+browser chrome changes, safe areas, render densities 1/2 and reduced motion. Authored board/UI stays
+480×800; 56 px tiles/64 px pitch remain aligned with hit zones. Inspect every catalog symbol via
+contact sheet, all ten chapter banners, all 100 artwork full/thumb pairs, clipped board corners,
+Reward and Gallery. No placeholder/missing texture, crop/stretch, black square or old-art fallback.
+
+Switch RU/EN in settings without reload, traverse scenes and restart; manual choice wins over SDK
+language. On fresh Yandex storage, RU portal → RU, other languages → EN. Check text overflow and
+font availability in both alphabets. Keep every font license.
+
+Audio: first tap starts/unlocks correctly, UI/tile SFX has no new delay, both tracks transition/loop,
+Music/Effects sliders in Settings and Pause persist independently, zero volume stays silent.
+Background/foreground and ads pause/resume appropriately with retained music behavior and no stale
+Android notification/media-session ownership. Compare Next with cooldown active and real ad shown;
+separate texture-load stalls from audio or SDK behavior before changing code.
+
+## Real Yandex draft regression matrix
+
+Run RU/EN and record device, SHA, callback order, result and console timestamps.
+
+| Scenario | Required observation |
+| --- | --- |
+| Startup automatic ad / delayed SDK startup | Non-Play input guarded; first interactive render sends ready once; gameplay marker starts only when running |
+| Before 90 s, then after 90 s | No early interstitial; only explicit eligible navigation requests one; no blank cover on tap/cooldown |
+| Complete Next/Replay/Menu | Reward remains until choice; close commits that destination once without another tap |
+| Confirmed Pause Restart/Exit, Gallery Menu | Same shared cooldown; Cancel/Resume/Full View Back never request ad |
+| Resume before close; close before delayed resume | Navigation promise settles at close; SDK input freeze lasts until actual resume; no synthetic resume |
+| `onClose(false)`, error/throw, missing callback | Navigation continues once; no reward assumption; watchdog logs identify fallback |
+| Rapid double tap | One pending request/action; no duplicate transition |
+| Long real ad | Cover begins only at open; no old screen flash after close; destination releases after render |
+| SDK pause + browser background in both orders | Releasing one cannot unfreeze the other; browser Continue remains required |
+| Gameplay/Pause/Reward/Complete/Menu/loading | SDK gameplay marker active only for playable running board |
+
+SDK and navigation implementation/timeout values are centralized in `PLATFORM_INTEGRATION.md`.
+The 15 s callback-envelope failure was observed on the portal despite earlier automated success;
+real draft evidence remains necessary after any adapter change.
+
+## Rewarded hints and browser Pause
+
+- Idle Hint opens clear voluntary Watch/Cancel. Cancel grants nothing and restores play. Yandex
+  grants only after `onRewarded`; early close/no-fill/error without reward shows unavailable.
+  Web free hints are QA behavior, not production fallback.
+- One pending request only. Active hint suppresses further videos but keeps normal tile input.
+  Both inset gold indicators remain after unrelated pair removal and selection changes. Removing
+  either marked tile clears the markers; stage/reset/replay/exit clears old state. No outside-tile
+  ring overlaps a neighbor; teal selection/red error/pressed feedback remain independent.
+- Background with confirmation or unavailable dialog: dialog is dismissed, browser Pause owns the
+  screen. During video, test result before/after SDK resume and foreground; defer result until
+  explicit Continue and Pause dismissal. No Hint dialog over Pause and no extra video.
+- Invalidate scene/stage while request is pending; late reward cannot alter a replacement board.
+  Hint indicators are board-local and are not expected to survive reload.
+
+## Distribution verification
+
+`check:package-size` reports uncompressed decimal bytes (warning >80,000,000; failure >100,000,000).
+For upload, ZIP **contents of dist**, with one root `index.html`, ASCII/no-whitespace member names,
+no `dist/` prefix, no corruption and ≤100,000,000 uncompressed bytes. The Yandex workflow checks
+these properties. Compare static imports, HTML/CSS references and expanded catalog paths with
+actual files; do not use direct-import absence alone as deletion evidence.
+
+GitHub Actions CI is broader than the Pages/Yandex packaging jobs: packaging alone does not run
+the 10k/blocker simulations. Require full CI and explicit device gates before release. Never claim
+fresh Android/Yandex testing when only local automated checks have run.

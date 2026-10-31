@@ -1,3 +1,6 @@
+> Historical design/implementation record. Some proposals and status statements are superseded.
+> Current behavior: [ARCHITECTURE.md](ARCHITECTURE.md), [PLATFORM_INTEGRATION.md](PLATFORM_INTEGRATION.md), [TESTING.md](TESTING.md).
+
 # Multi-stage pilot
 
 > **Historical note:** The Task 7 pilot was completed and then expanded in Task 7.2. The current campaign distribution is documented in `STAGE_PROGRESSION.md`.

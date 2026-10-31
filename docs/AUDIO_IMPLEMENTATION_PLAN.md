@@ -1,3 +1,6 @@
+> Historical design/implementation record. Some proposals and status statements are superseded.
+> Current behavior: [ARCHITECTURE.md](ARCHITECTURE.md), [PLATFORM_INTEGRATION.md](PLATFORM_INTEGRATION.md), [TESTING.md](TESTING.md).
+
 # Audio + Settings — implementation plan (2026-10-13)
 
 Scope: Phaser 4.2.1 / TypeScript / Yandex Games; 480x800 authored portrait coordinates. Source: user-approved Google Sheet `sound-plan` and supplied `Sounds_confrim.zip`. **Do not reinterpret the sound-plan's rejected sounds as required.**

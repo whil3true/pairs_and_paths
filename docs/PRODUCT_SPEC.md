@@ -1,3 +1,6 @@
+> Historical design/implementation record. Some proposals and status statements are superseded.
+> Current behavior: [ARCHITECTURE.md](ARCHITECTURE.md), [PLATFORM_INTEGRATION.md](PLATFORM_INTEGRATION.md), [TESTING.md](TESTING.md).
+
 # Product specification
 
 - Working titles: **Pairs & Paths: Connect the Tiles** (EN), **Пары и пути: Соедини плитки** (RU).

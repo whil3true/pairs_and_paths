@@ -1,3 +1,6 @@
+> Historical design/implementation record. Some proposals and status statements are superseded.
+> Current behavior: [ARCHITECTURE.md](ARCHITECTURE.md), [PLATFORM_INTEGRATION.md](PLATFORM_INTEGRATION.md), [TESTING.md](TESTING.md).
+
 # VISUAL SPECIFICATION v1
 
 **Project:** `whil3true/pairs_and_paths`  
