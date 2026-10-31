@@ -265,3 +265,11 @@ Press Pause during Hint's 900 ms feedback and during pair-removal, blocked-pair,
 ## Yandex Games SDK bootstrap QA: stage 1
 
 CI must pass typecheck, unit tests, 10k simulations, blockers, build and size limit. On GitHub Pages, verify the game starts without `/sdk.js`, preserves desktop 2× density and mobile rendering, and retains progress and audio preferences. In a Yandex console draft, check the SDK debug loader, Game Ready after first interactive render, RU/EN initial locale and saved manual override, error/retry UI, and audio pause/resume for SDK events, tab switches and startup ads. SDK-driven gameplay freeze and Gameplay API marking must be implemented before moderation approval; no ads are triggered in this first stage.
+
+## Yandex gameplay lifecycle QA
+
+In the draft debug panel verify gamepad is active only during playable board, not
+Pause, Reward, Complete, Menu, loading or SDK/browser background. SDK pause freezes
+tile input, timers and tweens. SDK resume must not dismiss the player's Pause menu
+or the browser background Pause, which still requires explicit Continue. Verify
+both interruption orders (browser then SDK, SDK then browser), audio, RU/EN and saves.
