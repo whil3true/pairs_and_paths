@@ -12,11 +12,10 @@ test("language preferences persist independently of audio and progress", () => {
   assert.equal(store.load(), "en");
   assert.equal(map.get(UI_LOCALE_STORAGE_KEY), "en");
   assert.equal(resolveStartupLocale(store.load()), "en");
-  assert.equal(resolveStartupLocale(store.load()), "en");
   assert.equal(resolveStartupLocale(null), "ru");
-  assert.equal(resolveStartupLocale("",null,"en"), "en");
-  assert.equal(resolveStartupLocale("",null,"ru-RU"), "ru");
-  assert.equal(resolveStartupLocale("",null,"tr"), "en");
+  assert.equal(resolveStartupLocale(null,"en"), "en");
+  assert.equal(resolveStartupLocale(null,"ru-RU"), "ru");
+  assert.equal(resolveStartupLocale(null,"tr"), "en");
   assert.equal(resolveStartupLocale("ru", "en"), "ru");
 });
 test("storage failures do not cause a false persisted locale", () => {
