@@ -320,3 +320,27 @@ extra advertisements are requested. Compare `interstitial_close`,
 `interstitial_navigation_unblocked`, `platform_resume` in logs. In case of
 a prolonged pause after navigation, diagnose SDK state separately rather than
 re-entering or repeating the navigation.
+
+## Rewarded hints release QA
+
+On the Yandex draft, press Hint while the board is idle. Confirm that the
+dialog offers a voluntary rewarded video with clear Watch / Cancel buttons.
+Cancel must return to playable board without any ad or hint. Successful
+rewarded playback grants a hint only after `onRewarded`, followed by `onClose`.
+Closing early, an SDK failure or no ad must never grant free hints; show an
+unavailable message and allow the player to continue.
+
+The two matching tiles remain marked until the pair is removed or the
+board changes, without blocking tile interaction. The hint is an independent
+inside-the-tile gold outline: ordinary teal selected state, red blocked state,
+tap/press feedback and board gaps must remain unchanged. The outline must
+not extend beyond the 56px visible tile card or overlap neighbouring cells.
+Test selecting one of the hinted tiles, selecting other tiles, removing a
+different pair, then the hinted pair, moving to a subsequent stage, Replay and
+Exit. Repeated taps while the rewarded ad is pending may request at most one
+video. Once a hint is active, the button should not request additional videos
+for the same unresolved suggestion. The standalone web build retains free
+hints for development only; Yandex does not.
+
+Run RU and EN, SDK pause/resume and audio checks, fast cancel/close,
+no-fill/error, and real Android touch before merge.
