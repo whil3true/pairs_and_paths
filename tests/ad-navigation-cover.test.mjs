@@ -4,11 +4,12 @@ import { readFile } from "node:fs/promises";
 
 const source = async (path) => readFile(new URL(path, import.meta.url), "utf8");
 
-test("navigation cover shields previous screen before the ad request", async () => {
+test("cover is installed only from the real interstitial open callback", async () => {
   const play = await source("../src/game/PlayScene.ts");
   const gallery = await source("../src/game/ArtworkGalleryScene.ts");
   for (const code of [play, gallery]) {
-    assert.match(code, /showNavigationCover\(\)[\s\S]*?interstitials\??\.tryShow\(\)/);
+    assert.match(code, /interstitials\??\.tryShow\(showNavigationCover\)/);
+    assert.doesNotMatch(code, /showNavigationCover\(\);\s*(?:\/\/[^\n]*\n\s*)*void this\.interstitials\.tryShow/);
     assert.match(code, /armNavigationCoverFallback\(\)/);
     assert.match(code, /hideNavigationCover\(\)/);
   }
