@@ -6,8 +6,9 @@ Audited 2026-10-31 from latest fetched `dev`:
 `c5e09f7a54f60fa6ee2822dd6d781afd3fcb570b` — Fix rewarded hint persistence and pause modal stacking (#128).
 No AGENTS.md was present in the checkout. Work is split into feature-branch draft PRs; no shared
 branch changes or history rewrites. PR A records architecture/evidence; PR B applies one coherent
-asset/history cleanup batch and verifies the unchanged game. Each feature branch starts at this
-same baseline so the cleanup PR does not contain the documentation rewrite.
+asset/history cleanup batch and verifies the unchanged game. PR A targets `dev`; PR B is stacked on PR A's feature branch, both descending from this
+recorded baseline. The cleanup PR diff therefore excludes the documentation rewrite. After merging
+PR A, retarget PR B to `dev` (merge updated dev into it if necessary; do not rewrite history).
 
 Environment: Node v24.22.1, npm 11.9.0, Linux; project/CI minimum is Node 22. `npm ci` installed the
 lockfile's two direct packages successfully. The environment prints an npm `http-proxy` deprecation
