@@ -64,11 +64,6 @@ export const computePortraitFrame = (
   };
 };
 
-export const isLegacyRenderScaleDebugRequested = (search: string): boolean => {
-  const params = new URLSearchParams(search);
-  return params.get("debug") === "1" && params.get("renderScale") === "1";
-};
-
 /**
  * Chooses the renderer density once at startup. EXPAND can display the
  * canonical field above its authored size even when DPR is 1, so DPR alone is
@@ -112,13 +107,12 @@ export const isDesktopBrowserUserAgent = (
 /**
  * Desktop sharpness trial: use the existing bounded 2x backing density at startup
  * instead of fractional 1.x density. Mobile keeps its current computed policy.
- * The explicit legacy 1x debug override always wins.
  */
 export const selectStartupRenderScale = (
   automaticRenderScale: number,
   isDesktop: boolean,
-  forceLegacy1x: boolean,
-): number => forceLegacy1x ? MIN_RENDER_SCALE : isDesktop ? MAX_RENDER_SCALE : automaticRenderScale;
+  // Desktop retains its previously approved 2× rendering policy.
+): number => isDesktop ? MAX_RENDER_SCALE : automaticRenderScale;
 
 const logicalCameraResizeHandlers = new WeakMap<Phaser.Scene, () => void>();
 
