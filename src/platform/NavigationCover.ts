@@ -25,16 +25,18 @@ export const showNavigationCover = (): void => {
   cover.hidden = false;
 };
 
-/** After scene.start, wait for a renderer frame: never expose the old scene. */
-export const releaseNavigationCoverAfterRender = (game: Phaser.Game): void => {
+/** Start a failsafe only after the selected navigation has been committed. */
+export const armNavigationCoverFallback = (): void => {
+  if (typeof document === "undefined" || document.getElementById(COVER_ID)?.hidden !== false) return;
   if (fallback !== null) clearTimeout(fallback);
   fallback = setTimeout(() => {
     console.warn("[Cozy SDK] navigation_cover_render_timeout");
     hideNavigationCover();
   }, MAX_COVER_MS);
-  // Phaser queues scene.start when called from an input callback, so wait for
-  // the subsequent completed frame before revealing the new scene.
-  game.events.once(Phaser.Core.Events.POST_RENDER, () => {
-    game.events.once(Phaser.Core.Events.POST_RENDER, hideNavigationCover);
-  });
+};
+
+/** Called by the destination only after its UI or board is constructed. */
+export const releaseNavigationCoverAfterRender = (game: Phaser.Game): void => {
+  if (typeof document === "undefined" || document.getElementById(COVER_ID)?.hidden !== false) return;
+  game.events.once(Phaser.Core.Events.POST_RENDER, hideNavigationCover);
 };
