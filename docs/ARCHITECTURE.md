@@ -118,3 +118,10 @@ preserves current vendor behavior; switching to minified Phaser is a separate ch
 `public/index.html` loads the vendor global before `js/main.js` as an ES module. No CDN is required
 for game assets. SDK `/sdk.js` comes from the portal. CI/deployment commands are indexed in README;
 release limits and device evidence belong to `TESTING.md`, cleanup evidence to `REPOSITORY_AUDIT.md`.
+
+The cleaned build invokes `scripts/check-assets.mjs` after copying: actual catalog expansions and
+CSS fonts must match the approved snapshot, all public files must be classified, copied bytes must
+match, local emitted/HTML/CSS references must resolve and dist must contain only the expected
+static files, emitted source modules and Phaser. This keeps recursive copying simple while
+failing if historical exports re-enter the deploy root. Historical design records are under
+`docs/history/`; they do not override this document.
