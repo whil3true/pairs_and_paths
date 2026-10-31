@@ -7,6 +7,7 @@ export interface PlatformService {
   readonly isPaused: boolean;
   /** Signals that a playable scene has finished its first render. */
   ready(): void;
+  setGameplayActive(active: boolean): void;
   onPause(handler: () => void): () => void;
   onResume(handler: () => void): () => void;
 }
