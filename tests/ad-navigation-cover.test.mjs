@@ -8,7 +8,7 @@ test("navigation cover shields previous screen before the ad request", async () 
   const play = await source("../src/game/PlayScene.ts");
   const gallery = await source("../src/game/ArtworkGalleryScene.ts");
   for (const code of [play, gallery]) {
-    assert.ok(code.indexOf("showNavigationCover()") < code.indexOf("interstitials.tryShow()"));
+    assert.match(code, /showNavigationCover\(\)[\s\S]*?interstitials\??\.tryShow\(\)/);
     assert.match(code, /armNavigationCoverFallback\(\)/);
     assert.match(code, /hideNavigationCover\(\)/);
   }
