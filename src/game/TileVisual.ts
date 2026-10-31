@@ -58,6 +58,16 @@ export class TileVisual {
     if (this.hintVisible === visible) return;
     this.hintVisible = visible;
     this.hintMark.setVisible(visible);
+    this.hintMark.setAlpha(1);
+    if (visible) {
+      // A single opacity-only entrance: no scale outside the visible tile.
+      this.hintMark.setAlpha(0.3);
+      this.root.scene.tweens.add({
+        targets: this.hintMark, alpha: 1, duration: 360, ease: "Sine.Out",
+      });
+    } else {
+      this.root.scene.tweens.killTweensOf(this.hintMark);
+    }
   }
 
   press(tweens: Phaser.Tweens.TweenManager): void {
