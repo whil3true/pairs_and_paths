@@ -136,3 +136,18 @@ locale/audio and navigation before adding a second game's mechanics.
 
 Applied in PR B: see [cleanup results](audit/CLEANUP_RESULT.md) for exact final metrics, all
 command outcomes and verification limitations. PR A itself changes documentation only.
+
+
+## Post-audit release hardening (follow-up)
+
+A separate release-hardening PR removes the public URL-controlled debug campaign,
+progress mutation, locale and render-scale overrides and the development symbol
+gallery. These tools were deliberately retained in the historical baseline
+cleanup (PR #131), but are not required for production. The original audit
+and inventory remain an accurate record of that earlier baseline.
+
+A fresh inventory confirms the public assets already contain only the approved
+runtime catalog and its dependencies; no additional unused pilot or old PNG
+was justified for deletion. Browser HTML title/ARIA branding is corrected to
+Cozy Gallery. Internal storage keys and npm package name remain unchanged for
+save compatibility. The changes are subject to independent CI and device QA.
