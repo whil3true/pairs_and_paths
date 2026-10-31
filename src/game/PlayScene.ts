@@ -859,6 +859,20 @@ export class PlayScene extends Phaser.Scene {
     if (resetOuterDim) resetPageDim();
   }
 
+  /** One advertisement attempt per confirmed navigation action. */
+  private navigateAfterInterstitial(action: () => void): void {
+    if (this.interstitialTransitionPending) return;
+    this.interstitialTransitionPending = true;
+    void this.interstitials.tryShow().catch((error: unknown) => {
+      console.warn("[Cozy SDK] interstitial_navigation_error", error);
+      return false;
+    }).then(() => {
+      if (!this.sys.isActive() || !this.interstitialTransitionPending) return;
+      this.interstitialTransitionPending = false;
+      action();
+    });
+  }
+
   private showComplete(): void {
     this.presentationState = "complete";
     this.syncGameplayMarker();
@@ -879,27 +893,20 @@ export class PlayScene extends Phaser.Scene {
       x: 240, y: COMPLETE_LAYOUT.primaryY, width: COMPLETE_LAYOUT.buttonWidth,
       height: COMPLETE_LAYOUT.buttonHeight,
       label: campaignComplete ? strings.restartFromLevelOne : strings.nextLevel,
-      onActivate: () => {
-        if (this.interstitialTransitionPending) return;
-        this.interstitialTransitionPending = true;
-        const next = campaignComplete ? 1 : this.currentLevelNumber + 1;
-        void this.interstitials.tryShow().then(() => {
-          if (!this.sys.isActive() || !this.interstitialTransitionPending) return;
-          this.interstitialTransitionPending = false;
-          this.currentLevelNumber = next;
-          this.startLevel();
-        });
-      },
+      onActivate: () => this.navigateAfterInterstitial(() => {
+        this.currentLevelNumber = campaignComplete ? 1 : this.currentLevelNumber + 1;
+        this.startLevel();
+      }),
     });
     const replayButton = createSecondaryButton(this, this.renderScale, {
       x: 240, y: COMPLETE_LAYOUT.replayY, width: COMPLETE_LAYOUT.buttonWidth,
       height: COMPLETE_LAYOUT.buttonHeight, label: strings.replayLevel, tone: "modalSecondary",
-      onActivate: () => this.startLevel(),
+      onActivate: () => this.navigateAfterInterstitial(() => this.startLevel()),
     });
     const menuButton = createSecondaryButton(this, this.renderScale, {
       x: 240, y: COMPLETE_LAYOUT.menuY, width: COMPLETE_LAYOUT.buttonWidth,
       height: COMPLETE_LAYOUT.buttonHeight, label: strings.menu, tone: "modalSecondary",
-      onActivate: () => this.scene.start("MainMenuScene"),
+      onActivate: () => this.navigateAfterInterstitial(() => this.scene.start("MainMenuScene")),
     });
     this.completeOverlay = this.add.container(0, 0, [
       shell, title, nextButton.container, replayButton.container, menuButton.container,
@@ -933,7 +940,9 @@ export class PlayScene extends Phaser.Scene {
       strings.restartConfirmBody,
       [
         { label: strings.cancel, kind: "primary", action: () => this.showPauseMenu() },
-        { label: strings.restartConfirmAction, kind: "danger", action: () => this.dismissPauseOverlay(() => this.startLevel()) },
+        { label: strings.restartConfirmAction, kind: "danger", action: () => this.navigateAfterInterstitial(
+          () => this.dismissPauseOverlay(() => this.startLevel()),
+        ) },
       ],
     );
   }
@@ -945,7 +954,9 @@ export class PlayScene extends Phaser.Scene {
       strings.exitConfirmBody,
       [
         { label: strings.cancel, kind: "primary", action: () => this.showPauseMenu() },
-        { label: strings.exitConfirmAction, kind: "danger", action: () => this.dismissPauseOverlay(() => this.scene.start("MainMenuScene")) },
+        { label: strings.exitConfirmAction, kind: "danger", action: () => this.navigateAfterInterstitial(
+          () => this.dismissPauseOverlay(() => this.scene.start("MainMenuScene")),
+        ) },
       ],
     );
   }
@@ -999,7 +1010,7 @@ export class PlayScene extends Phaser.Scene {
         x: PAUSE_LAYOUT.button.centerX, y, width: PAUSE_LAYOUT.button.width,
         height: PAUSE_LAYOUT.button.height, label,
         tone: kind === "secondary" ? "modalSecondary" : "default",
-        onActivate: () => { if (!this.pauseClosing) action(); },
+        onActivate: () => { if (!this.pauseClosing && !this.interstitialTransitionPending) action(); },
       });
       contentObjects.push(button.container);
     });

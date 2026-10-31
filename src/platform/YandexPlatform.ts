@@ -43,21 +43,30 @@ export class YandexPlatform implements PlatformService {
         clearTimeout(watchdog);
         resolve(shown);
       };
-      // A defensive callback watchdog prevents a broken advertising SDK from
-      // leaving the Next button stuck forever. Any SDK pause still owns input.
-      const watchdog = setTimeout(() => complete(false), 120000);
+      // Fail open if the SDK never opens an ad or calls back. A real opened
+      // advert receives a longer timeout; SDK pause remains authoritative.
+      let watchdog = setTimeout(() => {
+        console.warn("[Cozy SDK] interstitial_no_callback");
+        complete(false);
+      }, 15000);
       try {
+        // Official Yandex signature takes callbacks DIRECTLY, not { callbacks }.
         this.sdk.adv!.showFullscreenAdv({
-          callbacks: {
-            onOpen: () => console.info("[Cozy SDK] interstitial_open"),
-            onClose: (shown) => {
-              console.info("[Cozy SDK] interstitial_close", shown);
-              complete(shown === true);
-            },
-            onError: (error) => {
-              console.warn("[Cozy SDK] interstitial_error", error);
+          onOpen: () => {
+            console.info("[Cozy SDK] interstitial_open");
+            clearTimeout(watchdog);
+            watchdog = setTimeout(() => {
+              console.warn("[Cozy SDK] interstitial_close_timeout");
               complete(false);
-            },
+            }, 120000);
+          },
+          onClose: (shown) => {
+            console.info("[Cozy SDK] interstitial_close", shown);
+            complete(shown === true);
+          },
+          onError: (error) => {
+            console.warn("[Cozy SDK] interstitial_error", error);
+            complete(false);
           },
         });
       } catch (error) {

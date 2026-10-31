@@ -273,3 +273,24 @@ Pause, Reward, Complete, Menu, loading or SDK/browser background. SDK pause free
 tile input, timers and tweens. SDK resume must not dismiss the player's Pause menu
 or the browser background Pause, which still requires explicit Continue. Verify
 both interruption orders (browser then SDK, SDK then browser), audio, RU/EN and saves.
+
+## Yandex interstitial boundaries and callback correction (post-#121)
+
+Actual Yandex SDK `adv.showFullscreenAdv` takes a direct callbacks object,
+NOT `{ callbacks: ... }`. Verify this with a mock adapter and a real draft.
+
+One shared 90-second session/successful-show cooldown governs the following
+explicit navigation: Complete -> Next/Replay/Menu, manual Pause confirmation
+-> Restart/Exit, Gallery -> Main Menu. Gallery Full View -> Gallery, Cancel
+confirmation, and Resume never request advertisements.
+The Gallery exit must not use a separate timer. Rapid double taps may invoke
+at most one request; error, onClose(false), absent ad and timeout navigate.
+Logs distinguish `interstitial_skipped:cooldown`, `interstitial_request`,
+`interstitial_open`, `interstitial_close true/false`, and SDK errors.
+Confirm the rendered reward remains visible until the player chooses an exit.
+If the player exits a completed level, progress is already persisted.
+
+For music, record a before/after comparison on Next with cooldown active (no
+request) and after the cooldown (ad requested). Distinguish SDK audio pause
+from main-thread texture load; do not invent a playback workaround without
+measuring which case glitches.

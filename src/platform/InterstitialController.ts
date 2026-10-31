@@ -5,7 +5,6 @@ export const INTERSTITIAL_RETRY_MS = 15_000;
 
 /** Keeps adverts tied to an intentional level boundary, never to a timer. */
 export class InterstitialController {
-  private readonly sessionStart: number;
   private lastShownAt: number;
   private lastAttemptAt: number | null = null;
   private pending = false;
@@ -14,21 +13,29 @@ export class InterstitialController {
     private readonly platform: Pick<PlatformService, "id" | "showInterstitial">,
     private readonly now: () => number = () => Date.now(),
   ) {
-    this.sessionStart = this.now();
     // The portal may have shown a non-queryable automatic startup advert.
-    this.lastShownAt = this.sessionStart;
+    this.lastShownAt = this.now();
   }
 
   async tryShow(): Promise<boolean> {
     const time = this.now();
-    if (this.pending || this.platform.id !== "yandex") return false;
-    if (time - this.lastShownAt < INTERSTITIAL_COOLDOWN_MS) return false;
-    if (this.lastAttemptAt !== null && time - this.lastAttemptAt < INTERSTITIAL_RETRY_MS) return false;
+    if (this.platform.id !== "yandex") return false;
+    if (this.pending) return false;
+    if (time - this.lastShownAt < INTERSTITIAL_COOLDOWN_MS) {
+      console.info("[Cozy SDK] interstitial_skipped:cooldown", INTERSTITIAL_COOLDOWN_MS - (time - this.lastShownAt));
+      return false;
+    }
+    if (this.lastAttemptAt !== null && time - this.lastAttemptAt < INTERSTITIAL_RETRY_MS) {
+      console.info("[Cozy SDK] interstitial_skipped:retry", INTERSTITIAL_RETRY_MS - (time - this.lastAttemptAt));
+      return false;
+    }
     this.lastAttemptAt = time;
     this.pending = true;
+    console.info("[Cozy SDK] interstitial_request");
     try {
       const shown = await this.platform.showInterstitial();
       if (shown) this.lastShownAt = this.now();
+      else console.info("[Cozy SDK] interstitial_not_shown");
       return shown;
     } catch (error) {
       console.warn("[Cozy SDK] interstitial_request_failed", error);
