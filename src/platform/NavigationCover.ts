@@ -23,14 +23,18 @@ export const showNavigationCover = (): void => {
     document.body.appendChild(cover);
   }
   cover.hidden = false;
-  if (fallback !== null) clearTimeout(fallback);
-  fallback = setTimeout(() => {
-    console.warn("[Cozy SDK] navigation_cover_timeout");
-    hideNavigationCover();
-  }, MAX_COVER_MS);
 };
 
 /** After scene.start, wait for a renderer frame: never expose the old scene. */
 export const releaseNavigationCoverAfterRender = (game: Phaser.Game): void => {
-  game.events.once(Phaser.Core.Events.POST_RENDER, hideNavigationCover);
+  if (fallback !== null) clearTimeout(fallback);
+  fallback = setTimeout(() => {
+    console.warn("[Cozy SDK] navigation_cover_render_timeout");
+    hideNavigationCover();
+  }, MAX_COVER_MS);
+  // Phaser queues scene.start when called from an input callback, so wait for
+  // the subsequent completed frame before revealing the new scene.
+  game.events.once(Phaser.Core.Events.POST_RENDER, () => {
+    game.events.once(Phaser.Core.Events.POST_RENDER, hideNavigationCover);
+  });
 };
