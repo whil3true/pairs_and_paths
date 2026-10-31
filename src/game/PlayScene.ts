@@ -41,6 +41,7 @@ import {
 import { getPauseMotionPolicy, PAUSE_FADE_EASE, PAUSE_LAYOUT } from "./PauseVisualPolicy.js";
 import { attachBrowserGameplayLifecycle } from "./BrowserGameplayLifecycle.js";
 import { isGameplayActive } from "./GameplayStatePolicy.js";
+import { InterstitialController } from "../platform/InterstitialController.js";
 
 const keyOf = ({ col, row }: GridPoint): string => `${col},${row}`;
 const samePoint = (left: GridPoint, right: GridPoint): boolean =>
@@ -98,6 +99,7 @@ export class PlayScene extends Phaser.Scene {
   private sdkResumeCleanup: (() => void) | null = null;
   private sdkInputWasEnabled: boolean | null = null;
   private gameplayFrozen = false;
+  private interstitialTransitionPending = false;
   private inputLockedBeforeBrowserPause = false;
   private gameplayUiReady = false;
   private presentationState: "gameplay" | "loading" | "reward" | "complete" = "gameplay";
@@ -111,6 +113,7 @@ export class PlayScene extends Phaser.Scene {
   private readonly handleSceneShutdown = (): void => {
     this.events.off(Phaser.Scenes.Events.UPDATE, this.handleFirstRunningFrame);
     this.platform.setGameplayActive?.(false);
+    this.interstitialTransitionPending = false;
     this.browserLifecycleCleanup?.();
     this.browserLifecycleCleanup = null;
     this.sdkPauseCleanup?.();
@@ -136,6 +139,7 @@ export class PlayScene extends Phaser.Scene {
     private readonly renderScale = 1,
     private readonly initialLocale: SupportedLocale = DEFAULT_LOCALE,
     private readonly artworkTextures = new FullArtworkTextureCache(),
+    private readonly interstitials = new InterstitialController(platform),
   ) {
     super({ key: "PlayScene" });
   }
@@ -876,8 +880,15 @@ export class PlayScene extends Phaser.Scene {
       height: COMPLETE_LAYOUT.buttonHeight,
       label: campaignComplete ? strings.restartFromLevelOne : strings.nextLevel,
       onActivate: () => {
-        this.currentLevelNumber = campaignComplete ? 1 : this.currentLevelNumber + 1;
-        this.startLevel();
+        if (this.interstitialTransitionPending) return;
+        this.interstitialTransitionPending = true;
+        const next = campaignComplete ? 1 : this.currentLevelNumber + 1;
+        void this.interstitials.tryShow().then(() => {
+          if (!this.sys.isActive() || !this.interstitialTransitionPending) return;
+          this.interstitialTransitionPending = false;
+          this.currentLevelNumber = next;
+          this.startLevel();
+        });
       },
     });
     const replayButton = createSecondaryButton(this, this.renderScale, {

@@ -9,7 +9,7 @@ export const hasInteractiveScene = (activeKeys: readonly string[]): boolean =>
   activeKeys.some((key) => READY_SCENE_KEYS.includes(key));
 
 /** Signal platform readiness after the first rendered interactive screen. */
-export const attachGameReady = (game: Phaser.Game, platform: PlatformService): (() => void) => {
+export const attachGameReady = (game: Phaser.Game, platform: PlatformService, onReady?: () => void): (() => void) => {
   let sent = false;
   const onPostRender = (): void => {
     if (sent) return;
@@ -18,6 +18,7 @@ export const attachGameReady = (game: Phaser.Game, platform: PlatformService): (
     sent = true;
     game.events.off(Phaser.Core.Events.POST_RENDER, onPostRender);
     platform.ready();
+    onReady?.();
   };
   game.events.on(Phaser.Core.Events.POST_RENDER, onPostRender);
   const detach = (): void => { game.events.off(Phaser.Core.Events.POST_RENDER, onPostRender); };

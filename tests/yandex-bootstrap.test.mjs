@@ -97,11 +97,12 @@ test("Game Ready requires a playable scene, not only BootScene", () => {
   assert.equal(hasInteractiveScene(["SymbolGalleryScene"]), true);
 });
 
-test("SDK starts before audio and Phaser, no advertising invoked in stage 1", async () => {
+test("SDK starts before audio and Phaser, advertising is only level-boundary triggered", async () => {
   const main = await readFile(new URL("../src/main.ts", import.meta.url), "utf8");
   assert.ok(main.indexOf("const platform = await createPlatform()") < main.indexOf("new AudioManager"));
   assert.ok(main.indexOf("const platform = await createPlatform()") < main.indexOf("new Phaser.Game"));
-  assert.match(main, /attachGameReady\(game, platform\)/);
+  assert.match(main, /attachGameReady\(game, platform,/);
   assert.match(main, /platform\.onPause\(/);
-  assert.doesNotMatch(main, /showFullscreenAdv|showRewardedVideo/);
+  assert.match(main, /new InterstitialController\(platform\)/);
+  assert.doesNotMatch(main, /showFullscreenAdv\(/, "app bootstrap never directly requests advertisements");
 });
