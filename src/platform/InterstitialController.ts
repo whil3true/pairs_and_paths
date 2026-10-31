@@ -17,7 +17,7 @@ export class InterstitialController {
     this.lastShownAt = this.now();
   }
 
-  async tryShow(): Promise<boolean> {
+  async tryShow(onOpen?: () => void): Promise<boolean> {
     const time = this.now();
     if (this.platform.id !== "yandex") return false;
     if (this.pending) return false;
@@ -33,7 +33,7 @@ export class InterstitialController {
     this.pending = true;
     console.info("[Cozy SDK] interstitial_request");
     try {
-      const shown = await this.platform.showInterstitial();
+      const shown = await this.platform.showInterstitial(onOpen);
       if (shown) this.lastShownAt = this.now();
       else console.info("[Cozy SDK] interstitial_not_shown");
       return shown;

@@ -33,7 +33,7 @@ export class YandexPlatform implements PlatformService {
     else this.sdk.features?.GameplayAPI?.stop();
   }
 
-  showInterstitial(): Promise<boolean> {
+  showInterstitial(onOpen?: () => void): Promise<boolean> {
     if (!this.sdk.adv?.showFullscreenAdv) return Promise.resolve(false);
     return new Promise<boolean>((resolve) => {
       let settled = false;
@@ -77,6 +77,10 @@ export class YandexPlatform implements PlatformService {
           onOpen: () => {
             if (callbacksDone) return;
             console.info("[Cozy SDK] interstitial_open");
+            // Tell the game only when a real ad starts, not on button press.
+            try { onOpen?.(); } catch (error) {
+              console.warn("[Cozy SDK] interstitial_open_listener_failed", error);
+            }
             clearWatchdog();
             watchdog = setTimeout(() => {
               console.warn("[Cozy SDK] interstitial_close_timeout");

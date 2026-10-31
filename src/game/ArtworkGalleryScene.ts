@@ -1,6 +1,7 @@
 import type { CampaignProgress } from "../progress/CampaignProgress.js";
 import type { ProgressStore } from "../progress/ProgressStore.js";
 import { InterstitialController } from "../platform/InterstitialController.js";
+import { armNavigationCoverFallback, hideNavigationCover, showNavigationCover } from "../platform/NavigationCover.js";
 import {
   getArtworkGallerySlotState, getDefaultArtworkGalleryChapter, getUnlockedArtworkCount,
   getUnlockedArtworkCountInChapter,
@@ -88,15 +89,22 @@ export class ArtworkGalleryScene extends Phaser.Scene {
   private exitToMainMenu(): void {
     if (this.interstitialExitPending) return;
     this.interstitialExitPending = true;
-    // An isolated GalleryScene in unit tests can still navigate without SDK.
-    const maybeAd = this.interstitials?.tryShow() ?? Promise.resolve(false);
+    // No cover until the SDK confirms the interstitial is actually open.
+    const maybeAd = this.interstitials?.tryShow(showNavigationCover) ?? Promise.resolve(false);
     void maybeAd.catch((error: unknown) => {
       console.warn("[Cozy SDK] gallery_interstitial_error", error);
       return false;
     }).then(() => {
-      if (!this.sys.isActive() || !this.interstitialExitPending) return;
+      if (!this.sys.isActive() || !this.interstitialExitPending) {
+        hideNavigationCover();
+        return;
+      }
       this.interstitialExitPending = false;
       this.scene.start("MainMenuScene");
+      armNavigationCoverFallback();
+    }).catch((error: unknown) => {
+      console.error("[Cozy SDK] gallery_navigation_failed", error);
+      hideNavigationCover();
     });
   }
 

@@ -42,6 +42,7 @@ import { getPauseMotionPolicy, PAUSE_FADE_EASE, PAUSE_LAYOUT } from "./PauseVisu
 import { attachBrowserGameplayLifecycle } from "./BrowserGameplayLifecycle.js";
 import { isGameplayActive } from "./GameplayStatePolicy.js";
 import { InterstitialController } from "../platform/InterstitialController.js";
+import { armNavigationCoverFallback, hideNavigationCover, releaseNavigationCoverAfterRender, showNavigationCover } from "../platform/NavigationCover.js";
 
 const keyOf = ({ col, row }: GridPoint): string => `${col},${row}`;
 const samePoint = (left: GridPoint, right: GridPoint): boolean =>
@@ -322,6 +323,7 @@ export class PlayScene extends Phaser.Scene {
     }
     this.ensureBrowserPauseOverlay();
     this.syncGameplayMarker();
+    releaseNavigationCoverAfterRender(this.game);
   }
 
   private clearInitialStageSettle(): void {
@@ -859,17 +861,25 @@ export class PlayScene extends Phaser.Scene {
     if (resetOuterDim) resetPageDim();
   }
 
-  /** One advertisement attempt per confirmed navigation action. */
+  /** Keep the committed destination visually hidden until it has rendered. */
   private navigateAfterInterstitial(action: () => void): void {
     if (this.interstitialTransitionPending) return;
     this.interstitialTransitionPending = true;
-    void this.interstitials.tryShow().catch((error: unknown) => {
+    // No blank transition on tap or cooldown. Cover starts only on real ad open.
+    void this.interstitials.tryShow(showNavigationCover).catch((error: unknown) => {
       console.warn("[Cozy SDK] interstitial_navigation_error", error);
       return false;
     }).then(() => {
-      if (!this.sys.isActive() || !this.interstitialTransitionPending) return;
+      if (!this.sys.isActive() || !this.interstitialTransitionPending) {
+        hideNavigationCover();
+        return;
+      }
       this.interstitialTransitionPending = false;
       action();
+      armNavigationCoverFallback();
+    }).catch((error: unknown) => {
+      console.error("[Cozy SDK] interstitial_navigation_failed", error);
+      hideNavigationCover();
     });
   }
 

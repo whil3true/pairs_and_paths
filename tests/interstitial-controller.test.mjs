@@ -39,3 +39,25 @@ test("standalone web never advertises; concurrent attempts never overlap",async(
   assert.equal(await one,true);
   assert.equal(calls,1);
 });
+
+
+test("open hook runs only when an ad opens, not on cooldown, skipped or no-fill", async () => {
+  let time = 1000, opened = 0, calls = 0;
+  const ctl = new InterstitialController({
+    id: "yandex",
+    async showInterstitial(onOpen) {
+      calls++;
+      if (calls === 1) return false; // SDK did not open an ad.
+      onOpen?.();
+      return true;
+    },
+  }, () => time);
+  assert.equal(await ctl.tryShow(() => opened++), false); // initial cooldown
+  time += 90000;
+  assert.equal(await ctl.tryShow(() => opened++), false); // no-fill
+  assert.equal(opened, 0);
+  time += 15000;
+  assert.equal(await ctl.tryShow(() => opened++), true);
+  assert.equal(opened, 1);
+  assert.equal(calls, 2);
+});

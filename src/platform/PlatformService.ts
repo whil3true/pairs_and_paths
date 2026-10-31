@@ -9,7 +9,7 @@ export interface PlatformService {
   ready(): void;
   setGameplayActive(active: boolean): void;
   /** Resolves true only when a fullscreen interstitial was actually shown. */
-  showInterstitial(): Promise<boolean>;
+  showInterstitial(onOpen?: () => void): Promise<boolean>;
   onPause(handler: () => void): () => void;
   onResume(handler: () => void): () => void;
 }

@@ -77,3 +77,13 @@ body {
     transform: translateX(-50%);
   }
 }
+
+/* Opaque neutral cover for committed ad-bound navigation. Above the canvas and page dim. */
+#navigation-cover {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  background: #F5EEDF;
+  pointer-events: auto;
+}
+#navigation-cover[hidden] { display: none; }
