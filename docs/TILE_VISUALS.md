@@ -1,69 +1,42 @@
-# Tile visual system
+# Production tile visuals
 
-Tiles use a deterministic, symbol-first visual vocabulary. `TileId` remains the domain identity; the presentation catalog maps IDs 1..30 to committed transparent PNG runtime textures and one of six reusable accent assignments. Because many unrelated symbols share an accent, color remains a secondary recognition cue rather than a unique answer. Numeric IDs are not visible during normal play.
+The approved set is **V5.4.1**. Its intentionally historical runtime path is
+`public/assets/symbols/v3/`; texture keys are `tile-symbol-v3-NAME`. Never identify obsolete art
+from the directory version alone. Every catalog PNG has a 256×256 8-bit RGBA authored canvas,
+presented at 56 logical pixels with its transparent padding intact.
 
-## Catalog order
+## Exact TileId mapping
 
-1. sun
-2. moon
-3. drop
-4. star
-5. leaf
-6. flame
-7. cloud
-8. mountain
-9. lightning
-10. flower
-11. gem
-12. fish
-13. feather
-14. mushroom
-15. shell
-16. key
-17. bell
-18. crown
-19. compass
-20. snowflake
-21. clover
-22. eye
-23. spiral
-24. wave
-25. acorn
-26. lantern
-27. butterfly
-28. crystal
-29. planet
-30. heart
+| ID | Symbol | ID | Symbol | ID | Symbol |
+| --- | --- | --- | --- | --- | --- |
+| 1 | cup | 11 | bell | 21 | mushroom |
+| 2 | teapot | 12 | compass | 22 | crystal |
+| 3 | sun | 13 | camera | 23 | jam-jar |
+| 4 | cloud | 14 | mountain | 24 | heart |
+| 5 | key | 15 | planet | 25 | butterfly |
+| 6 | leaf | 16 | shell | 26 | snowflake |
+| 7 | feather | 17 | wave | 27 | moon |
+| 8 | flower | 18 | lightning | 28 | star |
+| 9 | clover | 19 | fish | 29 | lantern |
+| 10 | acorn | 20 | flame | 30 | gem |
 
-## Source and runtime assets
+`TileSymbols.ts` is authoritative. Current campaign IDs reach 22; entries 23–30 remain approved
+catalog assets and are used by the diagnostic gallery. Do not trim them to the campaign maximum.
+`preloadTileSymbols` skips cached textures; `BoardRuntimeAtlas` bakes the catalog/card states once
+per density/version; `TileVisual` uses those frames and a separate persistent inset hint outline.
 
-Task 8.3 separates editable source artwork from browser runtime textures:
+## Historical decisions to retain
 
-- prototype SVG masters: `art/source/symbols/*.svg`;
-- runtime textures: `public/assets/symbols/*.png`;
-- runtime export size: 256×256, 8-bit RGBA with transparency;
-- current display size: roughly 40–50 px depending on board layout.
+Early SVG/tint rendering produced black squares and inconsistent Android rasterization. PNG
+runtime textures avoid that dependency. The root-level prototype PNG/SVG catalog, 12-symbol pilot
+and v2 exports have been superseded; their exact deletion evidence belongs in the repository audit.
+They are not the source masters of V5.4.1. The corrected production cup is the byte version present
+in audited `dev` (`aa734d0` updated it), not an older pilot cup.
 
-The SVG masters are kept outside `public`, so the production build does not ship them. Phaser loads the committed PNG textures with its ordinary image loader. Runtime PNGs are generated artifacts, not the maximum authoring resolution: future themed artwork may be vector or much higher resolution and can be exported down to the runtime format.
+## Visual QA
 
-Task 8 originally rendered SVGs directly. Android QA exposed runtime-tint black squares, and later QA exposed inconsistent SVG rasterization/geometry presentation. PNG runtime textures remove those renderer-specific dependencies while preserving the same current prototype artwork.
-
-The current prototype drawings were intentionally rasterized as-is. Human QA has already identified **leaf, flame, mountain, gem, feather, shell, compass, clover, lantern, crystal, and planet** as visually imperfect. They are known temporary-art limitations and should be replaced or redesigned during the later full art-direction pass, not treated as final production icons.
-
-## Manual visual QA
-
-Open `?debug=1&symbols=1` for the developer-only 5×6 contact sheet. It uses the same PNG textures, catalog, card treatment, and approximate symbol-to-card ratio as gameplay.
-
-After deployment verify:
-
-- all 30 PNG symbols load;
-- transparent backgrounds remain transparent;
-- no black squares or missing textures appear;
-- no unexpected pixelation appears at gameplay size;
-- gallery and gameplay render the same artwork.
-
-Then compare `?debug=1&level=1` and `?debug=1&level=80`. The known semantic/art-quality limitations listed above are deliberately deferred until the final visual theme is chosen.
-
-HiDPI rendering is the production default. `renderScale` follows DPR clamped to `1..2`, increases Phaser Text texture resolution above 1×, and preserves the permanent logical `480×800` portrait composition and display footprint. POCO X6 Pro QA observed DPR ≈ 2.994 and correctly used the scale-2 `960×1600` backing canvas; desktop gameplay remains portrait-centered with background gutters. The former `hidpi=1` experiment gate is retired.
-
-For comparison or regression only, use `?debug=1&symbols=1&renderScale=1` for the gallery or `?debug=1&level=80&renderScale=1` for gameplay. This is the only explicit scale override and restores the legacy `480×800` backing canvas; arbitrary larger scales are not supported. Gallery diagnostics remain visible at `?debug=1&symbols=1` and report viewport CSS size, DPR, render scale, logical size, backing/client sizes, and renderer.
+`?debug=1&symbols=1` renders all 30 entries using the real catalog/atlas. Check transparency,
+consistent scale and padding, cup balance, no missing textures/black squares, and identical gallery
+versus gameplay artwork. Compare Level 1/80 and legacy `&renderScale=1` versus default density.
+Hint outlines must stay inside the tile, survive unrelated removals and coexist with selected/error
+states. Full device checks are in `TESTING.md`.
