@@ -1,15 +1,5 @@
-import type { StartupRoute } from "./CampaignStartup.js";
-
+/** Production entry always opens the Main Menu; debug routing is excluded. */
 export class BootScene extends Phaser.Scene {
-  constructor(private readonly route: StartupRoute) {
-    super({ key: "BootScene" });
-  }
-
-  create(): void {
-    if (this.route.kind === "gallery") this.scene.start("SymbolGalleryScene");
-    else if (this.route.kind === "play") this.scene.start("PlayScene", {
-      ...this.route.position, persistenceEnabled: this.route.persistenceEnabled,
-    });
-    else this.scene.start("MainMenuScene");
-  }
+  constructor() { super({ key: "BootScene" }); }
+  create(): void { this.scene.start("MainMenuScene"); }
 }
