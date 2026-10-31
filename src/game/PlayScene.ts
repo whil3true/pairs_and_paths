@@ -101,7 +101,15 @@ export class PlayScene extends Phaser.Scene {
   private inputLockedBeforeBrowserPause = false;
   private gameplayUiReady = false;
   private presentationState: "gameplay" | "loading" | "reward" | "complete" = "gameplay";
+  // create() runs before Phaser marks the scene RUNNING. Wait for a scene
+  // update before the first GameplayAPI.start(), otherwise the SDK debug
+  // gamepad stays dark until a later Pause/Resume or visibility event.
+  private readonly handleFirstRunningFrame = (): void => {
+    this.syncGameplayMarker();
+  };
+
   private readonly handleSceneShutdown = (): void => {
+    this.events.off(Phaser.Scenes.Events.UPDATE, this.handleFirstRunningFrame);
     this.platform.setGameplayActive?.(false);
     this.browserLifecycleCleanup?.();
     this.browserLifecycleCleanup = null;
@@ -178,6 +186,7 @@ export class PlayScene extends Phaser.Scene {
     }
     this.loadStage();
     this.ensureBrowserPauseOverlay();
+    this.events.once(Phaser.Scenes.Events.UPDATE, this.handleFirstRunningFrame);
     this.syncGameplayMarker();
   }
 
