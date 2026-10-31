@@ -20,7 +20,9 @@ export const showNavigationCover = (): void => {
     cover = document.createElement("div");
     cover.id = COVER_ID;
     cover.setAttribute("aria-hidden", "true");
-    document.body.appendChild(cover);
+    const gameRoot = document.getElementById("game");
+    if (!gameRoot) return;
+    gameRoot.appendChild(cover);
   }
   cover.hidden = false;
 };
