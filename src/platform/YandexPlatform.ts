@@ -37,41 +37,70 @@ export class YandexPlatform implements PlatformService {
     if (!this.sdk.adv?.showFullscreenAdv) return Promise.resolve(false);
     return new Promise<boolean>((resolve) => {
       let settled = false;
-      const complete = (shown: boolean): void => {
-        if (settled) return;
-        settled = true;
-        clearTimeout(watchdog);
-        resolve(shown);
+      let callbacksDone = false;
+      let wasShown = false;
+      let watchdog: ReturnType<typeof setTimeout> | null = null;
+      let waitWarning: ReturnType<typeof setTimeout> | null = null;
+      let unsubscribeResume: (() => void) | null = null;
+
+      const clearWatchdog = (): void => {
+        if (watchdog !== null) clearTimeout(watchdog);
+        watchdog = null;
       };
-      // Fail open if the SDK never opens an ad or calls back. A real opened
-      // advert receives a longer timeout; SDK pause remains authoritative.
-      let watchdog = setTimeout(() => {
+      const settle = (): void => {
+        if (settled || !callbacksDone || this.paused) return;
+        settled = true;
+        clearWatchdog();
+        if (waitWarning !== null) clearTimeout(waitWarning);
+        unsubscribeResume?.();
+        console.info("[Cozy SDK] interstitial_navigation_unblocked");
+        resolve(wasShown);
+      };
+      // onClose may arrive *before* game_api_resume. Releasing navigation
+      // immediately would start a new PlayScene stage while SDK input and
+      // Phaser timers are still frozen. Hold until both conditions are true.
+      const finishCallbacks = (shown: boolean): void => {
+        if (callbacksDone) return;
+        callbacksDone = true;
+        wasShown = shown;
+        clearWatchdog();
+        if (this.paused) {
+          console.info("[Cozy SDK] interstitial_closed_waiting_sdk_resume");
+          waitWarning = setTimeout(() => {
+            if (!settled) console.warn("[Cozy SDK] interstitial_resume_still_pending");
+          }, 10000);
+        }
+        settle();
+      };
+
+      unsubscribeResume = this.onResume(() => settle());
+      watchdog = setTimeout(() => {
         console.warn("[Cozy SDK] interstitial_no_callback");
-        complete(false);
+        finishCallbacks(false);
       }, 15000);
       try {
-        // Official Yandex signature takes callbacks DIRECTLY, not { callbacks }.
         this.sdk.adv!.showFullscreenAdv({
           onOpen: () => {
+            if (callbacksDone) return;
             console.info("[Cozy SDK] interstitial_open");
-            clearTimeout(watchdog);
+            clearWatchdog();
             watchdog = setTimeout(() => {
               console.warn("[Cozy SDK] interstitial_close_timeout");
-              complete(false);
+              finishCallbacks(false);
             }, 120000);
           },
           onClose: (shown) => {
             console.info("[Cozy SDK] interstitial_close", shown);
-            complete(shown === true);
+            finishCallbacks(shown === true);
           },
           onError: (error) => {
             console.warn("[Cozy SDK] interstitial_error", error);
-            complete(false);
+            finishCallbacks(false);
           },
         });
       } catch (error) {
         console.warn("[Cozy SDK] interstitial_throw", error);
-        complete(false);
+        finishCallbacks(false);
       }
     });
   }

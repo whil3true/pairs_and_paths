@@ -51,3 +51,53 @@ test("missing adv or throwing SDK cannot stall navigation", async () => {
   assert.equal(await bad.adapter.showInterstitial(), false);
   bad.adapter.destroy();
 });
+
+test("ad close before SDK resume must not navigate or unlock the frozen scene early", async () => {
+  const handlers = new Map();
+  let callbacks;
+  const sdk = {
+    on(name, fn) { handlers.set(name, fn); },
+    off(name) { handlers.delete(name); },
+    adv: { showFullscreenAdv(value) { callbacks = value; } },
+  };
+  const platform = new YandexPlatform(sdk);
+  let completed = false;
+  const pending = platform.showInterstitial().then(value => {
+    completed = true;
+    return value;
+  });
+
+  callbacks.onOpen();
+  handlers.get("game_api_pause")();
+  callbacks.onClose(true);
+  await Promise.resolve();
+  assert.equal(completed, false, "ad close alone cannot unblock SDK-paused gameplay");
+  assert.equal(platform.isPaused, true);
+  handlers.get("game_api_resume")();
+  assert.equal(await pending, true);
+  assert.equal(completed, true);
+  assert.equal(platform.isPaused, false);
+  platform.destroy();
+});
+
+test("SDK resume before onClose is also safe, and a skipped ad completes without pause", async () => {
+  const handlers = new Map();
+  let callbacks;
+  const sdk = {
+    on(name, fn) { handlers.set(name, fn); },
+    off(name) { handlers.delete(name); },
+    adv: { showFullscreenAdv(value) { callbacks = value; } },
+  };
+  const platform = new YandexPlatform(sdk);
+  const first = platform.showInterstitial();
+  callbacks.onOpen();
+  handlers.get("game_api_pause")();
+  handlers.get("game_api_resume")();
+  callbacks.onClose(true);
+  assert.equal(await first, true);
+
+  const second = platform.showInterstitial();
+  callbacks.onClose(false);
+  assert.equal(await second, false);
+  platform.destroy();
+});
