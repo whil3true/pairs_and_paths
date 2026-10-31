@@ -1,7 +1,7 @@
 import type { CampaignProgress } from "../progress/CampaignProgress.js";
 import type { ProgressStore } from "../progress/ProgressStore.js";
 import { InterstitialController } from "../platform/InterstitialController.js";
-import { hideNavigationCover, releaseNavigationCoverAfterRender, showNavigationCover } from "../platform/NavigationCover.js";
+import { armNavigationCoverFallback, hideNavigationCover, showNavigationCover } from "../platform/NavigationCover.js";
 import {
   getArtworkGallerySlotState, getDefaultArtworkGalleryChapter, getUnlockedArtworkCount,
   getUnlockedArtworkCountInChapter,
@@ -102,7 +102,7 @@ export class ArtworkGalleryScene extends Phaser.Scene {
       }
       this.interstitialExitPending = false;
       this.scene.start("MainMenuScene");
-      releaseNavigationCoverAfterRender(this.game);
+      armNavigationCoverFallback();
     }).catch((error: unknown) => {
       console.error("[Cozy SDK] gallery_navigation_failed", error);
       hideNavigationCover();
