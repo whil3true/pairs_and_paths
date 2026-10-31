@@ -17,6 +17,7 @@ import { configureUiLocale } from "./UiLocaleRuntime.js";
 import { loadProductionFonts } from "./TypographyAssets.js";
 import { createCard, createModalShell, createPrimaryButton, createSecondaryButton, createUiText } from "./UiPrimitives.js";
 import { BORDERS, COMPONENT_RADII, VISUAL_COLORS } from "./VisualTokens.js";
+import { releaseNavigationCoverAfterRender } from "../platform/NavigationCover.js";
 
 export class MainMenuScene extends Phaser.Scene {
   private audioSettingsOverlay: Phaser.GameObjects.Container | null = null;
@@ -120,6 +121,7 @@ export class MainMenuScene extends Phaser.Scene {
       iconSize: MAIN_MENU_LAYOUT.audioSettingsButton.iconSize,
       onActivate: () => this.openAudioSettings(),
     });
+    releaseNavigationCoverAfterRender(this.game);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.audioSettingsOverlay?.destroy(true);
       this.audioSettingsOverlay = null;
