@@ -41,7 +41,6 @@ export class YandexPlatform implements PlatformService {
       let wasShown = false;
       let watchdog: ReturnType<typeof setTimeout> | null = null;
 
-
       const clearWatchdog = (): void => {
         if (watchdog !== null) clearTimeout(watchdog);
         watchdog = null;
@@ -50,16 +49,13 @@ export class YandexPlatform implements PlatformService {
         if (settled || !callbacksDone) return;
         settled = true;
         clearWatchdog();
-
         console.info("[Cozy SDK] interstitial_navigation_unblocked");
         resolve(wasShown);
       };
-      // onClose may arrive *before* game_api_resume. Releasing navigation
-      // immediately would      // The advertisement callback owns navigation completion. SDK pause/resume
-      // independently owns Phaser input, timers, tweens, and audio. Waiting here
-      // for game_api_resume can trap the selected action on the Complete screen
-      // even after the ad has visibly closed; starting navigation does not
-      // override an outstanding SDK pause.
+      // Advertising callbacks own navigation completion. SDK pause/resume
+      // independently controls Phaser input, timers, tweens and audio.
+      // Delaying this promise until game_api_resume traps the user's chosen
+      // action on Complete even after the advertisement visibly closes.
       const finishCallbacks = (shown: boolean): void => {
         if (callbacksDone) return;
         callbacksDone = true;
@@ -71,7 +67,9 @@ export class YandexPlatform implements PlatformService {
         settle();
       };
 
-    finishCallbacks(false);
+      watchdog = setTimeout(() => {
+        console.warn("[Cozy SDK] interstitial_no_callback");
+        finishCallbacks(false);
       }, 15000);
       try {
         this.sdk.adv!.showFullscreenAdv({
