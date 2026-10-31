@@ -7,10 +7,12 @@ export interface YandexSdk {
     readonly GameplayAPI?: { start(): void; stop(): void };
   };
   readonly adv?: {
-    showFullscreenAdv(callbacks?: {
-      onOpen?: () => void;
-      onClose?: (wasShown: boolean) => void;
-      onError?: (error: object) => void;
+    showFullscreenAdv(options?: {
+      callbacks?: {
+        onOpen?: () => void;
+        onClose?: (wasShown: boolean) => void;
+        onError?: (error: object) => void;
+      };
     }): void;
   };
   readonly environment?: { readonly i18n?: { readonly lang?: string } };
