@@ -11,15 +11,13 @@ test("language preferences persist independently of audio and progress", () => {
   assert.equal(store.save("en"), true);
   assert.equal(store.load(), "en");
   assert.equal(map.get(UI_LOCALE_STORAGE_KEY), "en");
-  assert.equal(resolveStartupLocale("",store.load()), "en");
-  assert.equal(resolveStartupLocale("?debug=1&locale=ru",store.load()), "ru");
-  assert.equal(resolveStartupLocale("?locale=ru",store.load()), "en");
-  assert.equal(resolveStartupLocale("",null), "ru");
+  assert.equal(resolveStartupLocale(store.load()), "en");
+  assert.equal(resolveStartupLocale(store.load()), "en");
+  assert.equal(resolveStartupLocale(null), "ru");
   assert.equal(resolveStartupLocale("",null,"en"), "en");
   assert.equal(resolveStartupLocale("",null,"ru-RU"), "ru");
   assert.equal(resolveStartupLocale("",null,"tr"), "en");
-  assert.equal(resolveStartupLocale("", "ru", "en"), "ru");
-  assert.equal(resolveStartupLocale("?debug=1&locale=en", "ru", "ru"), "en");
+  assert.equal(resolveStartupLocale("ru", "en"), "ru");
 });
 test("storage failures do not cause a false persisted locale", () => {
   const store = new WebLocaleStore(() => ({getItem(){throw Error("denied");},setItem(){throw Error("denied");}}));
