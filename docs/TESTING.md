@@ -24,6 +24,25 @@ Simulators share `.simulation-dist` and must not run concurrently.
 The audit records exact baseline/final results and limitations in `REPOSITORY_AUDIT.md`.
 A passing build is not moderation approval or proof of Android playback/SDK callback delivery.
 
+## Startup intro and automatic Yandex advertising
+
+On first boot, a brief noninteractive IntroScene shows the already-approved
+localized RU/EN logo on the game's cream background for at least 1.2 seconds.
+It uses the same resolved locale as Main Menu, and a neutral background
+if the PNG fails to load. There are no buttons or audio/ad requests.
+If `game_api_pause` occurs while the intro is present, the transition to
+Main Menu is held until the matching SDK resume. IntroScene is deliberately
+not a `LoadingAPI.ready()` scene: readiness is still sent once after the
+first interactive Main Menu render, per the existing SDK contract.
+
+In the real Yandex draft, test repeated fresh starts with and without the
+portal's automatic start ad, RU/EN language and saved language preference.
+Watch for unexpected button activation, tap-through, stuck controls or
+audio during ads. The portal still owns start-ad timing; a late ad may
+appear over the menu after the intro, which remains protected by the SDK
+input guard. This intro reduces perceived surprise but is not an absolute
+timing guarantee.
+
 ## Production startup and release safety
 
 Production startup always opens Main Menu. Query parameters such as `debug=1`,

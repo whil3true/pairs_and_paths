@@ -4,6 +4,7 @@ import test from "node:test";
 import { createPlatform, isStandaloneHost, YANDEX_SDK_PATH } from "../.test-dist/platform/createPlatform.js";
 import { YandexPlatform } from "../.test-dist/platform/YandexPlatform.js";
 import { hasInteractiveScene } from "../.test-dist/platform/GameReady.js";
+import { shouldFinishStartupIntro, STARTUP_INTRO_DURATION_MS } from "../.test-dist/game/IntroPolicy.js";
 import { WebPlatform } from "../.test-dist/platform/WebPlatform.js";
 
 const mock = () => {
@@ -92,9 +93,30 @@ test("GitHub Pages and localhost bypass SDK; deployment hosts require valid SDK"
 test("Game Ready requires a playable scene, not only BootScene", () => {
   assert.equal(hasInteractiveScene([]), false);
   assert.equal(hasInteractiveScene(["BootScene"]), false);
+  assert.equal(hasInteractiveScene(["IntroScene"]), false);
   assert.equal(hasInteractiveScene(["MainMenuScene"]), true);
   assert.equal(hasInteractiveScene(["BootScene", "PlayScene"]), true);
   assert.equal(hasInteractiveScene(["SymbolGalleryScene"]), false);
+});
+
+test("startup intro never finishes while Yandex is paused", () => {
+  assert.equal(STARTUP_INTRO_DURATION_MS, 1200);
+  assert.equal(shouldFinishStartupIntro(1199, false), false);
+  assert.equal(shouldFinishStartupIntro(1200, false), true);
+  assert.equal(shouldFinishStartupIntro(2000, true), false);
+  assert.equal(shouldFinishStartupIntro(2000, false), true);
+});
+
+test("startup intro is localized, noninteractive and precedes first ready", async () => {
+  const intro = await readFile(new URL("../src/game/IntroScene.ts", import.meta.url), "utf8");
+  const main = await readFile(new URL("../src/main.ts", import.meta.url), "utf8");
+  const boot = await readFile(new URL("../src/game/BootScene.ts", import.meta.url), "utf8");
+  assert.match(intro, /getMainMenuBrandAsset\(getActiveUiLocale\(this\.initialLocale\)\)/);
+  assert.match(intro, /this\.input\.enabled = false/);
+  assert.doesNotMatch(intro, /showInterstitial|showFullscreenAdv|\.ready\(/);
+  assert.match(boot, /scene\.start\("IntroScene"\)/);
+  assert.ok(main.indexOf("new IntroScene(") < main.indexOf("new MainMenuScene("));
+  assert.equal(hasInteractiveScene(["IntroScene"]), false);
 });
 
 test("SDK starts before audio and Phaser, advertising is only level-boundary triggered", async () => {

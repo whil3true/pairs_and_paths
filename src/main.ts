@@ -5,6 +5,7 @@ import { attachBrowserAudioLifecycle } from "./audio/BrowserAudioLifecycle.js";
 import { WebAudioSettingsStore } from "./platform/WebAudioSettingsStore.js";
 import { resolveStartupLocale, WebLocaleStore } from "./platform/WebLocaleStore.js";
 import { BootScene } from "./game/BootScene.js";
+import { IntroScene } from "./game/IntroScene.js";
 import { MainMenuScene } from "./game/MainMenuScene.js";
 import { LevelSelectScene } from "./game/LevelSelectScene.js";
 import { PlayScene } from "./game/PlayScene.js";
@@ -71,6 +72,7 @@ const startGame = async (): Promise<void> => {
     backgroundColor: VISUAL_COLORS.bg.app.hex,
     scene: [
       new BootScene(),
+      new IntroScene(platform, renderScale, locale),
       new MainMenuScene(progressStore, renderScale, locale, localeStore),
       new LevelSelectScene(progressStore, renderScale, locale),
       new ArtworkGalleryScene(progressStore, renderScale, locale, interstitials),
