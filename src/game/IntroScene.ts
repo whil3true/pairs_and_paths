@@ -4,12 +4,9 @@ import { getMainMenuBrandAsset, computeMainMenuBrandPlacement } from "./MainMenu
 import { getActiveUiLocale } from "./UiLocaleRuntime.js";
 import type { SupportedLocale } from "./Localization.js";
 import { VISUAL_COLORS } from "./VisualTokens.js";
+import { shouldFinishStartupIntro } from "./IntroPolicy.js";
 
 /** Brief non-interactive startup screen; never initiates advertising. */
-export const STARTUP_INTRO_DURATION_MS = 1200;
-export const shouldFinishStartupIntro = (elapsedMs: number, sdkPaused: boolean): boolean =>
-  elapsedMs >= STARTUP_INTRO_DURATION_MS && !sdkPaused;
-
 export class IntroScene extends Phaser.Scene {
   private startedAt = 0;
   private finished = false;
