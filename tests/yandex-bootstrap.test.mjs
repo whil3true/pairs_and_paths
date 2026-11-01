@@ -4,7 +4,7 @@ import test from "node:test";
 import { createPlatform, isStandaloneHost, YANDEX_SDK_PATH } from "../.test-dist/platform/createPlatform.js";
 import { YandexPlatform } from "../.test-dist/platform/YandexPlatform.js";
 import { hasInteractiveScene } from "../.test-dist/platform/GameReady.js";
-import { shouldFinishStartupIntro, STARTUP_INTRO_DURATION_MS } from "../.test-dist/game/IntroScene.js";
+import { shouldFinishStartupIntro, STARTUP_INTRO_DURATION_MS } from "../.test-dist/game/IntroPolicy.js";
 import { WebPlatform } from "../.test-dist/platform/WebPlatform.js";
 
 const mock = () => {
