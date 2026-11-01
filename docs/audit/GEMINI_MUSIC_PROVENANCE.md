@@ -1,6 +1,6 @@
 # Porcelain Hours: generation and provenance evidence ledger
 
-Status: **GEMINI PROMPT/REPLY HISTORY VERIFIED; FINAL MUSIC FILE NOT IDENTIFIED**.
+Status: **GEMINI HISTORY VERIFIED; THIRD-GENERATION TRACK SELECTED AND BYTE-MATCHED**.
 Initial record 2026-10-31; Takeout inspected 2026-11-01. This record identifies the exact shipped audio, not every generated
 candidate and not a legal determination of copyright ownership.
 
@@ -48,25 +48,35 @@ additional revisions. Neither feedback record identifies the shipped audio.
   full transcript and private Gemini conversation URL are intentionally not
   committed to this public repository. Retain them in a private owner archive.
 
-### Unresolved final-version association
+### Resolved final-version association
 
-Four candidate outputs are documented, but **which one became
-`porcelain_hours.mp3` is not established**. The latest chronological
-generation at 10:18:39 must not automatically be treated as selected.
-The production MP3 SHA-256 is
-`14fe41b4dae8bea0f20fd46d6ba6ffc1e251230e910a61d0b55595c268dd4ffa`.
-Compare the owner's original selected audio download against that hash if
-available; if it was converted, preserve both checksums and a conversion record.
-The exact Gemini model, product mode and applicable generation-time terms
-remain unverified.
+The project owner identified four original downloads in generation order:
+`quiet_geometry.mp3`, `the_quiet_tally.mp3`,
+`porcelain_hours.mp3`, and `sunbeams_on_wood.mp3`.
+The **third version**, generated in the revision at
+**2026-10-13 10:15:22 CET**, was selected for the game.
+The fourth version, at 10:18:39 CET, was not selected.
+
+The original owner-supplied `porcelain_hours.mp3` has exactly the same
+**3,782,802-byte** size and SHA-256
+`14fe41b4dae8bea0f20fd46d6ba6ffc1e251230e910a61d0b55595c268dd4ffa`
+as the shipped production MP3. This verifies byte identity, not just
+a filename or musical resemblance. The complete four-version chronology
+and limitations are recorded in
+[`GEMINI_MUSIC_FINAL_VERIFICATION.md`](GEMINI_MUSIC_FINAL_VERIFICATION.md).
+
+Google Takeout contains the prompts and replies, but not a signed audio
+download manifest. The exact Gemini model version and generation-time
+feature-specific terms were not verified. This evidence is not a legal
+warranty of originality or third-party clearance.
 
 ## Private evidence to preserve outside the public game/repository
 
 1. Keep the supplied Google Takeout ZIPs in a private archive. If possible,
    preserve the original Gemini chat with all generated audio cards. The
    Takeout copy covers prompt/reply text but omits downloadable music.
-2. Save the original selected audio download separately, without modifying
-   it. Calculate its SHA-256 and byte count; compare with the shipped fingerprint.
+2. Selected audio identity is verified and its SHA-256 is recorded. Keeping a
+   separate private copy of the original download is optional.
 3. Record the original conversation URL or private export reference, actual
    generation date and model/product if displayed, and which exact message
    corresponds to the approved version.
@@ -83,8 +93,8 @@ remain unverified.
 - [x] Gemini generation/revision events and dated text responses independently inspected from Takeout.
 - [x] Private export HTML fingerprint recorded (no raw private export committed).
 - [ ] Owner confirms durable private preservation of the original ZIPs and chat music.
-- [ ] Final-generation message and exact audio version identified.
-- [ ] Original selected export independently hash-matched or transformation documented.
+- [x] Selected third-generation message and audio version identified.
+- [x] Original selected MP3 independently matched to the production file using SHA-256 and byte size.
 - [x] Generation event timestamps established for 2026-10-13.
 - [ ] Gemini model and applicable generation-time terms archived.
 
