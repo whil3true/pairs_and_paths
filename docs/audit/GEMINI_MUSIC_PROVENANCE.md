@@ -1,7 +1,7 @@
 # Porcelain Hours: generation and provenance evidence ledger
 
-Status: **PARTIALLY DOCUMENTED — Gemini conversation/export not independently inspected**.
-Recorded 2026-10-31. This record identifies the exact shipped audio, not every generated
+Status: **GEMINI PROMPT/REPLY HISTORY VERIFIED; FINAL MUSIC FILE NOT IDENTIFIED**.
+Initial record 2026-10-31; Takeout inspected 2026-11-01. This record identifies the exact shipped audio, not every generated
 candidate and not a legal determination of copyright ownership.
 
 ## Frozen production artifact
@@ -15,30 +15,56 @@ candidate and not a legal determination of copyright ownership.
 | Hash source | `docs/audit/production-assets.sha256.json`; also validated by `npm run build` / `check:assets` |
 | Integration | `src/audio/AudioAssetManifest.ts`, `AUDIO_MUSIC` entry `porcelain-hours` |
 
-## Generation chain: reported by the project owner
+## Evidence from owner-provided Google Takeout (2026-11-01)
 
-- Platform: Google Gemini.
-- The owner requested music, received an initial generated track, then sent
-  multiple corrective instructions. Gemini returned successive audio variants.
-- One of those variants was selected and included in the approved eight-file
-  `Sounds_confrim.zip`, then committed under the production path above.
-- **Not yet independently verified**: generation dates; Gemini model/product
-  and exact mode; original prompt and corrective prompts; exact response
-  containing the final selected audio; original download filename; whether
-  the final response's downloadable audio bytes match the shipped MP3; terms
-  displayed at generation time.
+The Google Gemini Apps activity export contains the following initial rights question
+and four music-generation/revision **prompt-and-textual-reply** events in one
+Gemini conversation. The timestamps below reproduce the timezone label shown
+by the Google export, without additional timezone conversion.
 
-Do not infer that the last message in the Gemini chat is the shipped version.
-An iterative conversation may contain several equally named candidates.
-Only a direct original export vs shipped-file **SHA-256 comparison** can establish
-byte identity; if the file was transcoded or renamed/processed, preserve the
-transformation record and source/export hashes instead.
+| Google Takeout timestamp | Evidence, paraphrased |
+| --- | --- |
+| 2026-10-13 10:04:53 CET | Owner asks whether generated game music may be used commercially without attribution. Gemini responds affirmatively with qualifications; its response is not authoritative legal clearance. |
+| 2026-10-13 10:09:02 CET | Owner requests positive, calm, looping background music for a pair-matching game. Gemini responds that a first composition is available in chat. |
+| 2026-10-13 10:12:15 CET | Owner requests a cozy loop without prominent bass, glossy TV-style sound or beach atmosphere. Gemini reports a revised version. |
+| 2026-10-13 10:15:22 CET | Owner asks to further reduce bass. Gemini reports another revised version. |
+| 2026-10-13 10:18:39 CET | Owner asks for a further variation based on the preceding track. Gemini reports another generated version. |
+
+Google Activity also records positive feedback on two earlier responses, before
+additional revisions. Neither feedback record identifies the shipped audio.
+
+### Private evidence fingerprint
+
+- Exported HTML inside the uploaded Takeout ZIP:
+  `Takeout/Мои действия/Приложения Gemini/МоиДействия.html`.
+- Original UTF-8 HTML: 1,043,495 bytes, SHA-256:
+  `fed2c20d915330d3d9de6a504b0b5f703b3a30c090e5245f0b803468fcfbb205`.
+- The second ZIP contains the Takeout archive browser, not a second conversation.
+- The activity HTML preserves user prompts and Gemini textual replies, **not**
+  downloadable generated music files. No MP3 or OGG for this generated track
+  was found in either archive. Other voice/media files are not evidence of
+  the selected music version and were not inspected as such.
+- These ZIPs include unrelated personal account activity. The source archives,
+  full transcript and private Gemini conversation URL are intentionally not
+  committed to this public repository. Retain them in a private owner archive.
+
+### Unresolved final-version association
+
+Four candidate outputs are documented, but **which one became
+`porcelain_hours.mp3` is not established**. The latest chronological
+generation at 10:18:39 must not automatically be treated as selected.
+The production MP3 SHA-256 is
+`14fe41b4dae8bea0f20fd46d6ba6ffc1e251230e910a61d0b55595c268dd4ffa`.
+Compare the owner's original selected audio download against that hash if
+available; if it was converted, preserve both checksums and a conversion record.
+The exact Gemini model, product mode and applicable generation-time terms
+remain unverified.
 
 ## Private evidence to preserve outside the public game/repository
 
-1. Export or save the **complete relevant Gemini conversation**, including
-   the initial instruction, every corrective prompt, each generated audio
-   result, and the final choice. Retain original timestamps if available.
+1. Keep the supplied Google Takeout ZIPs in a private archive. If possible,
+   preserve the original Gemini chat with all generated audio cards. The
+   Takeout copy covers prompt/reply text but omits downloadable music.
 2. Save the original selected audio download separately, without modifying
    it. Calculate its SHA-256 and byte count; compare with the shipped fingerprint.
 3. Record the original conversation URL or private export reference, actual
@@ -54,11 +80,13 @@ transformation record and source/export hashes instead.
 ## Completion checklist
 
 - [x] Production filename, size, SHA-256 and integration path recorded.
-- [x] Owner's account of iterative generation recorded as **reported**, not verified.
-- [ ] Gemini chat export / complete revision history securely archived.
+- [x] Gemini generation/revision events and dated text responses independently inspected from Takeout.
+- [x] Private export HTML fingerprint recorded (no raw private export committed).
+- [ ] Owner confirms durable private preservation of the original ZIPs and chat music.
 - [ ] Final-generation message and exact audio version identified.
 - [ ] Original selected export independently hash-matched or transformation documented.
-- [ ] Generation timestamp, model and applicable terms archived.
+- [x] Generation event timestamps established for 2026-10-13.
+- [ ] Gemini model and applicable generation-time terms archived.
 
 **Rights note:** This file is not public-domain/CC0 evidence. Google's
 [Terms of Service](https://policies.google.com/terms) contain a statement
