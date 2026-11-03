@@ -18,6 +18,7 @@ import { loadProductionFonts } from "./TypographyAssets.js";
 import { createCard, createModalShell, createPrimaryButton, createSecondaryButton, createUiText } from "./UiPrimitives.js";
 import { BORDERS, COMPONENT_RADII, VISUAL_COLORS } from "./VisualTokens.js";
 import { releaseNavigationCoverAfterRender } from "../platform/NavigationCover.js";
+import { resetPageDim, setPageDim } from "../platform/PageBackdrop.js";
 
 export class MainMenuScene extends Phaser.Scene {
   private audioSettingsOverlay: Phaser.GameObjects.Container | null = null;
@@ -123,8 +124,7 @@ export class MainMenuScene extends Phaser.Scene {
     });
     releaseNavigationCoverAfterRender(this.game);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
-      this.audioSettingsOverlay?.destroy(true);
-      this.audioSettingsOverlay = null;
+      this.closeAudioSettings();
     });
   }
 
@@ -166,14 +166,19 @@ export class MainMenuScene extends Phaser.Scene {
     const close = createPrimaryButton(this, this.renderScale, {
       x: layout.centerX, y: layout.closeY, width: 336, height: 52,
       label: strings.audioClose,
-      onActivate: () => {
-        this.audioSettingsOverlay?.destroy(true);
-        this.audioSettingsOverlay = null;
-      },
+      onActivate: () => this.closeAudioSettings(),
     });
     this.audioSettingsOverlay = this.add.container(0, 0, [
       shell, title, ...sliders, languageLabel, ...languageButtons, close.container,
     ]).setDepth(50);
+    setPageDim(VISUAL_COLORS.overlay.modal.alpha, 0);
+  }
+
+  private closeAudioSettings(): void {
+    if (this.audioSettingsOverlay === null) return;
+    this.audioSettingsOverlay.destroy(true);
+    this.audioSettingsOverlay = null;
+    resetPageDim();
   }
 
   private async selectLocale(next: SupportedLocale): Promise<void> {
@@ -184,14 +189,7 @@ export class MainMenuScene extends Phaser.Scene {
       if (!this.sys.isActive() || !this.localeStore.save(next)) return;
       configureUiLocale(next);
       document.documentElement.lang = next;
-      // Remove the debug override without navigating the browser.
-      const url = new URL(window.location.href);
-      if (url.searchParams.get("debug") === "1" && url.searchParams.has("locale")) {
-        url.searchParams.delete("locale");
-        try { window.history.replaceState(null, "", url.toString()); } catch { /* restricted browser */ }
-      }
-      this.audioSettingsOverlay?.destroy(true);
-      this.audioSettingsOverlay = null;
+      this.closeAudioSettings();
       this.scene.restart();
     } finally {
       this.changingLanguage = false;
