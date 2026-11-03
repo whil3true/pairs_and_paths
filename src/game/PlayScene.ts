@@ -38,7 +38,7 @@ import { getLevelChapterPresentation } from "./ChapterPresentation.js";
 import {
   COMPLETE_LAYOUT, getRewardMotionPolicy, REWARD_LAYOUT, REWARD_TRANSITION_DIM_ALPHA,
 } from "./RewardVisualPolicy.js";
-import { getPauseMotionPolicy, PAUSE_FADE_EASE, PAUSE_LAYOUT } from "./PauseVisualPolicy.js";
+import { PAUSE_LAYOUT } from "./PauseVisualPolicy.js";
 import { attachBrowserGameplayLifecycle } from "./BrowserGameplayLifecycle.js";
 import { isGameplayActive } from "./GameplayStatePolicy.js";
 import { InterstitialController } from "../platform/InterstitialController.js";
@@ -86,9 +86,7 @@ export class PlayScene extends Phaser.Scene {
   private rewardTransitionDim: Phaser.GameObjects.Rectangle | null = null;
   private currentArtworkVisual: Phaser.GameObjects.Image | null = null;
   private pauseOverlay: Phaser.GameObjects.Container | null = null;
-  private pauseTween: Phaser.Tweens.Tween | null = null;
   private pauseContent: Phaser.GameObjects.Container | null = null;
-  private pauseContentTween: Phaser.Tweens.Tween | null = null;
   private pauseClosing = false;
   private currentLevelNumber = 1;
   private currentStageIndex = 0;
@@ -1002,10 +1000,10 @@ export class PlayScene extends Phaser.Scene {
   private showPause(): void {
     if (this.inputLocked || this.hintModal !== null || this.hintAdPending || this.completeOverlay !== null
       || this.artworkPresentation !== null || this.pauseOverlay !== null) return;
-    this.showPauseMenu(true);
+    this.showPauseMenu();
   }
 
-  private showPauseMenu(animateEntry = false): void {
+  private showPauseMenu(): void {
     const strings = getUiStrings(this.locale);
     this.replacePauseOverlay(
       strings.pauseTitle,
@@ -1015,7 +1013,6 @@ export class PlayScene extends Phaser.Scene {
         { label: strings.pauseRestart, kind: "secondary", action: () => this.showRestartConfirmation() },
         { label: strings.pauseExit, kind: "secondary", action: () => this.showExitConfirmation() },
       ],
-      animateEntry,
     );
   }
 
@@ -1051,7 +1048,6 @@ export class PlayScene extends Phaser.Scene {
     titleCopy: string,
     message: string | undefined,
     actions: readonly { readonly label: string; readonly kind: "primary" | "secondary" | "danger"; readonly action: () => void }[],
-    animateEntry = false,
   ): void {
     if (this.pauseClosing) return;
     const ordinaryPause = message === undefined;
@@ -1109,78 +1105,19 @@ export class PlayScene extends Phaser.Scene {
       this.pauseOverlay.removeAll(true);
       this.pauseOverlay.add(objects);
     }
+    this.syncPausePageDim(1);
     this.syncGameplayMarker();
-    if (animateEntry) {
-      const motion = getPauseMotionPolicy(this.prefersReducedMotion());
-      const overlay = this.pauseOverlay;
-      overlay.setAlpha(0);
-      content.setAlpha(0).setY(motion.contentLift);
-      this.syncPausePageDim(0);
-      let tween!: Phaser.Tweens.Tween;
-      tween = this.tweens.add({
-        targets: overlay, alpha: 1, duration: motion.enterDuration, ease: PAUSE_FADE_EASE,
-        onUpdate: () => {
-          if (this.pauseTween === tween && this.pauseOverlay === overlay) {
-            this.syncPausePageDim(overlay.alpha);
-          }
-        },
-        onComplete: () => {
-          if (this.pauseTween !== tween || this.pauseOverlay !== overlay) return;
-          this.syncPausePageDim(1);
-          this.pauseTween = null;
-        },
-      });
-      this.pauseContentTween = this.tweens.add({
-        targets: content,
-        alpha: 1,
-        y: 0,
-        delay: motion.contentDelay,
-        duration: motion.contentDuration,
-        ease: "Quad.Out",
-        onComplete: () => { this.pauseContentTween = null; },
-      });
-      this.pauseTween = tween;
-    }
   }
 
   private dismissPauseOverlay(afterDismiss?: () => void): void {
     if (this.pauseOverlay === null || this.pauseClosing) return;
-    if (this.browserPauseRequired) {
-      this.clearPauseOverlayImmediately();
-      this.releaseBrowserPause(true);
-      afterDismiss?.();
-      this.syncGameplayMarker();
-      return;
-    }
+    // Commit the selected destination synchronously: no fade tween or delayed
+    // callback can survive browser backgrounding or navigate a second time.
     this.pauseClosing = true;
-    const overlay = this.pauseOverlay;
-    const motion = getPauseMotionPolicy(this.prefersReducedMotion());
-    this.pauseTween?.stop();
-    this.pauseTween = null;
-    this.pauseContentTween?.stop();
-    this.pauseContentTween = null;
-    this.syncPausePageDim(overlay.alpha);
-    let tween!: Phaser.Tweens.Tween;
-    tween = this.tweens.add({
-      targets: overlay, alpha: 0, duration: motion.exitDuration, ease: PAUSE_FADE_EASE,
-      onUpdate: () => {
-        if (this.pauseTween === tween && this.pauseOverlay === overlay) {
-          this.syncPausePageDim(overlay.alpha);
-        }
-      },
-      onComplete: () => {
-        if (this.pauseTween !== tween || this.pauseOverlay !== overlay) return;
-        this.pauseTween = null;
-        this.syncPausePageDim(0);
-        overlay.destroy(true);
-        this.pauseOverlay = null;
-        this.pauseContent = null;
-        this.pauseClosing = false;
-        afterDismiss?.();
-        this.syncGameplayMarker();
-      },
-    });
-    this.pauseTween = tween;
+    this.clearPauseOverlayImmediately();
+    if (this.browserPauseRequired) this.releaseBrowserPause(true);
+    afterDismiss?.();
+    this.syncGameplayMarker();
   }
 
   private syncPausePageDim(overlayAlpha: number): void {
@@ -1189,10 +1126,6 @@ export class PlayScene extends Phaser.Scene {
 
   private clearPauseOverlayImmediately(): void {
     const ownedPageDim = this.pauseOverlay !== null;
-    this.pauseTween?.stop();
-    this.pauseTween = null;
-    this.pauseContentTween?.stop();
-    this.pauseContentTween = null;
     this.pauseOverlay?.destroy(true);
     this.pauseOverlay = null;
     this.pauseContent = null;
@@ -1250,16 +1183,7 @@ export class PlayScene extends Phaser.Scene {
     this.inputLocked = true;
     this.ensureBrowserPauseOverlay();
     if (this.pauseOverlay !== null) {
-      this.pauseTween?.stop();
-      this.pauseTween = null;
-      this.pauseContentTween?.stop();
-      this.pauseContentTween = null;
-      // A dismissal action is committed only by its tween completion. If the
-      // page hides first, restore the same menu/confirmation and require a new
-      // activation after return; the invalidated completion cannot run twice.
       this.pauseClosing = false;
-      this.pauseOverlay.setAlpha(1);
-      this.pauseContent?.setAlpha(1).setY(0);
       this.syncPausePageDim(1);
     }
     // Freeze the scene-owned clock only after creating the static Pause UI.
