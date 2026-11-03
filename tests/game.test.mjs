@@ -68,7 +68,7 @@ import { getProductionFontProbes } from "../.test-dist/game/TypographyAssets.js"
 import {
   COMPLETE_LAYOUT, getRewardMotionPolicy, REWARD_LAYOUT, REWARD_TRANSITION_DIM_ALPHA,
 } from "../.test-dist/game/RewardVisualPolicy.js";
-import { getPauseMotionPolicy, PAUSE_FADE_EASE, PAUSE_LAYOUT } from "../.test-dist/game/PauseVisualPolicy.js";
+import { PAUSE_LAYOUT } from "../.test-dist/game/PauseVisualPolicy.js";
 
 const progressAt = (completedThroughLevel) => ({ version: 1, completedThroughLevel });
 
@@ -106,13 +106,6 @@ test("Pause and confirmation production policy freezes layout, motion, and local
   assert.deepEqual(PAUSE_LAYOUT.button, { centerX: 240, width: 368, height: 52, gap: 12 });
   assert.deepEqual(PAUSE_LAYOUT.pauseButtonCenters, [360, 424, 488]);
   assert.deepEqual(PAUSE_LAYOUT.confirmationButtonCenters, { safe: 420, danger: 484 });
-  assert.equal(PAUSE_FADE_EASE, "Linear");
-  assert.deepEqual(getPauseMotionPolicy(false), {
-    enterDuration: 200, exitDuration: 160, contentDelay: 45, contentDuration: 155, contentLift: 8,
-  });
-  assert.deepEqual(getPauseMotionPolicy(true), {
-    enterDuration: 100, exitDuration: 80, contentDelay: 0, contentDuration: 100, contentLift: 0,
-  });
   assert.deepEqual(
     [getUiStrings("ru").pauseTitle, getUiStrings("ru").pauseResume, getUiStrings("ru").pauseRestart,
       getUiStrings("ru").pauseExit, getUiStrings("ru").restartConfirmTitle,
@@ -476,19 +469,16 @@ test("level-card release navigation survives pointerout after a confirmed tap", 
   assert.doesNotMatch(source, /const pressVisual = card\.getAt/);
 });
 
-test("pause content enters after the shell instead of appearing as a static first frame", async () => {
-  const policy = await import("../.test-dist/game/PauseVisualPolicy.js");
-  const normal = policy.getPauseMotionPolicy(false);
-  const reduced = policy.getPauseMotionPolicy(true);
-  assert.deepEqual(normal, {
-    enterDuration: 200, exitDuration: 160, contentDelay: 45, contentDuration: 155, contentLift: 8,
-  });
-  assert.deepEqual(reduced, {
-    enterDuration: 100, exitDuration: 80, contentDelay: 0, contentDuration: 100, contentLift: 0,
-  });
+test("pause and confirmations appear instantly like settings without a fade tween", async () => {
   const source = await readFile(new URL("../src/game/PlayScene.ts", import.meta.url), "utf8");
-  assert.match(source, /content\.setAlpha\(0\)\.setY\(motion\.contentLift\)/);
-  assert.match(source, /targets:\s*content[\s\S]*delay:\s*motion\.contentDelay[\s\S]*duration:\s*motion\.contentDuration/);
+  const open = source.slice(source.indexOf("private showPause(): void"), source.indexOf("private dismissPauseOverlay("));
+  const dismiss = source.slice(source.indexOf("private dismissPauseOverlay("), source.indexOf("private syncPausePageDim("));
+  assert.match(open, /this\.showPauseMenu\(\);/);
+  assert.match(open, /this\.syncPausePageDim\(1\);/);
+  assert.doesNotMatch(open, /tweens\.add|setAlpha\(0\)|animateEntry|enterDuration|contentDelay/);
+  assert.match(dismiss, /this\.clearPauseOverlayImmediately\(\);/);
+  assert.match(dismiss, /afterDismiss\?\.\(\);/);
+  assert.doesNotMatch(dismiss, /tweens\.add|onComplete|exitDuration/);
 });
 
 test("portrait startup root matches the game field while landscape restores the oat backdrop", async () => {
