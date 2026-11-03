@@ -212,17 +212,8 @@ test("PlayScene browser pause freezes progress until explicit Continue", async (
   }
 });
 
-test("backgrounding resolves interrupted Pause opening and dismissal animations", async () => {
+test("instant Pause dismissal commits each action once and backgrounding keeps an active confirmation", async () => {
   const previousPhaser = globalThis.Phaser;
-
-  class FakeTween {
-    stopped = false;
-
-    constructor(config) { this.config = config; }
-    stop() { this.stopped = true; }
-    complete() { this.config.onComplete?.(); }
-  }
-
   class MockScene {
     constructor() {
       this.events = new EventEmitter();
@@ -233,16 +224,10 @@ test("backgrounding resolves interrupted Pause opening and dismissal animations"
       this.textures = { exists: () => false, remove() {} };
       this.time = { paused: false };
       this.tweens = {
-        created: [],
-        pauseCount: 0,
-        resumeCount: 0,
-        add(config) {
-          const tween = new FakeTween(config);
-          this.created.push(tween);
-          return tween;
-        },
-        pauseAll() { this.pauseCount += 1; },
-        resumeAll() { this.resumeCount += 1; },
+        pauseCount: 0, resumeCount: 0,
+        add() { throw new Error("Pause must not allocate an animation tween"); },
+        pauseAll() { this.pauseCount++; },
+        resumeAll() { this.resumeCount++; },
       };
     }
   }
@@ -254,96 +239,60 @@ test("backgrounding resolves interrupted Pause opening and dismissal animations"
   };
 
   try {
-    const { PlayScene } = await import("../.test-dist/game/PlayScene.js?browser-dismissal");
+    const { PlayScene } = await import("../.test-dist/game/PlayScene.js?instant-pause");
     const progressStore = { load: () => ({ version: 1, completedThroughLevel: 0 }) };
     const makeOverlay = () => ({
       alpha: 1,
       destroyed: false,
-      setAlpha(value) { this.alpha = value; return this; },
       destroy() { this.destroyed = true; },
-    });
-    const makeContent = () => ({
-      alpha: 1,
-      y: 0,
-      setAlpha(value) { this.alpha = value; return this; },
-      setY(value) { this.y = value; return this; },
     });
     const makeScene = () => {
       const scene = new PlayScene({}, progressStore);
       scene.gameplayUiReady = true;
       scene.showPauseMenu = () => {
         scene.pauseOverlay = makeOverlay();
-        scene.pauseContent = makeContent();
+        scene.pauseContent = {};
       };
       scene.showPauseMenu();
       return scene;
     };
 
-    // Pause -> Continue starts the exit tween. Backgrounding cancels that
-    // dismissal and restores the same interactive Pause menu.
-    const continuing = makeScene();
-    let continueCount = 0;
-    continuing.dismissPauseOverlay(() => { continueCount += 1; });
-    const staleContinueTween = continuing.pauseTween;
-    assert.equal(continuing.pauseClosing, true);
-    continuing.pauseOverlay.alpha = 0.35;
-    continuing.handleBrowserBackground();
-    continuing.handleBrowserForeground();
-    assert.equal(staleContinueTween.stopped, true);
-    assert.equal(continuing.pauseClosing, false, "canceled dismissal cannot leave controls disabled");
-    assert.equal(continuing.pauseOverlay.alpha, 1);
-    staleContinueTween.complete();
-    assert.equal(continueCount, 0, "stale dismissal completion is ignored");
-    continuing.dismissPauseOverlay(() => { continueCount += 1; });
-    assert.equal(continueCount, 1, "explicit Continue after restore resumes exactly once");
-    assert.equal(continuing.pauseOverlay, null);
-    assert.equal(continuing.time.paused, false);
-    assert.equal(continuing.tweens.resumeCount, 1);
-
-    // An interrupted opening tween is normalized to a fully visible menu.
-    const opening = makeScene();
-    opening.pauseOverlay.alpha = 0;
-    opening.pauseContent.alpha = 0;
-    opening.pauseContent.y = -12;
-    const openingShellTween = new FakeTween({});
-    const openingContentTween = new FakeTween({});
-    opening.pauseTween = openingShellTween;
-    opening.pauseContentTween = openingContentTween;
-    opening.handleBrowserBackground();
-    opening.handleBrowserForeground();
-    assert.equal(openingShellTween.stopped, true);
-    assert.equal(openingContentTween.stopped, true);
-    assert.equal(opening.pauseClosing, false);
-    assert.equal(opening.pauseOverlay.alpha, 1);
-    assert.equal(opening.pauseContent.alpha, 1);
-    assert.equal(opening.pauseContent.y, 0);
-
-    // Restart and Exit confirmations use the same dismissal path. Canceled
-    // callbacks stay stale, and the restored confirmation executes once only.
-    for (const actionName of ["restart", "exit"]) {
-      const confirmation = makeScene();
+    for (const actionName of ["continue", "restart", "exit"]) {
+      const scene = makeScene();
       let actionCount = 0;
-      const action = () => { actionCount += 1; };
-      confirmation.dismissPauseOverlay(action);
-      const staleActionTween = confirmation.pauseTween;
-      confirmation.handleBrowserBackground();
-      confirmation.handleBrowserForeground();
-      staleActionTween.complete();
-      assert.equal(actionCount, 0, `${actionName} does not run from a stale completion`);
-      assert.equal(confirmation.pauseClosing, false);
-      confirmation.dismissPauseOverlay(action);
-      assert.equal(actionCount, 1, `${actionName} runs once after explicit reactivation`);
-      staleActionTween.complete();
-      assert.equal(actionCount, 1, `${actionName} cannot run twice`);
+      const overlay = scene.pauseOverlay;
+      const action = () => { actionCount++; };
+      scene.dismissPauseOverlay(action);
+      assert.equal(actionCount, 1, `${actionName} commits synchronously`);
+      assert.equal(overlay.destroyed, true);
+      assert.equal(scene.pauseOverlay, null);
+      assert.equal(scene.pauseClosing, false);
+      scene.dismissPauseOverlay(action);
+      assert.equal(actionCount, 1, `${actionName} cannot execute twice`);
     }
 
+    const foreground = makeScene();
+    foreground.inputLocked = true;
+    foreground.handleBrowserBackground();
+    foreground.handleBrowserForeground();
+    assert.ok(foreground.pauseOverlay, "background retains the existing pause UI");
+    assert.equal(foreground.time.paused, true);
+    let resumed = 0;
+    foreground.dismissPauseOverlay(() => { resumed++; });
+    assert.equal(resumed, 1);
+    assert.equal(foreground.pauseOverlay, null);
+    assert.equal(foreground.browserPauseRequired, false);
+    assert.equal(foreground.time.paused, false);
+    assert.equal(foreground.inputLocked, true, "Continue restores the prior input lock");
+
     const repeated = makeScene();
-    for (let cycle = 0; cycle < 3; cycle += 1) {
+    for (let cycle = 0; cycle < 3; cycle++) {
       repeated.handleBrowserBackground();
       repeated.handleBrowserForeground();
-      assert.equal(repeated.pauseClosing, false);
       repeated.dismissPauseOverlay();
       assert.equal(repeated.time.paused, false);
+      assert.equal(repeated.pauseClosing, false);
+      repeated.showPauseMenu();
     }
     assert.equal(repeated.tweens.pauseCount, 3);
     assert.equal(repeated.tweens.resumeCount, 3);
