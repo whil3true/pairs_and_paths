@@ -614,12 +614,15 @@ export class PlayScene extends Phaser.Scene {
     this.hintModal = this.add.container(0, 0, [
       shell, title, body, ...(confirm ? [confirm.container] : []), cancel.container,
     ]).setDepth(60);
+    setPageDim(VISUAL_COLORS.overlay.modal.alpha, 0);
     this.syncGameplayMarker();
   }
 
   private dismissHintModal(): void {
-    this.hintModal?.destroy(true);
+    if (this.hintModal === null) return;
+    this.hintModal.destroy(true);
     this.hintModal = null;
+    resetPageDim();
     this.syncGameplayMarker();
   }
 
