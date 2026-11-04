@@ -12,18 +12,3 @@ export const PAUSE_LAYOUT = Object.freeze({
   audioButtonCenters: Object.freeze([454, 520, 586] as const),
 });
 
-export interface PauseMotionPolicy {
-  readonly enterDuration: number;
-  readonly exitDuration: number;
-  readonly contentDelay: number;
-  readonly contentDuration: number;
-  readonly contentLift: number;
-}
-
-export const PAUSE_FADE_EASE = "Linear";
-
-export const getPauseMotionPolicy = (reducedMotion: boolean): PauseMotionPolicy => Object.freeze(
-  reducedMotion
-    ? { enterDuration: 100, exitDuration: 80, contentDelay: 0, contentDuration: 100, contentLift: 0 }
-    : { enterDuration: 200, exitDuration: 160, contentDelay: 45, contentDuration: 155, contentLift: 8 },
-);
