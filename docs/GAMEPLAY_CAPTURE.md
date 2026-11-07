@@ -1,31 +1,38 @@
-# Read-only gameplay capture pilot
+# Authentic gameplay capture: 60 FPS + game audio
 
-This optional CI workflow records the **already deployed** Cozy Gallery GitHub Pages
-site using Chromium + Playwright, and exports the result as an Actions artifact.
+This independent GitHub Actions pilot opens the **deployed** Cozy Gallery
+GitHub Pages game in a headless Chromium and records the rendered game
+without modifying the actual game source.
 
-- Source: https://whil3true.github.io/pairs_and_paths/ (deployed `dev`, not the PR build)
-- Trigger: PR to `dev` containing capture workflow/scripts/docs; optionally manual dispatch
-  when available from the GitHub Actions interface for the workflow ref
-- No game/source changes, no debug URL routes, no progress overrides, no Yandex SDK
-- Uses the published deterministic level witness to choose legal pairs, then sends
-  **real touch taps** to the running Phaser canvas; verifies level completion via
-  localStorage in an isolated browser context
-- Captures two single-stage levels and the reward flow, trimming initial loading
-- Output: `capture-output/cozy-gallery-mobile-1080x1920.mp4`, H.264,
-  `capture-report.json`, a last-frame screenshot and original uncut WebM
-- Target: 1080×1920, 30 FPS, around 15–20 seconds
-- **No sound:** Playwright's built-in video recording does not record game audio.
-  FPS encoding is validated by ffprobe but frame smoothness still needs visual QA.
-- On failure the job is red; download its artifact for `failure.json` and
-  `failure.png`. It must not claim success merely because an MP4 exists.
+- URL: https://whil3true.github.io/pairs_and_paths/ (deployed dev)
+- Trigger: PR to dev changing this capture tool / workflow / docs
+- Isolated Playwright script under tools/gameplay-capture; no public debug routes
+- Real touchscreen taps guided by the game's published, deterministic witness
+- Captures original Phaser canvas frames via \`canvas.captureStream(60)\`
+- Captures actual \`HTMLAudioElement\` music and Web Audio SFX through an isolated
+  \`addInitScript\` capture-only audio mirror. No replacement/composited soundtrack.
+- Records a single synchronised WebM+Opus stream with browser \`MediaRecorder\`,
+  then uses FFmpeg to encode 1080×1920 H.264 60 FPS + AAC MP4
+- Verifies MP4 frame size, FPS, codecs, length, and **non-silent captured audio**
+  through ffprobe and FFmpeg volumedetect
+- Saves raw \`gameplay-source.webm\`, final MP4, \`capture-report.json\`,
+  and last-frame.png; failure attempts include \`failure.json\` and failure.png
+- No automatic merge and no changes to production SDK
+
+## Important quality limitation
+
+60 FPS in the output MP4 does **not** guarantee 60 unique rendered frames.
+The report includes source frame count / effective source FPS plus
+requestAnimationFrame interval gaps so that frame drops are visible.
+Please inspect the file itself for motion quality and sound sync.
+Headless software WebGL can be CPU-bound; a lower output FPS may be more honest
+if the source rate cannot reach close to 60.
 
 ## Download
 
-Open the pull request → Checks → Gameplay video capture pilot → job run →
-Artifacts → `cozy-gallery-gameplay-capture-pilot`. The artifact is a ZIP containing
-the captured video, verification report and optional diagnostics. GitHub retains it
-for seven days. No changes are merged automatically.
+Open PR #138 → Checks → Gameplay video capture pilot → run → Artifacts →
+\`cozy-gallery-gameplay-capture-pilot\`. Download the ZIP.
+Artifacts are retained seven days.
 
-This pilot is not yet a verified release video. Check the playback visually,
-including connection lines, tile removal, source resolution and stuttering.
-A silent MP4 is not a substitute for a final promotional recording with game audio.
+If the job fails, check \`failure.json\` and the runner logs. Do not
+declare successful audio capture without the non-silence check.
