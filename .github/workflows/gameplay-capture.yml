@@ -31,10 +31,18 @@ jobs:
       - name: Install Chromium and headless system libraries
         working-directory: tools/gameplay-capture
         run: npx playwright install --with-deps chromium
-      - name: Ensure FFmpeg exists
-        run: command -v ffmpeg || (sudo apt-get update && sudo apt-get install -y ffmpeg)
-      - name: Capture authentic gameplay
-        run: node tools/gameplay-capture/capture.mjs
+      - name: Install virtual display, browser audio, and FFmpeg
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb pulseaudio pulseaudio-utils ffmpeg
+      - name: Start the isolated capture audio sink
+        run: |
+          pulseaudio --start --exit-idle-time=-1
+          pactl load-module module-null-sink sink_name=cozy_capture sink_properties=device.description=CozyCapture
+          pactl set-default-sink cozy_capture
+          pactl info
+      - name: Capture authentic gameplay at native screen resolution
+        run: xvfb-run --auto-servernum --server-args="-screen 0 1080x1920x24 -ac" node tools/gameplay-capture/capture.mjs
       - name: Upload video, verification report and failure evidence
         if: always()
         uses: actions/upload-artifact@v7
