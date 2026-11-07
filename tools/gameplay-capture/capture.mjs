@@ -5,13 +5,13 @@ import { performance } from "node:perf_hooks";
 import path from "node:path";
 
 const URL = "https://whil3true.github.io/pairs_and_paths/";
-const WIDTH = 720;
-const HEIGHT = 1280;
+const WIDTH = 540;
+const HEIGHT = 960;
 const OUTPUT_WIDTH = 1080;
 const OUTPUT_HEIGHT = 1920;
 const FPS = 60;
 const OUTPUT = path.resolve("capture-output");
-const RAW_VIDEO = path.join(OUTPUT, "gameplay-source-720x1280.mp4");
+const RAW_VIDEO = path.join(OUTPUT, "gameplay-source-540x960.mp4");
 const FINAL_VIDEO = path.join(OUTPUT, "cozy-gallery-mobile-1080x1920-60fps-audio.mp4");
 
 
@@ -20,7 +20,7 @@ await mkdir(OUTPUT, { recursive: true });
 
 const browser = await chromium.launch({
   headless: false,
-  args: ["--start-fullscreen", "--kiosk", "--window-position=0,0", "--window-size=720,1280",
+  args: ["--start-fullscreen", "--kiosk", "--window-position=0,0", "--window-size=540,960",
     "--use-gl=angle", "--use-angle=swiftshader", "--enable-webgl", "--ignore-gpu-blocklist",
     "--no-first-run", "--disable-infobars", "--autoplay-policy=no-user-gesture-required"],
 });

@@ -43,7 +43,7 @@ jobs:
           pactl info
       - name: Capture authentic gameplay at native screen resolution
         run: |
-          xvfb-run --auto-servernum --server-args="-screen 0 720x1280x24 -ac" bash -c '
+          xvfb-run --auto-servernum --server-args="-screen 0 540x960x24 -ac" bash -c '
             openbox >/tmp/capture-openbox.log 2>&1 &
             WM_PID=$!
             trap "kill $WM_PID 2>/dev/null || true" EXIT
