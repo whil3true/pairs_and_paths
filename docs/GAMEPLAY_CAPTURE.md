@@ -1,49 +1,49 @@
-# Gameplay capture pilot: full-screen, no cursor, original sound
+# Cozy Gallery: automated four-video gameplay capture
 
-This optional workflow records **real gameplay** on the deployed GitHub Pages site.
-It has no game source changes and does not modify the Yandex SDK, UI, or assets.
+This optional GitHub Actions workflow records real, deployed GitHub Pages
+gameplay in four variants:
 
-## Screen and performance
+| Variant | Source capture | Final MP4 |
+| --- | --- | --- |
+| Mobile RU | 480×854 | 1080×1920 |
+| Mobile EN | 480×854 | 1080×1920 |
+| Desktop RU | 960×540 | 1920×1080 |
+| Desktop EN | 960×540 | 1920×1080 |
 
-- 480×854 Xvfb virtual display managed by Openbox.
-- The capture browser additionally injects `translate=no`, the `notranslate`
-  class and `<meta name="google" content="notranslate">` before the game page
-  runs; the state is verified immediately after navigation. This is capture-only.
-- An additional PSNR QA check compares only the top 90 pixels of the actual X11
-  screenshot against the Playwright viewport image. It fails when their
-  mismatch suggests a native browser overlay; diagnostics are uploaded.
-- Recording Chromium disables its built-in automatic translation bubble with
-  `--disable-translate` and `--disable-features=Translate,TranslateUI`, and
-  runs with `ru-RU` locale. This affects only the isolated capture browser.
-  Neither the game nor its localization behavior is modified.
-- A CDP command sets Chromium's **actual window** to fullscreen. There should
-  be **no tabs, address bar, borders or OS UI** in the captured screen.
-- The pipeline captures real X11 video at 60 FPS with FFmpeg \`-draw_mouse 0\`,
-  so the mouse cursor is not rendered into the file.
-- A Playwright viewport screenshot is compared with an actual X11 screenshot
-  using PSNR. Large mismatches (browser chrome or wrong offset) fail capture.
-- CPU/software WebGL struggles to render 1080×1920 at 60 FPS; we capture at
-  480×854 to reduce raster load and then upscale offline to 1080×1920.
-  The final MP4 is therefore **1080×1920 encoded**, not native 1080p-detail.
-  This prioritizes fluidity. Preserve audio and natural source timestamps.
-- Chromium rAF interval metrics and video frame counts are emitted to the
-  report to help diagnose stalls. FFmpeg frame count cannot prove that every
-  image is unique. Manual playback inspection is still required.
+All recordings use actual Playwright taps/clicks, the shipped deterministic
+solution witness, two genuine levels and the real reward sequence. No synthetic
+game frames, changes to the game/SDK, or added soundtrack.
 
-## Sound and gameplay
+## Localization QA
 
-- PulseAudio null sink \`cozy_capture\` collects **original** HTMLAudioElement
-  music and Web Audio effects.
-- FFmpeg records its monitor stream with the video, producing H.264 + AAC MP4.
-  Audio is checked for a non-silent peak.
-- Playwright sends real touchscreen taps, using the already-shipped
-  deterministic level witness. Two levels and the reward scene are recorded.
+The recording uses a fresh, isolated browser context for each run.
+A capture-only initialization script saves the requested UI locale using
+`pairs-and-paths:ui-locale`, which is the game's existing preference key.
+After startup we read the shipped `UiLocaleRuntime` module to verify that
+the *actual running game's* active language matches the expected language.
+The same locale is used for Chromium UI and `notranslate` injection so the
+browser never overlays the built-in Google Translate UI.
 
-## Download
+## Output, video quality, audio
 
-Open [PR #138](https://github.com/whil3true/pairs_and_paths/pull/138)
-→ Checks → Gameplay video capture pilot → Artifacts. Each successful run
-contains final 1080×1920 MP4, source 480×854 MP4, technical report and
-screen-geometry/viewport QA images. Artifacts expire in seven days.
+Each job records the full X11 desktop in fullscreen Chromium with Openbox,
+FFmpeg `-draw_mouse 0`, real PulseAudio music and sound effects, and
+no editing or inserted frames. Actual capture resolution is kept low for
+software WebGL performance; offline Lanczos upscale produces the requested
+pixel dimensions. Upscaling does **not** add real source image detail.
 
-This remains a draft experiment; no automatic merge or production deployment.
+The browser viewport is compared with an X11 screenshot both overall and
+for the top 90 pixels to detect native browser chrome. A report measures
+the actual output FPS, source rAF pacing, completed levels, full-screen
+geometry, and audible audio.
+
+A matrix job creates each video separately. The `deliverables` job combines
+the four *final* MP4 files and four JSON QA reports into one GitHub Actions
+artifact named `cozy-gallery-four-gameplay-videos`. Individual job artifacts
+also contain the smaller source captures and diagnostic screenshots.
+
+If any variant fails, the combined artifact is not published. The individual
+artifacts provide failure diagnostics. Visual playback review remains required
+to catch mid-recording overlays and repeated software-rendered frames.
+
+All artifacts have seven-day retention; the workflow is not auto-merged.

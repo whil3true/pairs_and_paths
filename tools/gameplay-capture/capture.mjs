@@ -5,14 +5,26 @@ import { performance } from "node:perf_hooks";
 import path from "node:path";
 
 const URL = "https://whil3true.github.io/pairs_and_paths/";
-const WIDTH = 480;
-const HEIGHT = 854;
-const OUTPUT_WIDTH = 1080;
-const OUTPUT_HEIGHT = 1920;
+const LAYOUT = process.env.CAPTURE_LAYOUT ?? "mobile";
+const LOCALE = process.env.CAPTURE_LOCALE ?? "ru";
+const PROFILES = Object.freeze({
+  mobile: { width: 480, height: 854, outputWidth: 1080, outputHeight: 1920 },
+  desktop: { width: 960, height: 540, outputWidth: 1920, outputHeight: 1080 },
+});
+if (!Object.hasOwn(PROFILES, LAYOUT) || !["ru", "en"].includes(LOCALE)) {
+  throw Error("Invalid capture profile or locale");
+}
+const PROFILE = PROFILES[LAYOUT];
+const WIDTH = PROFILE.width;
+const HEIGHT = PROFILE.height;
+const OUTPUT_WIDTH = PROFILE.outputWidth;
+const OUTPUT_HEIGHT = PROFILE.outputHeight;
 const FPS = 60;
+const LABEL = LAYOUT + "-" + LOCALE;
 const OUTPUT = path.resolve("capture-output");
-const RAW_VIDEO = path.join(OUTPUT, "gameplay-source-480x854.mp4");
-const FINAL_VIDEO = path.join(OUTPUT, "cozy-gallery-mobile-1080x1920-60fps-audio.mp4");
+const RAW_VIDEO = path.join(OUTPUT, "gameplay-source-" + LABEL + "-" + WIDTH + "x" + HEIGHT + ".mp4");
+const FINAL_VIDEO = path.join(OUTPUT, "cozy-gallery-" + LABEL + "-" + OUTPUT_WIDTH + "x" + OUTPUT_HEIGHT + "-60fps.mp4");
+const REPORT_PATH = path.join(OUTPUT, "capture-report-" + LABEL + ".json");
 
 
 
@@ -20,34 +32,41 @@ await mkdir(OUTPUT, { recursive: true });
 
 const browser = await chromium.launch({
   headless: false,
-  args: ["--start-fullscreen", "--kiosk", "--window-position=0,0", "--window-size=480,854",
+  args: ["--start-fullscreen", "--kiosk", "--window-position=0,0", "--window-size=" + WIDTH + "," + HEIGHT,
     "--use-gl=angle", "--use-angle=swiftshader", "--enable-webgl", "--ignore-gpu-blocklist",
     "--no-first-run", "--disable-infobars", "--autoplay-policy=no-user-gesture-required",
     // Browser UI must never cover the recorded game. Disable Chromium's
     // automatic translation bubble and match the game's Russian locale.
     "--disable-translate", "--disable-features=Translate,TranslateUI",
-    "--lang=ru-RU", "--no-default-browser-check"],
+    "--lang=" + (LOCALE === "en" ? "en-US" : "ru-RU"), "--no-default-browser-check"],
 });
 const context = await browser.newContext({
   // This affects only the isolated recording browser, not player settings.
-  locale: "ru-RU",
+  locale: LOCALE === "en" ? "en-US" : "ru-RU",
   viewport: { width: WIDTH, height: HEIGHT },
   deviceScaleFactor: 1,
-  hasTouch: true,
-  isMobile: true,
-  userAgent: "Mozilla/5.0 (Linux; Android 14; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Mobile Safari/537.36",
+  hasTouch: LAYOUT === "mobile",
+  isMobile: LAYOUT === "mobile",
+  // Real desktop classification exercises the game's production 2x desktop policy.
+  ...(LAYOUT === "mobile" ? {
+    userAgent: "Mozilla/5.0 (Linux; Android 14; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Mobile Safari/537.36",
+  } : {}),
 
 });
 // The shipped HTML declares lang="en" even when the UI is Russian. Chromium
 // may therefore offer to translate it despite the launch flags. Mark the
 // document as untranslatable before any page script executes. This only runs
 // in the isolated recording browser and is never committed to the game.
-await context.addInitScript(() => {
+await context.addInitScript((locale) => {
+  // The game reads this persisted manual locale on boot, before creating scenes.
+  // Fresh Playwright context isolates it; no real player's preferences change.
+  try { window.localStorage.setItem("pairs-and-paths:ui-locale", locale); }
+  catch { /* about:blank has no accessible origin; the game origin will. */ }
   const protect = () => {
     const html = document.documentElement;
     if (html) {
       if (html.getAttribute("translate") !== "no") html.setAttribute("translate", "no");
-      if (html.getAttribute("lang") !== "ru") html.setAttribute("lang", "ru");
+      if (html.getAttribute("lang") !== locale) html.setAttribute("lang", locale);
       if (!html.classList.contains("notranslate")) html.classList.add("notranslate");
     }
     const head = document.head;
@@ -66,13 +85,13 @@ await context.addInitScript(() => {
   protect();
   document.addEventListener("DOMContentLoaded", protect, { once: true });
   new MutationObserver(protect).observe(document, { childList: true, subtree: true });
-});
+}, LOCALE);
 
 async function enforceNoTranslate() {
-  return page.evaluate(() => {
+  return page.evaluate((locale) => {
     const html = document.documentElement;
     html.setAttribute("translate", "no");
-    html.setAttribute("lang", "ru");
+    html.setAttribute("lang", locale);
     html.classList.add("notranslate");
     document.body?.setAttribute("translate", "no");
     document.body?.classList.add("notranslate");
@@ -88,8 +107,9 @@ async function enforceNoTranslate() {
       htmlLang: html.getAttribute("lang"),
       metaNoTranslate: Boolean(document.head.querySelector('meta[name="google"][content="notranslate"]')),
       bodyTranslate: document.body?.getAttribute("translate"),
+      storedLocale: localStorage.getItem("pairs-and-paths:ui-locale"),
     };
-  });
+  }, LOCALE);
 }
 
 const page = await context.newPage();
@@ -125,7 +145,8 @@ async function tapWorld(x, y) {
   if (px < r.x || py < r.y || px >= r.x + r.width || py >= r.y + r.height) {
     throw Error("Logical tap falls outside canvas");
   }
-  await page.touchscreen.tap(px, py);
+  if (LAYOUT === "mobile") await page.touchscreen.tap(px, py);
+  else await page.mouse.click(px, py, { delay: 35 });
 }
 
 async function witnessForLevel(levelNumber) {
@@ -144,14 +165,23 @@ try {
   const response = await page.goto(URL, { waitUntil: "domcontentloaded", timeout: 60000 });
   if (!response || !response.ok()) throw Error("GitHub Pages response was not successful");
   const translationDomState = await enforceNoTranslate();
-  if (translationDomState.htmlTranslate !== "no" || !translationDomState.metaNoTranslate) {
+  if (translationDomState.htmlTranslate !== "no" || !translationDomState.metaNoTranslate
+      || translationDomState.storedLocale !== LOCALE) {
     throw Error("Capture document must be marked notranslate before recording");
   }
   await canvas.waitFor({ state: "visible", timeout: 45000 });
   await page.waitForTimeout(2600); // Initial non-interactive intro precedes Main Menu.
+  const activeGameLocale = await page.evaluate(async () => {
+    const runtimeUrl = new globalThis.URL("./js/game/UiLocaleRuntime.js", document.baseURI).href;
+    const { getActiveUiLocale } = await import(runtimeUrl);
+    return getActiveUiLocale("ru");
+  });
+  if (activeGameLocale !== LOCALE) {
+    throw Error("Game localization mismatch: expected " + LOCALE + " but got " + activeGameLocale);
+  }
   await tapWorld(240, 482); // Main Menu Play, using approved production layout.
   await page.waitForTimeout(2200); // Level-1 artwork/symbol loading and settling.
-  // Capture only the fullscreen Chromium content at 480x854 while PulseAudio
+  // Capture the selected fullscreen Chromium profile while PulseAudio
   // monitors the sink used by both HTMLAudioElement music and Web Audio SFX.
   const dimensions = await page.evaluate(() => [window.innerWidth, window.innerHeight]);
   if (dimensions[0] !== WIDTH || dimensions[1] !== HEIGHT) {
@@ -173,18 +203,18 @@ try {
   }
   // Explicit QA: compare a real screenshot of the X11 display against the
   // browser viewport. A tab strip or address bar shifts them and fails PSNR.
-  await page.screenshot({ path: path.join(OUTPUT, "capture-viewport.png") });
+  await page.screenshot({ path: path.join(OUTPUT, "capture-viewport-" + LABEL + ".png") });
   const screenShot = spawnSync("ffmpeg", [
     "-hide_banner", "-loglevel", "error", "-y",
     "-f", "x11grab", "-draw_mouse", "0",
     "-video_size", WIDTH + "x" + HEIGHT,
     "-i", process.env.DISPLAY + "+0,0",
-    "-frames:v", "1", path.join(OUTPUT, "capture-screen.png"),
+    "-frames:v", "1", path.join(OUTPUT, "capture-screen-" + LABEL + ".png"),
   ], { encoding: "utf8", timeout: 15000 });
   if (screenShot.status !== 0) throw Error("Could not inspect X11 display: " + screenShot.stderr);
   const diff = spawnSync("ffmpeg", [
-    "-hide_banner", "-i", path.join(OUTPUT, "capture-screen.png"),
-    "-i", path.join(OUTPUT, "capture-viewport.png"),
+    "-hide_banner", "-i", path.join(OUTPUT, "capture-screen-" + LABEL + ".png"),
+    "-i", path.join(OUTPUT, "capture-viewport-" + LABEL + ".png"),
     "-filter_complex", "[0:v][1:v]psnr",
     "-f", "null", "-",
   ], { encoding: "utf8", timeout: 15000 });
@@ -199,8 +229,8 @@ try {
   // strip at the top. Inspect that region independently for Chrome Translate.
   const topDiff = spawnSync("ffmpeg", [
     "-hide_banner",
-    "-i", path.join(OUTPUT, "capture-screen.png"),
-    "-i", path.join(OUTPUT, "capture-viewport.png"),
+    "-i", path.join(OUTPUT, "capture-screen-" + LABEL + ".png"),
+    "-i", path.join(OUTPUT, "capture-viewport-" + LABEL + ".png"),
     "-filter_complex", "[0:v]crop=iw:90:0:0[topScreen];[1:v]crop=iw:90:0:0[topViewport];[topScreen][topViewport]psnr",
     "-f", "null", "-",
   ], { encoding: "utf8", timeout: 15000 });
@@ -209,7 +239,7 @@ try {
   topPsnrDb = topLabel === "inf" ? 99 : Number(topLabel);
   if (!Number.isFinite(topPsnrDb) || topPsnrDb < 26) {
     throw Error("Top-of-screen browser UI suspected: PSNR=" + topPsnrDb
-      + "; inspect capture-screen.png and capture-viewport.png");
+      + "; inspect capture-screen-" + LABEL + ".png and capture-viewport-" + LABEL + ".png");
   }
   await page.evaluate(() => {
     const samples = [];
@@ -269,7 +299,7 @@ try {
     }
   }
   await page.waitForTimeout(1600);
-  await page.screenshot({ path: path.join(OUTPUT, "last-frame.png") });
+  await page.screenshot({ path: path.join(OUTPUT, "last-frame-" + LABEL + ".png") });
   frameTiming = await page.evaluate(() => { const intervals = window.__captureFrameTiming?.samples || [];
     window.__captureFrameTiming = null;
     const sorted = [...intervals].sort((a,b)=>a-b);
@@ -280,7 +310,7 @@ try {
 } catch (err) {
   failure = err;
   try {
-    await page.screenshot({ path: path.join(OUTPUT, "failure.png") });
+    await page.screenshot({ path: path.join(OUTPUT, "failure-" + LABEL + ".png") });
   } catch { /* The browser may already be gone. */ }
 } finally {
   captureEndTime = performance.now();
@@ -298,7 +328,7 @@ try {
 }
 
 if (failure !== null) {
-  await writeFile(path.join(OUTPUT, "failure.json"), JSON.stringify({
+  await writeFile(path.join(OUTPUT, "failure-" + LABEL + ".json"), JSON.stringify({
     error: String(failure), completedThroughLevel, ffmpeg: ffmpegMessages.slice(-5000), fullscreenInfo, screenPsnrDb, topPsnrDb, console: logs,
   }, null, 2));
   throw failure;
@@ -309,7 +339,7 @@ if (failure !== null) {
 execFileSync("ffmpeg", [
   "-hide_banner", "-loglevel", "error", "-y",
   "-i", RAW_VIDEO,
-  "-vf", "scale=1080:1920:flags=lanczos,setsar=1",
+  "-vf", "scale=" + OUTPUT_WIDTH + ":" + OUTPUT_HEIGHT + ":flags=lanczos,setsar=1",
   "-c:v", "libx264", "-preset", "veryfast", "-crf", "18", "-pix_fmt", "yuv420p",
   "-fps_mode", "passthrough", "-c:a", "copy", "-movflags", "+faststart", FINAL_VIDEO,
 ], { stdio: "inherit", timeout: 180000 });
@@ -333,10 +363,11 @@ const maxVolumeDb = Number(/max_volume:\s*(-?[\d.]+) dB/.exec(audioCheck.stderr)
 const audible = Number.isFinite(maxVolumeDb) && maxVolumeDb > -55;
 const report = {
   method: "fullscreen Chromium in Openbox/Xvfb, FFmpeg x11grab 60fps without cursor + PulseAudio",
+  layout: LAYOUT, requestedLocale: LOCALE, verifiedGameLocale: activeGameLocale,
   captureResolution: [WIDTH, HEIGHT], outputResolution: [OUTPUT_WIDTH, OUTPUT_HEIGHT],
   fullscreenInfo, screenPsnrDb, topPsnrDb, frameTiming,
   translationDomState: "notranslate applied at document start and after navigation",
-  browserTranslationPolicy: "disabled via Chromium flags; locale ru-RU",
+  browserTranslationPolicy: "disabled via Chromium flags; locale " + LOCALE,
   source: URL, width: video?.width, height: video?.height,
   fps: video?.avg_frame_rate, actualFrames: frames,
   durationSeconds: duration, frameCountPerSecond: videoRate,
@@ -347,7 +378,7 @@ const report = {
   warning: "A nominal 60fps frame stream can contain duplicates if WebGL or the runner cannot render every frame.",
   console: logs, ffmpegWarnings: ffmpegMessages.slice(-4000),
 };
-await writeFile(path.join(OUTPUT, "capture-report.json"), JSON.stringify(report, null, 2));
+await writeFile(REPORT_PATH, JSON.stringify(report, null, 2));
 console.log("CAPTURE_RESULT " + JSON.stringify(report));
 if (video?.width !== OUTPUT_WIDTH || video?.height !== OUTPUT_HEIGHT
  || Math.abs(Number(video?.avg_frame_rate?.split("/")[0]) / Number(video?.avg_frame_rate?.split("/")[1]) - 60) > 0.5

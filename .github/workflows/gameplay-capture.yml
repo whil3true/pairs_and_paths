@@ -1,4 +1,4 @@
-name: Gameplay video capture pilot
+name: Gameplay video capture (RU + EN, mobile + desktop)
 
 on:
   pull_request:
@@ -13,53 +13,99 @@ permissions:
   contents: read
 
 concurrency:
-  group: gameplay-capture-pilot
+  group: gameplay-capture-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   capture:
+    name: ${{ matrix.layout }} / ${{ matrix.locale }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { layout: mobile, locale: ru, width: 480, height: 854 }
+          - { layout: mobile, locale: en, width: 480, height: 854 }
+          - { layout: desktop, locale: ru, width: 960, height: 540 }
+          - { layout: desktop, locale: en, width: 960, height: 540 }
+    env:
+      CAPTURE_LAYOUT: ${{ matrix.layout }}
+      CAPTURE_LOCALE: ${{ matrix.locale }}
+      CAPTURE_WIDTH: ${{ matrix.width }}
+      CAPTURE_HEIGHT: ${{ matrix.height }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Install isolated Playwright dependency
+      - name: Install Playwright in isolated tools folder
         working-directory: tools/gameplay-capture
         run: npm install --no-package-lock --no-audit --no-fund
-      - name: Install Chromium and headless system libraries
+      - name: Install Chromium with headless dependencies
         working-directory: tools/gameplay-capture
         run: npx playwright install --with-deps chromium
-      - name: Install virtual display, browser audio, and FFmpeg
+      - name: Install virtual display and audio
         run: |
           sudo apt-get update
           sudo apt-get install -y xvfb openbox pulseaudio pulseaudio-utils ffmpeg
-      - name: Start the isolated capture audio sink
+      - name: Start isolated audio sink
         run: |
           pulseaudio --start --exit-idle-time=-1
           pactl load-module module-null-sink sink_name=cozy_capture sink_properties=device.description=CozyCapture
           pactl set-default-sink cozy_capture
-          pactl info
-      - name: Capture authentic gameplay at native screen resolution
+      - name: Capture real gameplay
         run: |
-          xvfb-run --auto-servernum --server-args="-screen 0 480x854x24 -ac" bash -c '
+          xvfb-run --auto-servernum --server-args="-screen 0 ${CAPTURE_WIDTH}x${CAPTURE_HEIGHT}x24 -ac" bash -c '
             openbox >/tmp/capture-openbox.log 2>&1 &
             WM_PID=$!
             trap "kill $WM_PID 2>/dev/null || true" EXIT
             sleep 1
             node tools/gameplay-capture/capture.mjs
           '
-      - name: Upload video, verification report and failure evidence
+      - name: Upload individual recording and diagnostics
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: cozy-gallery-gameplay-capture-pilot
+          name: cozy-capture-${{ matrix.layout }}-${{ matrix.locale }}
           path: |
             capture-output/*.mp4
-            capture-output/*.webm
             capture-output/*.json
             capture-output/*.png
+          if-no-files-found: error
+          retention-days: 7
+          compression-level: 0
+
+  deliverables:
+    name: Combine four final MP4 videos
+    needs: capture
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download successful variants
+        uses: actions/download-artifact@v4
+        with:
+          pattern: cozy-capture-*
+          path: captures
+          merge-multiple: true
+      - name: Collect only final videos and reports
+        run: |
+          mkdir -p deliverables
+          for label in mobile-ru mobile-en desktop-ru desktop-en; do
+            video=$(find captures -maxdepth 1 -type f -name "cozy-gallery-${label}-*60fps.mp4" -print -quit)
+            if [ -z "$video" ]; then
+              echo "Missing finished MP4 for $label" >&2
+              exit 1
+            fi
+            cp "$video" deliverables/
+            cp "captures/capture-report-${label}.json" deliverables/
+          done
+          echo "All four videos collected"
+          ls -lh deliverables
+      - name: Upload four-video release archive
+        uses: actions/upload-artifact@v7
+        with:
+          name: cozy-gallery-four-gameplay-videos
+          path: deliverables/
           if-no-files-found: error
           retention-days: 7
           compression-level: 0
