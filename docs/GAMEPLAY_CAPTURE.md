@@ -6,6 +6,12 @@ It has no game source changes and does not modify the Yandex SDK, UI, or assets.
 ## Screen and performance
 
 - 480×854 Xvfb virtual display managed by Openbox.
+- The capture browser additionally injects `translate=no`, the `notranslate`
+  class and `<meta name="google" content="notranslate">` before the game page
+  runs; the state is verified immediately after navigation. This is capture-only.
+- An additional PSNR QA check compares only the top 90 pixels of the actual X11
+  screenshot against the Playwright viewport image. It fails when their
+  mismatch suggests a native browser overlay; diagnostics are uploaded.
 - Recording Chromium disables its built-in automatic translation bubble with
   `--disable-translate` and `--disable-features=Translate,TranslateUI`, and
   runs with `ru-RU` locale. This affects only the isolated capture browser.

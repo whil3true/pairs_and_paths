@@ -38,6 +38,60 @@ const context = await browser.newContext({
   userAgent: "Mozilla/5.0 (Linux; Android 14; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Mobile Safari/537.36",
 
 });
+// The shipped HTML declares lang="en" even when the UI is Russian. Chromium
+// may therefore offer to translate it despite the launch flags. Mark the
+// document as untranslatable before any page script executes. This only runs
+// in the isolated recording browser and is never committed to the game.
+await context.addInitScript(() => {
+  const protect = () => {
+    const html = document.documentElement;
+    if (html) {
+      if (html.getAttribute("translate") !== "no") html.setAttribute("translate", "no");
+      if (html.getAttribute("lang") !== "ru") html.setAttribute("lang", "ru");
+      if (!html.classList.contains("notranslate")) html.classList.add("notranslate");
+    }
+    const head = document.head;
+    if (head && !head.querySelector('meta[name="google"][content="notranslate"]')) {
+      const meta = document.createElement("meta");
+      meta.setAttribute("name", "google");
+      meta.setAttribute("content", "notranslate");
+      head.appendChild(meta);
+    }
+    const body = document.body;
+    if (body) {
+      if (body.getAttribute("translate") !== "no") body.setAttribute("translate", "no");
+      if (!body.classList.contains("notranslate")) body.classList.add("notranslate");
+    }
+  };
+  protect();
+  document.addEventListener("DOMContentLoaded", protect, { once: true });
+  new MutationObserver(protect).observe(document, { childList: true, subtree: true });
+});
+
+async function enforceNoTranslate() {
+  return page.evaluate(() => {
+    const html = document.documentElement;
+    html.setAttribute("translate", "no");
+    html.setAttribute("lang", "ru");
+    html.classList.add("notranslate");
+    document.body?.setAttribute("translate", "no");
+    document.body?.classList.add("notranslate");
+    let meta = document.head.querySelector('meta[name="google"][content="notranslate"]');
+    if (!meta) {
+      meta = document.createElement("meta");
+      meta.setAttribute("name", "google");
+      meta.setAttribute("content", "notranslate");
+      document.head.appendChild(meta);
+    }
+    return {
+      htmlTranslate: html.getAttribute("translate"),
+      htmlLang: html.getAttribute("lang"),
+      metaNoTranslate: Boolean(document.head.querySelector('meta[name="google"][content="notranslate"]')),
+      bodyTranslate: document.body?.getAttribute("translate"),
+    };
+  });
+}
+
 const page = await context.newPage();
 const cdp = await context.newCDPSession(page);
 const { windowId } = await cdp.send("Browser.getWindowForTarget");
@@ -57,6 +111,7 @@ let captureEndTime = null;
 let completedThroughLevel = 0;
 let frameTiming = null;
 let screenPsnrDb = null;
+let topPsnrDb = null;
 let fullscreenInfo = null;
 let failure = null;
 
@@ -88,6 +143,10 @@ async function witnessForLevel(levelNumber) {
 try {
   const response = await page.goto(URL, { waitUntil: "domcontentloaded", timeout: 60000 });
   if (!response || !response.ok()) throw Error("GitHub Pages response was not successful");
+  const translationDomState = await enforceNoTranslate();
+  if (translationDomState.htmlTranslate !== "no" || !translationDomState.metaNoTranslate) {
+    throw Error("Capture document must be marked notranslate before recording");
+  }
   await canvas.waitFor({ state: "visible", timeout: 45000 });
   await page.waitForTimeout(2600); // Initial non-interactive intro precedes Main Menu.
   await tapWorld(240, 482); // Main Menu Play, using approved production layout.
@@ -135,6 +194,22 @@ try {
   if (!Number.isFinite(screenPsnrDb) || screenPsnrDb < 18) {
     throw Error("Browser chrome or wrong capture region detected. PSNR="
       + screenPsnrDb + "; fullscreen=" + JSON.stringify(fullscreenInfo));
+  }
+  // The existing full-frame PSNR can miss an overlay occupying only a thin
+  // strip at the top. Inspect that region independently for Chrome Translate.
+  const topDiff = spawnSync("ffmpeg", [
+    "-hide_banner",
+    "-i", path.join(OUTPUT, "capture-screen.png"),
+    "-i", path.join(OUTPUT, "capture-viewport.png"),
+    "-filter_complex", "[0:v]crop=iw:90:0:0[topScreen];[1:v]crop=iw:90:0:0[topViewport];[topScreen][topViewport]psnr",
+    "-f", "null", "-",
+  ], { encoding: "utf8", timeout: 15000 });
+  if (topDiff.status !== 0) throw Error("Browser overlay QA could not run: " + topDiff.stderr);
+  const topLabel = /average:([\d.]+|inf)/.exec(topDiff.stderr)?.[1];
+  topPsnrDb = topLabel === "inf" ? 99 : Number(topLabel);
+  if (!Number.isFinite(topPsnrDb) || topPsnrDb < 26) {
+    throw Error("Top-of-screen browser UI suspected: PSNR=" + topPsnrDb
+      + "; inspect capture-screen.png and capture-viewport.png");
   }
   await page.evaluate(() => {
     const samples = [];
@@ -224,7 +299,7 @@ try {
 
 if (failure !== null) {
   await writeFile(path.join(OUTPUT, "failure.json"), JSON.stringify({
-    error: String(failure), completedThroughLevel, ffmpeg: ffmpegMessages.slice(-5000), fullscreenInfo, screenPsnrDb, console: logs,
+    error: String(failure), completedThroughLevel, ffmpeg: ffmpegMessages.slice(-5000), fullscreenInfo, screenPsnrDb, topPsnrDb, console: logs,
   }, null, 2));
   throw failure;
 }
@@ -259,7 +334,8 @@ const audible = Number.isFinite(maxVolumeDb) && maxVolumeDb > -55;
 const report = {
   method: "fullscreen Chromium in Openbox/Xvfb, FFmpeg x11grab 60fps without cursor + PulseAudio",
   captureResolution: [WIDTH, HEIGHT], outputResolution: [OUTPUT_WIDTH, OUTPUT_HEIGHT],
-  fullscreenInfo, screenPsnrDb, frameTiming,
+  fullscreenInfo, screenPsnrDb, topPsnrDb, frameTiming,
+  translationDomState: "notranslate applied at document start and after navigation",
   browserTranslationPolicy: "disabled via Chromium flags; locale ru-RU",
   source: URL, width: video?.width, height: video?.height,
   fps: video?.avg_frame_rate, actualFrames: frames,
