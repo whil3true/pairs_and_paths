@@ -192,7 +192,7 @@ const report = {
 await writeFile(path.join(OUTPUT, "capture-report.json"), JSON.stringify(report, null, 2));
 console.log("CAPTURE_RESULT " + JSON.stringify(report));
 if (video?.width !== WIDTH || video?.height !== HEIGHT
- || !String(video?.avg_frame_rate).includes("60")
+ || Math.abs(Number(video?.avg_frame_rate?.split("/")[0]) / Number(video?.avg_frame_rate?.split("/")[1]) - 60) > 0.5
  || audio?.codec_name !== "aac" || !audible
  || !Number.isFinite(duration) || duration < 12) {
   throw Error("X11 capture quality gate failed; inspect report and recording");
