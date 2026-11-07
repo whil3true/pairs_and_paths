@@ -34,7 +34,7 @@ jobs:
       - name: Install virtual display, browser audio, and FFmpeg
         run: |
           sudo apt-get update
-          sudo apt-get install -y xvfb pulseaudio pulseaudio-utils ffmpeg
+          sudo apt-get install -y xvfb openbox pulseaudio pulseaudio-utils ffmpeg
       - name: Start the isolated capture audio sink
         run: |
           pulseaudio --start --exit-idle-time=-1
@@ -42,7 +42,14 @@ jobs:
           pactl set-default-sink cozy_capture
           pactl info
       - name: Capture authentic gameplay at native screen resolution
-        run: xvfb-run --auto-servernum --server-args="-screen 0 1080x1920x24 -ac" node tools/gameplay-capture/capture.mjs
+        run: |
+          xvfb-run --auto-servernum --server-args="-screen 0 720x1280x24 -ac" bash -c '
+            openbox >/tmp/capture-openbox.log 2>&1 &
+            WM_PID=$!
+            trap "kill $WM_PID 2>/dev/null || true" EXIT
+            sleep 1
+            node tools/gameplay-capture/capture.mjs
+          '
       - name: Upload video, verification report and failure evidence
         if: always()
         uses: actions/upload-artifact@v7

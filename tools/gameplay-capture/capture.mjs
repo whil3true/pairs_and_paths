@@ -1,15 +1,18 @@
 import { chromium } from "playwright";
 import { mkdir, writeFile, stat } from "node:fs/promises";
-import { execFileSync, spawn } from "node:child_process";
+import { execFileSync, spawn, spawnSync } from "node:child_process";
 import { performance } from "node:perf_hooks";
 import path from "node:path";
 
 const URL = "https://whil3true.github.io/pairs_and_paths/";
-const WIDTH = 1080;
-const HEIGHT = 1920;
+const WIDTH = 720;
+const HEIGHT = 1280;
+const OUTPUT_WIDTH = 1080;
+const OUTPUT_HEIGHT = 1920;
 const FPS = 60;
 const OUTPUT = path.resolve("capture-output");
-const RAW_VIDEO = path.join(OUTPUT, "cozy-gallery-mobile-1080x1920-60fps-audio.mp4");
+const RAW_VIDEO = path.join(OUTPUT, "gameplay-source-720x1280.mp4");
+const FINAL_VIDEO = path.join(OUTPUT, "cozy-gallery-mobile-1080x1920-60fps-audio.mp4");
 
 
 
@@ -17,7 +20,7 @@ await mkdir(OUTPUT, { recursive: true });
 
 const browser = await chromium.launch({
   headless: false,
-  args: ["--start-fullscreen", "--kiosk", "--window-position=0,0",
+  args: ["--start-fullscreen", "--kiosk", "--window-position=0,0", "--window-size=720,1280",
     "--use-gl=angle", "--use-angle=swiftshader", "--enable-webgl", "--ignore-gpu-blocklist",
     "--no-first-run", "--disable-infobars", "--autoplay-policy=no-user-gesture-required"],
 });
@@ -30,6 +33,10 @@ const context = await browser.newContext({
 
 });
 const page = await context.newPage();
+const cdp = await context.newCDPSession(page);
+const { windowId } = await cdp.send("Browser.getWindowForTarget");
+await cdp.send("Browser.setWindowBounds", { windowId, bounds: { windowState: "fullscreen" } });
+await page.waitForTimeout(900);
 
 const logs = [];
 page.on("pageerror", (err) => logs.push("pageerror: " + err.message));
@@ -42,6 +49,9 @@ let ffmpegMessages = "";
 let captureStartTime = null;
 let captureEndTime = null;
 let completedThroughLevel = 0;
+let frameTiming = null;
+let screenPsnrDb = null;
+let fullscreenInfo = null;
 let failure = null;
 
 async function tapWorld(x, y) {
@@ -76,17 +86,66 @@ try {
   await page.waitForTimeout(2600); // Initial non-interactive intro precedes Main Menu.
   await tapWorld(240, 482); // Main Menu Play, using approved production layout.
   await page.waitForTimeout(2200); // Level-1 artwork/symbol loading and settling.
-  // Capture the actual 1080x1920 X11 display at 60 FPS while PulseAudio
+  // Capture only the fullscreen Chromium content at 720x1280 while PulseAudio
   // monitors the sink used by both HTMLAudioElement music and Web Audio SFX.
   const dimensions = await page.evaluate(() => [window.innerWidth, window.innerHeight]);
   if (dimensions[0] !== WIDTH || dimensions[1] !== HEIGHT) {
     throw Error("Unexpected Chromium viewport size: " + JSON.stringify(dimensions));
   }
-  await page.screenshot({ path: path.join(OUTPUT, "capture-start.png") });
+  fullscreenInfo = {
+    ...(await cdp.send("Browser.getWindowBounds", { windowId })).bounds,
+    ...await page.evaluate(() => ({
+      innerWidth: window.innerWidth,
+      innerHeight: window.innerHeight,
+      outerWidth: window.outerWidth,
+      outerHeight: window.outerHeight,
+      canvasBounds: (() => { const r = document.querySelector("#game canvas").getBoundingClientRect();
+        return { x: r.x, y: r.y, width: r.width, height: r.height }; })(),
+    })),
+  };
+  if (fullscreenInfo.windowState !== "fullscreen") {
+    throw Error("Chromium is not fullscreen: " + JSON.stringify(fullscreenInfo));
+  }
+  // Explicit QA: compare a real screenshot of the X11 display against the
+  // browser viewport. A tab strip or address bar shifts them and fails PSNR.
+  await page.screenshot({ path: path.join(OUTPUT, "capture-viewport.png") });
+  const screenShot = spawnSync("ffmpeg", [
+    "-hide_banner", "-loglevel", "error", "-y",
+    "-f", "x11grab", "-draw_mouse", "0",
+    "-video_size", WIDTH + "x" + HEIGHT,
+    "-i", process.env.DISPLAY + "+0,0",
+    "-frames:v", "1", path.join(OUTPUT, "capture-screen.png"),
+  ], { encoding: "utf8", timeout: 15000 });
+  if (screenShot.status !== 0) throw Error("Could not inspect X11 display: " + screenShot.stderr);
+  const diff = spawnSync("ffmpeg", [
+    "-hide_banner", "-i", path.join(OUTPUT, "capture-screen.png"),
+    "-i", path.join(OUTPUT, "capture-viewport.png"),
+    "-filter_complex", "[0:v][1:v]psnr",
+    "-f", "null", "-",
+  ], { encoding: "utf8", timeout: 15000 });
+  if (diff.status !== 0) throw Error("Viewport/screen QA failed: " + diff.stderr);
+  const psnrLabel = /average:([\d.]+|inf)/.exec(diff.stderr)?.[1];
+  screenPsnrDb = psnrLabel === "inf" ? 99 : Number(psnrLabel);
+  if (!Number.isFinite(screenPsnrDb) || screenPsnrDb < 18) {
+    throw Error("Browser chrome or wrong capture region detected. PSNR="
+      + screenPsnrDb + "; fullscreen=" + JSON.stringify(fullscreenInfo));
+  }
+  await page.evaluate(() => {
+    const samples = [];
+    let previous = 0;
+    window.__captureFrameTiming = { samples };
+    const tick = (now) => {
+      if (!window.__captureFrameTiming) return;
+      if (previous > 0) samples.push(now - previous);
+      previous = now;
+      requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  });
   ffmpeg = spawn("ffmpeg", [
     "-hide_banner", "-loglevel", "warning", "-y",
     "-thread_queue_size", "1024", "-f", "x11grab",
-    "-framerate", "60", "-video_size", "1080x1920",
+    "-draw_mouse", "0", "-framerate", String(FPS), "-video_size", WIDTH + "x" + HEIGHT,
     "-i", process.env.DISPLAY + "+0,0",
     "-thread_queue_size", "1024", "-f", "pulse",
     "-i", "cozy_capture.monitor",
@@ -130,6 +189,13 @@ try {
   }
   await page.waitForTimeout(1600);
   await page.screenshot({ path: path.join(OUTPUT, "last-frame.png") });
+  frameTiming = await page.evaluate(() => { const intervals = window.__captureFrameTiming?.samples || [];
+    window.__captureFrameTiming = null;
+    const sorted = [...intervals].sort((a,b)=>a-b);
+    return { samples: intervals.length, over25ms: intervals.filter(x=>x>25).length,
+      over40ms: intervals.filter(x=>x>40).length,
+      p95ms: sorted[Math.floor(sorted.length*0.95)] || null,
+      maxMs: sorted[sorted.length-1] || null }; });
 } catch (err) {
   failure = err;
   try {
@@ -152,33 +218,42 @@ try {
 
 if (failure !== null) {
   await writeFile(path.join(OUTPUT, "failure.json"), JSON.stringify({
-    error: String(failure), completedThroughLevel, ffmpeg: ffmpegMessages.slice(-5000), console: logs,
+    error: String(failure), completedThroughLevel, ffmpeg: ffmpegMessages.slice(-5000), fullscreenInfo, screenPsnrDb, console: logs,
   }, null, 2));
   throw failure;
 }
 
-// X11 capture is already cropped to gameplay only. Do not manufacture frames
-// with FPS conversion: keep the 60fps source as the deliverable.
-const captureBytes = (await stat(RAW_VIDEO)).size;
+// Retain source timestamps and original audio. Upscale in a separate offline
+// pass to 1080x1920 so the real-time capture never pays the scaling cost.
+execFileSync("ffmpeg", [
+  "-hide_banner", "-loglevel", "error", "-y",
+  "-i", RAW_VIDEO,
+  "-vf", "scale=1080:1920:flags=lanczos,setsar=1",
+  "-c:v", "libx264", "-preset", "veryfast", "-crf", "18", "-pix_fmt", "yuv420p",
+  "-fps_mode", "passthrough", "-c:a", "copy", "-movflags", "+faststart", FINAL_VIDEO,
+], { stdio: "inherit", timeout: 180000 });
+const captureBytes = (await stat(FINAL_VIDEO)).size;
 const probe = JSON.parse(execFileSync("ffprobe", [
   "-v", "error", "-count_frames",
   "-show_entries", "stream=codec_type,codec_name,width,height,avg_frame_rate,nb_read_frames",
-  "-show_entries", "format=duration", "-of", "json", RAW_VIDEO,
+  "-show_entries", "format=duration", "-of", "json", FINAL_VIDEO,
 ], { encoding: "utf8" }));
 const video = probe.streams?.find((x) => x.codec_type === "video");
 const audio = probe.streams?.find((x) => x.codec_type === "audio");
 const duration = Number(probe.format?.duration);
 const frames = Number(video?.nb_read_frames);
 const videoRate = frames / duration;
-const { spawnSync } = await import("node:child_process");
+
 const audioCheck = spawnSync("ffmpeg", [
-  "-hide_banner", "-i", RAW_VIDEO, "-vn", "-af", "volumedetect",
+  "-hide_banner", "-i", FINAL_VIDEO, "-vn", "-af", "volumedetect",
   "-f", "null", "-",
 ], { encoding: "utf8", timeout: 30000 });
 const maxVolumeDb = Number(/max_volume:\s*(-?[\d.]+) dB/.exec(audioCheck.stderr)?.[1]);
 const audible = Number.isFinite(maxVolumeDb) && maxVolumeDb > -55;
 const report = {
-  method: "headed Chromium in Xvfb, FFmpeg x11grab 60fps + PulseAudio monitor",
+  method: "fullscreen Chromium in Openbox/Xvfb, FFmpeg x11grab 60fps without cursor + PulseAudio",
+  captureResolution: [WIDTH, HEIGHT], outputResolution: [OUTPUT_WIDTH, OUTPUT_HEIGHT],
+  fullscreenInfo, screenPsnrDb, frameTiming,
   source: URL, width: video?.width, height: video?.height,
   fps: video?.avg_frame_rate, actualFrames: frames,
   durationSeconds: duration, frameCountPerSecond: videoRate,
@@ -191,7 +266,7 @@ const report = {
 };
 await writeFile(path.join(OUTPUT, "capture-report.json"), JSON.stringify(report, null, 2));
 console.log("CAPTURE_RESULT " + JSON.stringify(report));
-if (video?.width !== WIDTH || video?.height !== HEIGHT
+if (video?.width !== OUTPUT_WIDTH || video?.height !== OUTPUT_HEIGHT
  || Math.abs(Number(video?.avg_frame_rate?.split("/")[0]) / Number(video?.avg_frame_rate?.split("/")[1]) - 60) > 0.5
  || audio?.codec_name !== "aac" || !audible
  || !Number.isFinite(duration) || duration < 12) {

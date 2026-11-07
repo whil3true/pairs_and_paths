@@ -1,26 +1,39 @@
-# Gameplay capture pilot: true screen + original game audio
+# Gameplay capture pilot: full-screen, no cursor, original sound
 
-The experimental workflow records the already deployed GitHub Pages version,
-without touching game source code or SDK integration.
+This optional workflow records **real gameplay** on the deployed GitHub Pages site.
+It has no game source changes and does not modify the Yandex SDK, UI, or assets.
 
-- Chromium runs **headed** within an isolated 1080×1920 Xvfb desktop.
-- FFmpeg x11grab samples the actual virtual screen at **60 FPS**.
-- The system default PulseAudio sink is a dedicated null sink named
-  \`cozy_capture\`; FFmpeg records \`cozy_capture.monitor\` simultaneously.
-  This includes actual HTMLAudioElement music and Web Audio effects.
-- Uses real Playwright touchscreen taps and published deterministic moves.
-- Records two levels and reward display.
-- Produces H.264/AAC MP4 and \`capture-report.json\`.
-- Checks container frame rate, real frame count, dimensions, audio codec,
-  and verifies audio has non-silent samples.
-- Runner CPU/software WebGL may still produce repeated frames. Encoded 60 FPS
-  is not evidence of 60 unique game renders: inspect the video.
-- GitHub PR checks upload video and diagnostic PNG/JSON as a ZIP artifact.
-- Do not merge without reviewing result. No automatic merge or deployment.
+## Screen and performance
 
-The previous canvas.captureStream/MediaRecorder experiment captured audible
-audio but only three WebGL frames over ~34 seconds. That method was abandoned
-in favor of native X11 display capture.
+- 720×1280 Xvfb virtual display managed by Openbox.
+- A CDP command sets Chromium's **actual window** to fullscreen. There should
+  be **no tabs, address bar, borders or OS UI** in the captured screen.
+- The pipeline captures real X11 video at 60 FPS with FFmpeg \`-draw_mouse 0\`,
+  so the mouse cursor is not rendered into the file.
+- A Playwright viewport screenshot is compared with an actual X11 screenshot
+  using PSNR. Large mismatches (browser chrome or wrong offset) fail capture.
+- CPU/software WebGL struggles to render 1080×1920 at 60 FPS; we capture at
+  720×1280 to reduce raster load and then upscale offline to 1080×1920.
+  The final MP4 is therefore **1080×1920 encoded**, not native 1080p-detail.
+  This prioritizes fluidity. Preserve audio and natural source timestamps.
+- Chromium rAF interval metrics and video frame counts are emitted to the
+  report to help diagnose stalls. FFmpeg frame count cannot prove that every
+  image is unique. Manual playback inspection is still required.
 
-**Artifact:** Open PR #138 → Checks → Gameplay video capture pilot →
-Artifacts → \`cozy-gallery-gameplay-capture-pilot\`. Kept seven days.
+## Sound and gameplay
+
+- PulseAudio null sink \`cozy_capture\` collects **original** HTMLAudioElement
+  music and Web Audio effects.
+- FFmpeg records its monitor stream with the video, producing H.264 + AAC MP4.
+  Audio is checked for a non-silent peak.
+- Playwright sends real touchscreen taps, using the already-shipped
+  deterministic level witness. Two levels and the reward scene are recorded.
+
+## Download
+
+Open [PR #138](https://github.com/whil3true/pairs_and_paths/pull/138)
+→ Checks → Gameplay video capture pilot → Artifacts. Each successful run
+contains final 1080×1920 MP4, source 720×1280 MP4, technical report and
+screen-geometry/viewport QA images. Artifacts expire in seven days.
+
+This remains a draft experiment; no automatic merge or production deployment.
