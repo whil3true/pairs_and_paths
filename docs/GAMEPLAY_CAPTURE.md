@@ -6,6 +6,10 @@ It has no game source changes and does not modify the Yandex SDK, UI, or assets.
 ## Screen and performance
 
 - 480×854 Xvfb virtual display managed by Openbox.
+- Recording Chromium disables its built-in automatic translation bubble with
+  `--disable-translate` and `--disable-features=Translate,TranslateUI`, and
+  runs with `ru-RU` locale. This affects only the isolated capture browser.
+  Neither the game nor its localization behavior is modified.
 - A CDP command sets Chromium's **actual window** to fullscreen. There should
   be **no tabs, address bar, borders or OS UI** in the captured screen.
 - The pipeline captures real X11 video at 60 FPS with FFmpeg \`-draw_mouse 0\`,

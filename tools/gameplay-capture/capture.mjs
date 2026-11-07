@@ -22,9 +22,15 @@ const browser = await chromium.launch({
   headless: false,
   args: ["--start-fullscreen", "--kiosk", "--window-position=0,0", "--window-size=480,854",
     "--use-gl=angle", "--use-angle=swiftshader", "--enable-webgl", "--ignore-gpu-blocklist",
-    "--no-first-run", "--disable-infobars", "--autoplay-policy=no-user-gesture-required"],
+    "--no-first-run", "--disable-infobars", "--autoplay-policy=no-user-gesture-required",
+    // Browser UI must never cover the recorded game. Disable Chromium's
+    // automatic translation bubble and match the game's Russian locale.
+    "--disable-translate", "--disable-features=Translate,TranslateUI",
+    "--lang=ru-RU", "--no-default-browser-check"],
 });
 const context = await browser.newContext({
+  // This affects only the isolated recording browser, not player settings.
+  locale: "ru-RU",
   viewport: { width: WIDTH, height: HEIGHT },
   deviceScaleFactor: 1,
   hasTouch: true,
@@ -86,7 +92,7 @@ try {
   await page.waitForTimeout(2600); // Initial non-interactive intro precedes Main Menu.
   await tapWorld(240, 482); // Main Menu Play, using approved production layout.
   await page.waitForTimeout(2200); // Level-1 artwork/symbol loading and settling.
-  // Capture only the fullscreen Chromium content at 720x1280 while PulseAudio
+  // Capture only the fullscreen Chromium content at 480x854 while PulseAudio
   // monitors the sink used by both HTMLAudioElement music and Web Audio SFX.
   const dimensions = await page.evaluate(() => [window.innerWidth, window.innerHeight]);
   if (dimensions[0] !== WIDTH || dimensions[1] !== HEIGHT) {
@@ -254,6 +260,7 @@ const report = {
   method: "fullscreen Chromium in Openbox/Xvfb, FFmpeg x11grab 60fps without cursor + PulseAudio",
   captureResolution: [WIDTH, HEIGHT], outputResolution: [OUTPUT_WIDTH, OUTPUT_HEIGHT],
   fullscreenInfo, screenPsnrDb, frameTiming,
+  browserTranslationPolicy: "disabled via Chromium flags; locale ru-RU",
   source: URL, width: video?.width, height: video?.height,
   fps: video?.avg_frame_rate, actualFrames: frames,
   durationSeconds: duration, frameCountPerSecond: videoRate,
