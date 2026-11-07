@@ -1,0 +1,50 @@
+name: Gameplay video capture pilot
+
+on:
+  pull_request:
+    branches: [dev]
+    paths:
+      - ".github/workflows/gameplay-capture.yml"
+      - "tools/gameplay-capture/**"
+      - "docs/GAMEPLAY_CAPTURE.md"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: gameplay-capture-pilot
+  cancel-in-progress: true
+
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install isolated Playwright dependency
+        working-directory: tools/gameplay-capture
+        run: npm install --no-package-lock --no-audit --no-fund
+      - name: Install Chromium and headless system libraries
+        working-directory: tools/gameplay-capture
+        run: npx playwright install --with-deps chromium
+      - name: Ensure FFmpeg exists
+        run: command -v ffmpeg || (sudo apt-get update && sudo apt-get install -y ffmpeg)
+      - name: Capture authentic gameplay
+        run: node tools/gameplay-capture/capture.mjs
+      - name: Upload video, verification report and failure evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: cozy-gallery-gameplay-capture-pilot
+          path: |
+            capture-output/*.mp4
+            capture-output/*.webm
+            capture-output/*.json
+            capture-output/*.png
+          if-no-files-found: error
+          retention-days: 7
+          compression-level: 0

@@ -1,0 +1,9 @@
+{
+  "name": "cozy-gallery-gameplay-capture",
+  "private": true,
+  "type": "module",
+  "description": "Isolated Playwright dependency for read-only GitHub Pages gameplay capture",
+  "dependencies": {
+    "playwright": "1.65.0"
+  }
+}
