@@ -5,7 +5,7 @@ It has no game source changes and does not modify the Yandex SDK, UI, or assets.
 
 ## Screen and performance
 
-- 540×960 Xvfb virtual display managed by Openbox.
+- 480×854 Xvfb virtual display managed by Openbox.
 - A CDP command sets Chromium's **actual window** to fullscreen. There should
   be **no tabs, address bar, borders or OS UI** in the captured screen.
 - The pipeline captures real X11 video at 60 FPS with FFmpeg \`-draw_mouse 0\`,
@@ -13,7 +13,7 @@ It has no game source changes and does not modify the Yandex SDK, UI, or assets.
 - A Playwright viewport screenshot is compared with an actual X11 screenshot
   using PSNR. Large mismatches (browser chrome or wrong offset) fail capture.
 - CPU/software WebGL struggles to render 1080×1920 at 60 FPS; we capture at
-  540×960 to reduce raster load and then upscale offline to 1080×1920.
+  480×854 to reduce raster load and then upscale offline to 1080×1920.
   The final MP4 is therefore **1080×1920 encoded**, not native 1080p-detail.
   This prioritizes fluidity. Preserve audio and natural source timestamps.
 - Chromium rAF interval metrics and video frame counts are emitted to the
@@ -33,7 +33,7 @@ It has no game source changes and does not modify the Yandex SDK, UI, or assets.
 
 Open [PR #138](https://github.com/whil3true/pairs_and_paths/pull/138)
 → Checks → Gameplay video capture pilot → Artifacts. Each successful run
-contains final 1080×1920 MP4, source 540×960 MP4, technical report and
+contains final 1080×1920 MP4, source 480×854 MP4, technical report and
 screen-geometry/viewport QA images. Artifacts expire in seven days.
 
 This remains a draft experiment; no automatic merge or production deployment.
