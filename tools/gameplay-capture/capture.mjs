@@ -134,6 +134,7 @@ let screenPsnrDb = null;
 let topPsnrDb = null;
 let fullscreenInfo = null;
 let failure = null;
+let activeGameLocale = null;
 
 async function tapWorld(x, y) {
   const r = await canvas.boundingBox();
@@ -171,7 +172,7 @@ try {
   }
   await canvas.waitFor({ state: "visible", timeout: 45000 });
   await page.waitForTimeout(2600); // Initial non-interactive intro precedes Main Menu.
-  const activeGameLocale = await page.evaluate(async () => {
+  activeGameLocale = await page.evaluate(async () => {
     const runtimeUrl = new globalThis.URL("./js/game/UiLocaleRuntime.js", document.baseURI).href;
     const { getActiveUiLocale } = await import(runtimeUrl);
     return getActiveUiLocale("ru");
