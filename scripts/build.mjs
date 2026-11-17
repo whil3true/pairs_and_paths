@@ -9,7 +9,11 @@ const run = (command, args) => {
 
 run(process.execPath, ["scripts/clean.mjs"]);
 run(process.platform === "win32" ? "npx.cmd" : "npx", ["tsc"]);
-await cp(new URL("../public", import.meta.url), new URL("../dist", import.meta.url), { recursive: true });
+await cp(new URL("../public", import.meta.url), new URL("../dist", import.meta.url), {
+  recursive: true,
+  // Source-only audio provenance/QA notes; preserve the actual font licenses.
+  filter: (source) => !source.replaceAll("\\", "/").endsWith("/assets/audio/README.md"),
+});
 await mkdir(new URL("../dist/vendor", import.meta.url), { recursive: true });
 
 const candidates = ["dist/phaser.js", "dist/phaser.min.js"];
@@ -20,6 +24,8 @@ for (const candidate of candidates) {
 }
 if (!phaserFile) throw new Error(`No browser-ready Phaser distribution found (checked ${candidates.join(", ")})`);
 await cp(phaserFile, new URL("../dist/vendor/phaser.js", import.meta.url));
+await cp(new URL("../node_modules/phaser/LICENSE.md", import.meta.url),
+  new URL("../dist/vendor/phaser.LICENSE.txt", import.meta.url));
 
 // Validate deployed catalogs and public inputs before treating the build as releasable.
 run(process.execPath, ["scripts/check-assets.mjs"]);
