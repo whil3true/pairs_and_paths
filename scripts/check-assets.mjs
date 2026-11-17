@@ -57,16 +57,20 @@ const walk = async (directory) => {
 const relative = (url, base) => fileURLToPath(url).slice(fileURLToPath(base).length).replaceAll("\\", "/");
 const publicFiles = await walk(publicRoot);
 const allowed = new Set([...Object.keys(snapshot), "index.html", "styles.css", "assets/audio/README.md"]);
+const deployedPaths = new Set([...allowed].filter((path) => path !== "assets/audio/README.md"));
 assert.deepEqual(publicFiles.map((url) => relative(url, publicRoot)).sort(), [...allowed].sort(),
   "Unexpected public file: classify new assets/support files; do not silently ship old exports");
 for (const source of publicFiles) {
   const path = relative(source, publicRoot);
+  if (!deployedPaths.has(path)) continue;
   assert.deepEqual(await readFile(new URL(path, distRoot)), await readFile(source), `Static copy differs: ${path}`);
 }
 
 // Check emitted module references plus HTML/CSS paths. This is not a general JS reachability analyzer.
 const distFiles = await walk(distRoot);
-const expectedDist = new Set([...allowed, "vendor/phaser.js"]);
+const expectedDist = new Set([...deployedPaths, "vendor/phaser.js", "vendor/phaser.LICENSE.txt"]);
+assert.deepEqual(await readFile(new URL("vendor/phaser.LICENSE.txt", distRoot)),
+  await readFile(new URL("node_modules/phaser/LICENSE.md", root)), "Phaser MIT license must be preserved");
 const sourceRoot = new URL("src/", root);
 for (const source of await walk(sourceRoot)) {
   const path = relative(source, sourceRoot);

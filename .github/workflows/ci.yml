@@ -4,6 +4,7 @@ on:
   pull_request:
   push:
     branches: [main, dev, "feature/**"]
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -22,5 +23,48 @@ jobs:
       - run: npm test
       - run: npm run simulate -- --count 10000
       - run: npm run simulate:blockers
+      - name: Test Yandex package validator
+        run: python3 -m unittest discover -s scripts -p test_check_yandex_build.py -v
       - run: npm run build
       - run: npm run check:package-size
+      - name: Validate Yandex production tree
+        run: python3 scripts/check-yandex-build.py dist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: production-dist
+          path: dist
+          if-no-files-found: error
+
+  yandex-release:
+    name: Yandex upload-ready ZIP
+    needs: validate
+    if: ${{ success() && (github.event_name == 'pull_request' || github.ref == 'refs/heads/dev') }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: production-dist
+          path: dist
+      - name: Recheck the exact tested production tree
+        run: python3 scripts/check-yandex-build.py dist
+      # Upload directory contents, never a prebuilt ZIP. GitHub creates the final ZIP.
+      - name: Publish Cozy Gallery Yandex files
+        id: ready
+        uses: actions/upload-artifact@v4
+        with:
+          name: cozy-gallery-yandex
+          path: dist
+          if-no-files-found: error
+          overwrite: true
+      - name: Verify the actual downloadable ZIP against production-dist
+        env:
+          GH_TOKEN: ${{ github.token }}
+          YANDEX_ARTIFACT_ID: ${{ steps.ready.outputs.artifact-id }}
+          YANDEX_ARTIFACT_URL: ${{ steps.ready.outputs.artifact-url }}
+        run: |
+          gh api "/repos/${GITHUB_REPOSITORY}/actions/artifacts/${YANDEX_ARTIFACT_ID}/zip" > "${RUNNER_TEMP}/cozy-gallery-yandex.zip"
+          python3 scripts/check-yandex-build.py "${RUNNER_TEMP}/cozy-gallery-yandex.zip" --compare dist --report "${RUNNER_TEMP}/yandex-upload-validation.json"

@@ -46,8 +46,13 @@ Other hosts require Yandex SDK initialization and show retry UI if it fails.
 | `npm run check:assets` | After build: verify expanded catalogs, production hashes, emitted/static paths and exact release contents |
 | `npm run check:package-size` | Report distribution/artwork bytes; warn >80 MB, fail >100 MB (decimal) |
 
-CI runs all six validation commands on pull requests. Pushes to `dev` deploy GitHub Pages
-and create a Yandex draft ZIP artifact (root `index.html`, no outer project directory).
+CI preserves typecheck, unit tests, both simulations, build (including `check:assets`) and
+package-size validation, and tests the release validator with Python 3 (standard library only).
+Successful pull requests and pushes to `dev` publish **`cozy-gallery-yandex`**:
+download **`cozy-gallery-yandex.zip`** and upload it directly to the Yandex draft.
+The release job reuses the tested build and downloads the actual ZIP through GitHub API
+to check its contents and exact production bytes. [Download instructions](docs/YANDEX_BUILD_DOWNLOAD.md).
+Pushes to `dev` also deploy the standalone preview through the unchanged Pages workflow.
 Feature branch PRs do not deploy or submit a game for moderation. Do not commit `dist/`,
 `node_modules/`, `.test-dist/` or `.simulation-dist/`.
 
